@@ -1,4 +1,4 @@
-// ══════════════════════════════════════════════════════════════════════════════
+﻿// ══════════════════════════════════════════════════════════════════════════════
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -2010,7 +2010,7 @@ $("tCbtSubmitBtn").onclick = async () => {
 // Load previous submissions by this teacher
 function renderTeacherSubmissions() {
   if (!teacherSubmissions.length) {
-    $("tCbtMyExamsTbody").innerHTML = <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No exams submitted yet. Parse questions above and click "Submit Exam" to send to the admin.</td></tr>;
+    $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No exams submitted yet. Parse questions above and click "Submit Exam" to send to the admin.</td></tr>`;
     return;
   }
 
@@ -2023,29 +2023,29 @@ function renderTeacherSubmissions() {
       const d = new Date(dStr.includes("T") ? dStr : dStr + "T00:00:00");
       if (!isNaN(d.getTime())) launchDisplay = d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
     }
-    const timeDisplay = ${sub.startTime || sub.gateOpen || "08:00"} â€“ ;
-    const shuffleDisplay = sub.shuffle !== false ? "ðŸ”€ Shuffled" : "Sequential";
+    const timeDisplay = `${sub.startTime || sub.gateOpen || "08:00"} - ${sub.endTime || sub.gateClose || "20:00"}`;
+    const shuffleDisplay = sub.shuffle !== false ? "Shuffled" : "Sequential";
 
-    const resolvedSubName = sub.subjectName || (typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "â€”";
+    const resolvedSubName = sub.subjectName || (typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "-";
 
-    return 
+    return `
       <tr>
-        <td style="font-weight:600"></td>
-        <td></td>
-        <td></td>
-        <td> mins</td>
-        <td></td>
+        <td style="font-weight:600">${esc(sub.title)}</td>
+        <td>${esc(resolvedSubName)}</td>
+        <td>${esc(sub.className || "-")}</td>
+        <td>${sub.duration || 30} mins</td>
+        <td>${qCount}</td>
         <td style="font-size:12px">
-          <strong style="color:var(--accent)">ðŸ“… </strong>
-          <div style="font-size:11px;color:var(--text-muted)"> Â· </div>
+          <strong style="color:var(--accent)">Launch: ${esc(launchDisplay)}</strong>
+          <div style="font-size:11px;color:var(--text-muted)">${esc(timeDisplay)} &middot; ${shuffleDisplay}</div>
         </td>
-        <td><span style="color:var(--status-good);font-weight:600;font-size:12px">â— </span></td>
+        <td><span style="color:var(--status-good);font-weight:600;font-size:12px">&bull; ${esc(sub.status || "Ready")}</span></td>
         <td style="text-align:right">
-          <button type="button" class="btn btn-secondary btn-sm" data-preview-teacher-exam="" style="margin-right:6px">ðŸ‘ï¸ Preview &amp; Edit</button>
-          <button type="button" class="btn-text" data-del-my-exam="" style="color:var(--status-fail)">Delete</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-preview-teacher-exam="${esc(sub.docId)}" style="margin-right:6px">Preview &amp; Edit</button>
+          <button type="button" class="btn-text" data-del-my-exam="${esc(sub.docId)}" style="color:var(--status-fail)">Delete</button>
         </td>
       </tr>
-    ;
+    `;
   }).join("");
 
   document.querySelectorAll("[data-preview-teacher-exam]").forEach(b => {
