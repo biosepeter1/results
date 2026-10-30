@@ -1,4 +1,4 @@
-// ══════════════════════════════════════════════════════════════════════════════
+﻿// ══════════════════════════════════════════════════════════════════════════════
 // ADMINISTRATOR PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -1927,6 +1927,50 @@ let adminSortAsc = true;
 
 const SCORES_CACHE_KEY = "admin_exam_scores_cache_v3";
 
+// ── Score Conversion ──────────────────────────────────────────
+const SCORE_CONVERSION_KEY = "SCORE_CONVERSION_SETTING_v1";
+
+function getScoreConversion() {
+  try { return JSON.parse(localStorage.getItem(SCORE_CONVERSION_KEY)) || null; } catch(e) { return null; }
+}
+function setScoreConversion(obj) {
+  if (obj) localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
+  else localStorage.removeItem(SCORE_CONVERSION_KEY);
+}
+function applyScoreConversion(rawScore) {
+  const c = getScoreConversion();
+  if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return rawScore;
+  const factor = c.targetMax / c.originalMax;
+  return Math.round(rawScore * factor * 100) / 100;
+}
+function applyPctConversion(rawScore) {
+  const c = getScoreConversion();
+  if (!c || !c.originalMax || !c.targetMax) return null; // null = use stored pct
+  const converted = applyScoreConversion(rawScore);
+  return Math.round((converted / c.targetMax) * 100 * 10) / 10;
+}
+function refreshConversionUI() {
+  const c = getScoreConversion();
+  const origEl = document.getElementById("convOrigMax");
+  const tgtEl = document.getElementById("convTargetMax");
+  const multLbl = document.getElementById("convMultiplierLabel");
+  const activeLbl = document.getElementById("convActiveLabel");
+  if (!origEl) return;
+  if (c && c.originalMax && c.targetMax) {
+    origEl.value = c.originalMax;
+    tgtEl.value = c.targetMax;
+    const f = (c.targetMax / c.originalMax).toFixed(4).replace(/\.?0+$/, "");
+    multLbl.textContent = "× " + f;
+    activeLbl.textContent = "✅ Active: scores shown out of " + c.targetMax;
+  } else {
+    origEl.value = "";
+    tgtEl.value = "";
+    multLbl.textContent = "";
+    activeLbl.textContent = "No conversion – raw scores displayed";
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
 function getCachedScores() {
   try {
     const raw = localStorage.getItem(SCORES_CACHE_KEY);
@@ -2304,7 +2348,10 @@ function renderScoresTableOnly() {
 
   $("scoresTbody").innerHTML = pageRows.map((r, idx) => {
     const globalIdx = startIdx + idx + 1;
-    const pctVal = r.pct || 0;
+    const rawScore = parseFloat(r.score) || 0;
+    const dispScore = applyScoreConversion(rawScore);
+    const convPct = applyPctConversion(rawScore);
+    const pctVal = convPct !== null ? convPct : (r.pct || 0);
 
     let statusClass = "status-good";
     let statusLabel = "Pass";
@@ -2316,6 +2363,10 @@ function renderScoresTableOnly() {
       statusLabel = "Pass";
     }
 
+    const scoreDisplay = (dispScore !== rawScore)
+      ? `${dispScore} <span style="font-size:10px;color:var(--text-muted,#8892b0)">(raw:${rawScore})</span>`
+      : esc(r.score);
+
     return `
       <tr>
         <td data-label="#" class="muted-cell">${globalIdx}</td>
@@ -2324,7 +2375,7 @@ function renderScoresTableOnly() {
         <td data-label="Subject">${esc(r.subject)}</td>
         <td data-label="Class">${esc(r.class)}</td>
         <td data-label="Arm">${esc(r.arm)}</td>
-        <td data-label="Score" class="numeric">${esc(r.score)}</td>
+        <td data-label="Score" class="numeric">${scoreDisplay}</td>
         <td data-label="Percentage" class="numeric">${pctVal}%</td>
         <td data-label="Status"><span class="status-text ${statusClass}">${statusLabel}</span></td>
         <td data-label="Date &amp; Time" class="muted-cell">${esc(r.date)}</td>
@@ -2403,24 +2454,75 @@ if ($("scoresCacheRetryBtn")) $("scoresCacheRetryBtn").onclick = () => loadStude
 // Print Report
 $("scoresPrintBtn").onclick = () => window.print();
 
+// Score Conversion Controls
+(function initConversionPanel() {
+  const origEl = document.getElementById("convOrigMax");
+  const tgtEl  = document.getElementById("convTargetMax");
+  const applyBtn = document.getElementById("convApplyBtn");
+  const resetBtn = document.getElementById("convResetBtn");
+  if (!origEl) return;
+
+  refreshConversionUI();
+
+  // Live multiplier preview as user types
+  function updatePreview() {
+    const o = parseFloat(origEl.value);
+    const t = parseFloat(tgtEl.value);
+    const multLbl = document.getElementById("convMultiplierLabel");
+    if (o > 0 && t > 0) {
+      multLbl.textContent = "× " + (t / o).toFixed(4).replace(/\.?0+$/, "");
+    } else {
+      multLbl.textContent = "";
+    }
+  }
+  origEl.addEventListener("input", updatePreview);
+  tgtEl.addEventListener("input", updatePreview);
+
+  applyBtn.onclick = () => {
+    const o = parseFloat(origEl.value);
+    const t = parseFloat(tgtEl.value);
+    if (!o || o <= 0 || !t || t <= 0) {
+      alert("Please enter valid positive numbers for both Original Max and Target Max.");
+      return;
+    }
+    setScoreConversion({ originalMax: o, targetMax: t });
+    refreshConversionUI();
+    renderScoresTableOnly();
+  };
+
+  resetBtn.onclick = () => {
+    setScoreConversion(null);
+    origEl.value = "";
+    tgtEl.value = "";
+    refreshConversionUI();
+    renderScoresTableOnly();
+  };
+})();
+
 // Export CSV
 $("scoresExportCsvBtn").onclick = () => {
   const sorted = getSortedAdminRows();
   if (!sorted.length) { alert("No rows to export."); return; }
   const headers = ["#", "Student Name", "Reg Number", "Subject", "Class", "Arm", "Score", "Percentage", "Status", "Date & Time", "Term"];
-  const rows = sorted.map((r, i) => [
-    i + 1,
-    `"${(r.student || "").replace(/"/g, '""')}"`,
-    `"${(r.reg || "").replace(/"/g, '""')}"`,
-    `"${(r.subject || "").replace(/"/g, '""')}"`,
-    `"${(r.class || "").replace(/"/g, '""')}"`,
-    `"${(r.arm || "").replace(/"/g, '""')}"`,
-    `"${(r.score || "").replace(/"/g, '""')}"`,
-    `${r.pct || 0}%`,
-    (r.pct || 0) < 50 ? "Fail" : "Pass",
-    `"${(r.date || "").replace(/"/g, '""')}"`,
-    `"${(r.term || "").replace(/"/g, '""')}"`
-  ]);
+  const rows = sorted.map((r, i) => {
+    const rawScore = parseFloat(r.score) || 0;
+    const dispScore = applyScoreConversion(rawScore);
+    const convPct = applyPctConversion(rawScore);
+    const pctVal = convPct !== null ? convPct : (r.pct || 0);
+    return [
+      i + 1,
+      `"${(r.student || "").replace(/"/g, '""')}"`,
+      `"${(r.reg || "").replace(/"/g, '""')}"`,
+      `"${(r.subject || "").replace(/"/g, '""')}"`,
+      `"${(r.class || "").replace(/"/g, '""')}"`,
+      `"${(r.arm || "").replace(/"/g, '""')}"`,
+      dispScore,
+      `${pctVal}%`,
+      pctVal < 50 ? "Fail" : "Pass",
+      `"${(r.date || "").replace(/"/g, '""')}"`,
+      `"${(r.term || "").replace(/"/g, '""')}"`
+    ];
+  });
   const csv = [headers.join(","), ...rows.map(e => e.join(","))].join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
