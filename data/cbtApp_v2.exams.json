@@ -1,0 +1,8252 @@
+[{
+  "_id": {
+    "$oid": "6ad7195b45913c59c33e5055"
+  },
+  "title": "FRENCH MID TERM EXAM",
+  "subject": {
+    "$oid": "68d290c4dccbf5227b8d79e0"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad7197045913c59c33e5086"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5087"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5088"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5089"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508a"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508b"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508c"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508d"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508e"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e508f"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5090"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5091"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5092"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5093"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5094"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5095"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5096"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5097"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5098"
+    },
+    {
+      "$oid": "6ad7197045913c59c33e5099"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913db"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d7"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d8"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913cb"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913dd"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91460"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91443"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91434"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-20T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:33:48.006Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-20T14:04:20.497Z"
+  },
+  "__v": 42
+},
+{
+  "_id": {
+    "$oid": "6ad719ab45913c59c33e50ae"
+  },
+  "title": "NIGERIAN HISTORY MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f571a1f7894cb96a1465"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad719e545913c59c33e50e1"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e2"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e3"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e4"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e5"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e6"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e7"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e8"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50e9"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50ea"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50eb"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50ec"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50ed"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50ee"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50ef"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50f0"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50f1"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50f2"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50f3"
+    },
+    {
+      "$oid": "6ad719e545913c59c33e50f4"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913cb"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d7"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913db"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913dd"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d8"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91443"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91434"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91460"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-20T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:35:07.337Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-20T14:00:43.536Z"
+  },
+  "__v": 42
+},
+{
+  "_id": {
+    "$oid": "6ad71a0445913c59c33e5109"
+  },
+  "title": "PHE MID TERM EXAM",
+  "subject": {
+    "$oid": "68c550a044dc59aedc899eb6"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71a1045913c59c33e513b"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e513c"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e513d"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e513e"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e513f"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5140"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5141"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5142"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5143"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5144"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5145"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5146"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5147"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5148"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e5149"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e514a"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e514b"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e514c"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e514d"
+    },
+    {
+      "$oid": "6ad71a1045913c59c33e514e"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d7"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913cb"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913db"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91443"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913dd"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d8"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91460"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91434"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-20T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:36:36.338Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-20T13:56:54.918Z"
+  },
+  "__v": 42
+},
+{
+  "_id": {
+    "$oid": "6ad71a4a45913c59c33e5163"
+  },
+  "title": "SOCIAL AND CITIZENSHIP STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6985e1d521fa2427ffc9c0b0"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71a5745913c59c33e5195"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e5196"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e5197"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e5198"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e5199"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519a"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519b"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519c"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519d"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519e"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e519f"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a0"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a1"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a2"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a3"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a4"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a5"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a6"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a7"
+    },
+    {
+      "$oid": "6ad71a5745913c59c33e51a8"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91531"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d914b9"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91509"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:37:46.568Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:33:52.119Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "6ad71b1a45913c59c33e520f"
+  },
+  "title": "BUSINESS STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f342a1f7894cb96a1401"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71b2845913c59c33e5241"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5242"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5243"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5244"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5245"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5246"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5247"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5248"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5249"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524a"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524b"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524c"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524d"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524e"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e524f"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5250"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5251"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5252"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5253"
+    },
+    {
+      "$oid": "6ad71b2845913c59c33e5254"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91531"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91509"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d914b9"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:41:14.854Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:38:46.614Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "6ad71b7045913c59c33e5269"
+  },
+  "title": "INTERMEDIATE SCIENCE MID TERM EXAM",
+  "subject": {
+    "$oid": "6919eaa4a1f7894cb96a1343"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71b7d45913c59c33e529b"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e529c"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e529d"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e529e"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e529f"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a0"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a1"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a2"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a3"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a4"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a5"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a6"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a7"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a8"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52a9"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52aa"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52ab"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52ac"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52ad"
+    },
+    {
+      "$oid": "6ad71b7d45913c59c33e52ae"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91531"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91509"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d914b9"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91559"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:42:40.582Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:42:40.933Z"
+  },
+  "__v": 8
+},
+{
+  "_id": {
+    "$oid": "6ad71bb145913c59c33e52c3"
+  },
+  "title": "YORUBA LANGUAGE MID TERM EXAM",
+  "subject": {
+    "$oid": "68d29460dccbf5227b8d79ff"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71bbc45913c59c33e52f5"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52f6"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52f7"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52f8"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52f9"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52fa"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52fb"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52fc"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52fd"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52fe"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e52ff"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5300"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5301"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5302"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5303"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5304"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5305"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5306"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5307"
+    },
+    {
+      "$oid": "6ad71bbc45913c59c33e5308"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91531"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91509"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d914b9"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:43:45.624Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:46:16.858Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "6ad71bea45913c59c33e531d"
+  },
+  "title": "BASIC TECHNOLOGY MID TERM EXAM",
+  "subject": {
+    "$oid": "6919eebea1f7894cb96a13b2"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71bf445913c59c33e534f"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5350"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5351"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5352"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5353"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5354"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5355"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5356"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5357"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5358"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5359"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535a"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535b"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535c"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535d"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535e"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e535f"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5360"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5361"
+    },
+    {
+      "$oid": "6ad71bf445913c59c33e5362"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915fa"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9161a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91617"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:44:42.860Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:48:00.698Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "6ad71c1845913c59c33e5377"
+  },
+  "title": "FRENCH MID TERM EXAM",
+  "subject": {
+    "$oid": "68d290c4dccbf5227b8d79e0"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71ce845913c59c33e53b6"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53b7"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53b8"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53b9"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53ba"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53bb"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53bc"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53bd"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53be"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53bf"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c0"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c1"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c2"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c3"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c4"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c5"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c6"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c7"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c8"
+    },
+    {
+      "$oid": "6ad71ce845913c59c33e53c9"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915fa"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9161a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91617"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:45:28.536Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T14:37:54.479Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "6ad71d3245913c59c33e53de"
+  },
+  "title": "AGRIC SCIENCE MID TERM EXAM",
+  "subject": {
+    "$oid": "68d4544a902dbca0fec8274e"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71d4545913c59c33e5410"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5411"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5412"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5413"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5414"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5415"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5416"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5417"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5418"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5419"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541a"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541b"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541c"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541d"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541e"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e541f"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5420"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5421"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5422"
+    },
+    {
+      "$oid": "6ad71d4545913c59c33e5423"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915fa"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9161a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91617"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:50:10.362Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T14:04:46.435Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "6ad71d7045913c59c33e5438"
+  },
+  "title": "MATHEMATICS MID TERM EXAM",
+  "subject": {
+    "$oid": "68acd2b5b81c01af321d0998"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad71ef245913c59c33e546a"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e546b"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e546c"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e546d"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e546e"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e546f"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5470"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5471"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5472"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5473"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5474"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5475"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5476"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5477"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5478"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e5479"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e547a"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e547b"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e547c"
+    },
+    {
+      "$oid": "6ad71ef245913c59c33e547d"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d7"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91443"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913db"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91434"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913dd"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913cb"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d8"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91460"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-20T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:51:12.362Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-20T13:51:12.607Z"
+  },
+  "__v": 42
+},
+{
+  "_id": {
+    "$oid": "6ad71f1c45913c59c33e5492"
+  },
+  "title": "MATHEMATICS MID TERM EXAM",
+  "subject": {
+    "$oid": "68acd2b5b81c01af321d0998"
+  },
+  "duration": 30,
+  "questions": [
+    {
+      "$oid": "6ad720cd45913c59c33e54c5"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54c6"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54c7"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54c8"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54c9"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54ca"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54cb"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54cc"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54cd"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54ce"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54cf"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d0"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d1"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d2"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d3"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d4"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d5"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d6"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d7"
+    },
+    {
+      "$oid": "6ad720cd45913c59c33e54d8"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915fa"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9161a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91606"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91591"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91617"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T07:58:20.626Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T14:23:19.402Z"
+  },
+  "__v": 7
+},
+{
+  "_id": {
+    "$oid": "6ad77eba2a958840ab1c4ed7"
+  },
+  "title": "MID-TERM EXAMINATION ",
+  "subject": {
+    "$oid": "6919eaa4a1f7894cb96a1343"
+  },
+  "duration": 25,
+  "questions": [],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [
+    {
+      "$oid": "6919eb99a1f7894cb96a1361"
+    }
+  ],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "17:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-20T14:46:18.261Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T13:56:06.431Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6ad867a184890e5b1cb629c9"
+  },
+  "title": "SOCIAL AND CITIZENSHIP STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6985e1d521fa2427ffc9c0b0"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad867b184890e5b1cb629fc"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb629fd"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb629fe"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb629ff"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a00"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a01"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a02"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a03"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a04"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a05"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a06"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a07"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a08"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a09"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0a"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0b"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0c"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0d"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0e"
+    },
+    {
+      "$oid": "6ad867b184890e5b1cb62a0f"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91437"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:20:01.674Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T11:51:20.776Z"
+  },
+  "__v": 34
+},
+{
+  "_id": {
+    "$oid": "6ad8680184890e5b1cb62a25"
+  },
+  "title": "DIGITAL TECHNOLOGY MID TERM EXAM",
+  "subject": {
+    "$oid": "698ae5b1b093510866fe608f"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad8681284890e5b1cb62a58"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a59"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5a"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5b"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5c"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5d"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5e"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a5f"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a60"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a61"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a62"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a63"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a64"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a65"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a66"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a67"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a68"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a69"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a6a"
+    },
+    {
+      "$oid": "6ad8681284890e5b1cb62a6b"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91437"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:21:37.988Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T11:59:11.014Z"
+  },
+  "__v": 34
+},
+{
+  "_id": {
+    "$oid": "6ad8683284890e5b1cb62a81"
+  },
+  "title": "YORUBA STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "68d29460dccbf5227b8d79ff"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab4"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab5"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab6"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab7"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab8"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ab9"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62aba"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62abb"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62abc"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62abd"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62abe"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62abf"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac0"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac1"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac2"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac3"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac4"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac5"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac6"
+    },
+    {
+      "$oid": "6ad8685e84890e5b1cb62ac7"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91437"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:22:26.059Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T12:11:53.990Z"
+  },
+  "__v": 34
+},
+{
+  "_id": {
+    "$oid": "6ad8688084890e5b1cb62add"
+  },
+  "title": "ENGLISH STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "68d04890c92e802af0bb876d"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad8690d84890e5b1cb62b2d"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b2e"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b2f"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b30"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b31"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b32"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b33"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b34"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b35"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b36"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b37"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b38"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b39"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3a"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3b"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3c"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3d"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3e"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b3f"
+    },
+    {
+      "$oid": "6ad8690d84890e5b1cb62b40"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91437"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91453"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:23:44.968Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T11:50:27.025Z"
+  },
+  "__v": 34
+},
+{
+  "_id": {
+    "$oid": "6ad86a4384890e5b1cb62bd9"
+  },
+  "title": "DIGITAL TECHNOLOGIES MID TERM EXAM",
+  "subject": {
+    "$oid": "698ae5b1b093510866fe608f"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c0c"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c0d"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c0e"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c0f"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c10"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c11"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c12"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c13"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c14"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c15"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c16"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c17"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c18"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c19"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1a"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1b"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1c"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1d"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1e"
+    },
+    {
+      "$oid": "6ad86a5f84890e5b1cb62c1f"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91532"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91508"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:31:15.963Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T10:41:19.198Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "6ad86aad84890e5b1cb62c5f"
+  },
+  "title": "PHE MID TERM EXAM",
+  "subject": {
+    "$oid": "68c550a044dc59aedc899eb6"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad86abf84890e5b1cb62c92"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c93"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c94"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c95"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c96"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c97"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c98"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c99"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9a"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9b"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9c"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9d"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9e"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62c9f"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca0"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca1"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca2"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca3"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca4"
+    },
+    {
+      "$oid": "6ad86abf84890e5b1cb62ca5"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91532"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:33:01.165Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:54:35.999Z"
+  },
+  "__v": 5
+},
+{
+  "_id": {
+    "$oid": "6ad86af484890e5b1cb62cbb"
+  },
+  "title": "ENGLISH STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "68d04890c92e802af0bb876d"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad86d3384890e5b1cb62d0b"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d0c"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d0d"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d0e"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d0f"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d10"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d11"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d12"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d13"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d14"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d15"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d16"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d17"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d18"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d19"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d1a"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d1b"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d1c"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d1d"
+    },
+    {
+      "$oid": "6ad86d3384890e5b1cb62d1e"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91532"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9152e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9150c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91508"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": false,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:34:12.130Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T09:59:34.233Z"
+  },
+  "__v": 8
+},
+{
+  "_id": {
+    "$oid": "6ad86d5e84890e5b1cb62d48"
+  },
+  "title": "MATHEMATICS MID TERM EXAM",
+  "subject": {
+    "$oid": "68acd2b5b81c01af321d0998"
+  },
+  "duration": 30,
+  "questions": [
+    {
+      "$oid": "6ad8701084890e5b1cb62d85"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d86"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d87"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d88"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d89"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8a"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8b"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8c"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8d"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8e"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d8f"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d90"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d91"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d92"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d93"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d94"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d95"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d96"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d97"
+    },
+    {
+      "$oid": "6ad8701084890e5b1cb62d98"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91532"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9150c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91550"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91551"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91558"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91503"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9156e"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:44:30.069Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T10:20:24.733Z"
+  },
+  "__v": 9
+},
+{
+  "_id": {
+    "$oid": "6ad8704484890e5b1cb62dae"
+  },
+  "title": "PHE MID TERM EXAM",
+  "subject": {
+    "$oid": "68c550a044dc59aedc899eb6"
+  },
+  "duration": 5,
+  "questions": [
+    {
+      "$oid": "6ad8705684890e5b1cb62de1"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de2"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de3"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de4"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de5"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de6"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de7"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de8"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62de9"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62dea"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62deb"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62dec"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62ded"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62dee"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62def"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62df0"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62df1"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62df2"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62df3"
+    },
+    {
+      "$oid": "6ad8705684890e5b1cb62df4"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91581"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:56:52.225Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T10:13:58.752Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad8708184890e5b1cb62e0a"
+  },
+  "title": "HOME ECONOMICS MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f64ca1f7894cb96a1495"
+  },
+  "duration": 5,
+  "questions": [
+    {
+      "$oid": "6ad8709284890e5b1cb62e3d"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e3e"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e3f"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e40"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e41"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e42"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e43"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e44"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e45"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e46"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e47"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e48"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e49"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4a"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4b"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4c"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4d"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4e"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e4f"
+    },
+    {
+      "$oid": "6ad8709284890e5b1cb62e50"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9159c"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:57:53.336Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T09:19:34.714Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad870e184890e5b1cb62e66"
+  },
+  "title": "ENGLISH STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "68d04890c92e802af0bb876d"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad8712484890e5b1cb62e99"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9a"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9b"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9c"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9d"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9e"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62e9f"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea0"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea1"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea2"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea3"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea4"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea5"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea6"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea7"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea8"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62ea9"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62eaa"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62eab"
+    },
+    {
+      "$oid": "6ad8712484890e5b1cb62eac"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T07:59:29.611Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T08:00:36.743Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6ad8716884890e5b1cb62ec2"
+  },
+  "title": "CIVIC EDUCATION MID TERM EXAM",
+  "subject": {
+    "$oid": "68d2c7fddccbf5227b8d7bdf"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad871ae84890e5b1cb62ef5"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62ef6"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62ef7"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62ef8"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62ef9"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62efa"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62efb"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62efc"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62efd"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62efe"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62eff"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f00"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f01"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f02"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f03"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f04"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f05"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f06"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f07"
+    },
+    {
+      "$oid": "6ad871ae84890e5b1cb62f08"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-21T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-21T08:01:44.922Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-21T08:02:54.851Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6ad9bd7068439e3b4c2994a0"
+  },
+  "title": "BUSINESSS  STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f342a1f7894cb96a1401"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bdb561589c10971ac684"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac685"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac686"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac687"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac688"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac689"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68a"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68b"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68c"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68d"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68e"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac68f"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac690"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac691"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac692"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac693"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac694"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac695"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac696"
+    },
+    {
+      "$oid": "6ad9bdb561589c10971ac697"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91471"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e9"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:38:24.177Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T12:18:10.864Z"
+  },
+  "__v": 35
+},
+{
+  "_id": {
+    "$oid": "6ad9bdd561589c10971ac6ad"
+  },
+  "title": "CCA MID TERM EXAM",
+  "subject": {
+    "$oid": "68d454ee902dbca0fec82766"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9be1561589c10971ac6e1"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e2"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e3"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e4"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e5"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e6"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e7"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e8"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6e9"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6ea"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6eb"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6ec"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6ed"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6ee"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6ef"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6f0"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6f1"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6f2"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6f3"
+    },
+    {
+      "$oid": "6ad9be1561589c10971ac6f4"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91471"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e9"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:40:05.364Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T12:06:26.305Z"
+  },
+  "__v": 34
+},
+{
+  "_id": {
+    "$oid": "6ad9be3c61589c10971ac70a"
+  },
+  "title": "CRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404d8213f0bc29679c586"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9be4661589c10971ac73d"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac73e"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac73f"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac740"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac741"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac742"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac743"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac744"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac745"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac746"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac747"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac748"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac749"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74a"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74b"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74c"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74d"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74e"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac74f"
+    },
+    {
+      "$oid": "6ad9be4661589c10971ac750"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91471"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e9"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:41:48.684Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T11:57:46.173Z"
+  },
+  "__v": 33
+},
+{
+  "_id": {
+    "$oid": "6ad9be6861589c10971ac766"
+  },
+  "title": "IRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404b1213f0bc29679c57c"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9be7661589c10971ac799"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79a"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79b"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79c"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79d"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79e"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac79f"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a0"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a1"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a2"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a3"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a4"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a5"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a6"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a7"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a8"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7a9"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7aa"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7ab"
+    },
+    {
+      "$oid": "6ad9be7661589c10971ac7ac"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91471"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:42:32.615Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T11:58:39.479Z"
+  },
+  "__v": 4
+},
+{
+  "_id": {
+    "$oid": "6ad9bea061589c10971ac7c2"
+  },
+  "title": "CRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404d8213f0bc29679c586"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bec661589c10971ac7f6"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7f7"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7f8"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7f9"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7fa"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7fb"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7fc"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7fd"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7fe"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac7ff"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac800"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac801"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac802"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac803"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac804"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac805"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac806"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac807"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac808"
+    },
+    {
+      "$oid": "6ad9bec661589c10971ac809"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91558"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:43:28.409Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T10:22:53.719Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad9befb61589c10971ac81f"
+  },
+  "title": "IRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404b1213f0bc29679c57c"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bf0861589c10971ac852"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac853"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac854"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac855"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac856"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac857"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac858"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac859"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85a"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85b"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85c"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85d"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85e"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac85f"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac860"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac861"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac862"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac863"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac864"
+    },
+    {
+      "$oid": "6ad9bf0861589c10971ac865"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:44:59.552Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T07:45:12.721Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6ad9bf3a61589c10971ac87b"
+  },
+  "title": "FRENCH LANGUAGE MID TERM EXAM",
+  "subject": {
+    "$oid": "68d290c4dccbf5227b8d79e0"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bf4661589c10971ac8ae"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8af"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b0"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b1"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b2"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b3"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b4"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b5"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b6"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b7"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b8"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8b9"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8ba"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8bb"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8bc"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8bd"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8be"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8bf"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8c0"
+    },
+    {
+      "$oid": "6ad9bf4661589c10971ac8c1"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:46:02.965Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T07:46:14.620Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6ad9bf6d61589c10971ac8d7"
+  },
+  "title": "HISTORY MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f571a1f7894cb96a1465"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bfa861589c10971ac90b"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac90c"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac90d"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac90e"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac90f"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac910"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac911"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac912"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac913"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac914"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac915"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac916"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac917"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac918"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac919"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac91a"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac91b"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac91c"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac91d"
+    },
+    {
+      "$oid": "6ad9bfa861589c10971ac91e"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91558"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:46:53.975Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T10:13:28.090Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad9bfde61589c10971ac934"
+  },
+  "title": "BUSINESS STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f342a1f7894cb96a1401"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9bff361589c10971ac967"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac968"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac969"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96a"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96b"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96c"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96d"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96e"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac96f"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac970"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac971"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac972"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac973"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac974"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac975"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac976"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac977"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac978"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac979"
+    },
+    {
+      "$oid": "6ad9bff361589c10971ac97a"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91636"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:48:46.138Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T08:58:34.017Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad9c02c61589c10971ac990"
+  },
+  "title": "CCA MID TERM EXAM",
+  "subject": {
+    "$oid": "68d454ee902dbca0fec82766"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9c03761589c10971ac9c3"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c4"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c5"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c6"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c7"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c8"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9c9"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9ca"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9cb"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9cc"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9cd"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9ce"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9cf"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d0"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d1"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d2"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d3"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d4"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d5"
+    },
+    {
+      "$oid": "6ad9c03761589c10971ac9d6"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91636"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91581"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:50:04.325Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T10:16:34.368Z"
+  },
+  "__v": 4
+},
+{
+  "_id": {
+    "$oid": "6ad9c07761589c10971ac9ef"
+  },
+  "title": "HISTORY MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f571a1f7894cb96a1465"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9c09b61589c10971aca23"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca24"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca25"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca26"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca27"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca28"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca29"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2a"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2b"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2c"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2d"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2e"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca2f"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca30"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca31"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca32"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca33"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca34"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca35"
+    },
+    {
+      "$oid": "6ad9c09b61589c10971aca36"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91636"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:51:19.282Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T08:54:48.536Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad9c0bc61589c10971aca4c"
+  },
+  "title": "CRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404d8213f0bc29679c586"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9c0c861589c10971aca7f"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca80"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca81"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca82"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca83"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca84"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca85"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca86"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca87"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca88"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca89"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8a"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8b"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8c"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8d"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8e"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca8f"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca90"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca91"
+    },
+    {
+      "$oid": "6ad9c0c861589c10971aca92"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91636"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:52:28.692Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T09:02:03.711Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6ad9c0f361589c10971acaa8"
+  },
+  "title": "IRS MID TERM EXAM",
+  "subject": {
+    "$oid": "68d404b1213f0bc29679c57c"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6ad9c0fe61589c10971acadb"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acadc"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acadd"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acade"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acadf"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae0"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae1"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae2"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae3"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae4"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae5"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae6"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae7"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae8"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acae9"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acaea"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acaeb"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acaec"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acaed"
+    },
+    {
+      "$oid": "6ad9c0fe61589c10971acaee"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-22T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-22T07:53:23.538Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-22T07:53:34.642Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6adb1361b5ac32b5d3b6aa76"
+  },
+  "title": "FASHION DESIGN AND GARMENT MAKING MID TERM EXAM",
+  "subject": {
+    "$oid": "6985e01f21fa2427ffc9c07b"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaa9"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaaa"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaab"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaac"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaad"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaae"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaaf"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab0"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab1"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab2"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab3"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab4"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab5"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab6"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab7"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab8"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aab9"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aaba"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aabb"
+    },
+    {
+      "$oid": "6adb137bb5ac32b5d3b6aabc"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913d6"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T07:57:21.944Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T12:55:01.898Z"
+  },
+  "__v": 17
+},
+{
+  "_id": {
+    "$oid": "6adb13e3b5ac32b5d3b6aad2"
+  },
+  "title": "HORTICULTURE AND CROP PRODUCTION MID TERM EXAM",
+  "subject": {
+    "$oid": "6985e03c21fa2427ffc9c07f"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab05"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab06"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab07"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab08"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab09"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0a"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0b"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0c"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0d"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0e"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab0f"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab10"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab11"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab12"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab13"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab14"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab15"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab16"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab17"
+    },
+    {
+      "$oid": "6adb1407b5ac32b5d3b6ab18"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913c9"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "23:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T07:59:31.605Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T12:55:44.590Z"
+  },
+  "__v": 20
+},
+{
+  "_id": {
+    "$oid": "6adb1479b5ac32b5d3b6ab2e"
+  },
+  "title": "BASIC SCIENCE MID TERM EXAM",
+  "subject": {
+    "$oid": "6919eaa4a1f7894cb96a1343"
+  },
+  "duration": 7,
+  "questions": [
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab61"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab62"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab63"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab64"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab65"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab66"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab67"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab68"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab69"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6a"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6b"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6c"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6d"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6e"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab6f"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab70"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab71"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab72"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab73"
+    },
+    {
+      "$oid": "6adb1486b5ac32b5d3b6ab74"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d9141e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141a"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91412"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91415"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91420"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91410"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91422"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91424"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91421"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91416"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91414"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91423"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141b"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9144d"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91419"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9140e"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91418"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91417"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9141f"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91411"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913e6"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d91413"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9142c"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d913c9"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "11:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601b98086fbe04ba3fb0"
+  },
+  "arm": [
+    {
+      "$oid": "6915fd4de62cef47bf2847b0"
+    },
+    {
+      "$oid": "6915fd53e62cef47bf2847b7"
+    },
+    {
+      "$oid": "6915fd5ae62cef47bf2847be"
+    },
+    {
+      "$oid": "6915fd62e62cef47bf2847c5"
+    },
+    {
+      "$oid": "6915fd7be62cef47bf2847d1"
+    },
+    {
+      "$oid": "6915fd80e62cef47bf2847d8"
+    },
+    {
+      "$oid": "6915fd85e62cef47bf2847df"
+    },
+    {
+      "$oid": "6915fd8ae62cef47bf2847e6"
+    },
+    {
+      "$oid": "6915fd94e62cef47bf2847f0"
+    },
+    {
+      "$oid": "6915fd99e62cef47bf2847f7"
+    },
+    {
+      "$oid": "6915fde3e62cef47bf2847fe"
+    },
+    {
+      "$oid": "6915fe15e62cef47bf28480f"
+    },
+    {
+      "$oid": "6915fe3ae62cef47bf284819"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:02:01.930Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T12:51:57.397Z"
+  },
+  "__v": 35
+},
+{
+  "_id": {
+    "$oid": "6adb14c5b5ac32b5d3b6ab9e"
+  },
+  "title": "FASHION DESIGN AND GARMENT MAKING MID TERM EXAM",
+  "subject": {
+    "$oid": "6985e01f21fa2427ffc9c07b"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd1"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd2"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd3"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd4"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd5"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd6"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd7"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd8"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abd9"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abda"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abdb"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abdc"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abdd"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abde"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abdf"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abe0"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abe1"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abe2"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abe3"
+    },
+    {
+      "$oid": "6adb14d0b5ac32b5d3b6abe4"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d914d7"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:03:17.897Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T08:35:03.483Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6adb14f5b5ac32b5d3b6abfa"
+  },
+  "title": "HORTICULTURE AND CROP PRODUCTION",
+  "subject": {
+    "$oid": "6985e03c21fa2427ffc9c07f"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac2d"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac2e"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac2f"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac30"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac31"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac32"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac33"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac34"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac35"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac36"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac37"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac38"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac39"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3a"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3b"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3c"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3d"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3e"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac3f"
+    },
+    {
+      "$oid": "6adb1520b5ac32b5d3b6ac40"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:04:05.241Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T08:04:48.635Z"
+  },
+  "__v": 2
+},
+{
+  "_id": {
+    "$oid": "6adb153eb5ac32b5d3b6ac56"
+  },
+  "title": "CCA MID TERM EXAM",
+  "subject": {
+    "$oid": "68d454ee902dbca0fec82766"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac89"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8a"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8b"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8c"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8d"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8e"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac8f"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac90"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac91"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac92"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac93"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac94"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac95"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac96"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac97"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac98"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac99"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac9a"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac9b"
+    },
+    {
+      "$oid": "6adb154ab5ac32b5d3b6ac9c"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d914d7"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3602e98086fbe04ba3fb5"
+  },
+  "arm": [
+    {
+      "$oid": "6915fc0be62cef47bf284749"
+    },
+    {
+      "$oid": "6915fc4be62cef47bf284755"
+    },
+    {
+      "$oid": "6915fc52e62cef47bf28475c"
+    },
+    {
+      "$oid": "6915fc5ae62cef47bf284763"
+    },
+    {
+      "$oid": "6915fc68e62cef47bf28476d"
+    },
+    {
+      "$oid": "6915fc6de62cef47bf284774"
+    },
+    {
+      "$oid": "6915fc75e62cef47bf28477b"
+    },
+    {
+      "$oid": "6915fc81e62cef47bf284789"
+    },
+    {
+      "$oid": "6915fcf7e62cef47bf284793"
+    },
+    {
+      "$oid": "6915fcfee62cef47bf28479a"
+    },
+    {
+      "$oid": "6915fd18e62cef47bf2847a4"
+    },
+    {
+      "$oid": "6916156de62cef47bf2848f7"
+    },
+    {
+      "$oid": "69161943e62cef47bf284bce"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:05:18.500Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T08:39:32.146Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6adb156bb5ac32b5d3b6acb2"
+  },
+  "title": "BASIC SCIENCE MID TERM EXAM",
+  "subject": {
+    "$oid": "6919eaa4a1f7894cb96a1343"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb157bb5ac32b5d3b6ace5"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6ace6"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6ace7"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6ace8"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6ace9"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acea"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6aceb"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acec"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6aced"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acee"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acef"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf0"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf1"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf2"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf3"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf4"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf5"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf6"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf7"
+    },
+    {
+      "$oid": "6adb157bb5ac32b5d3b6acf8"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915d1"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9159d"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:06:03.138Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T10:24:01.241Z"
+  },
+  "__v": 4
+},
+{
+  "_id": {
+    "$oid": "6adb15b3b5ac32b5d3b6ad0e"
+  },
+  "title": "YORUBA MID TERM EXAM",
+  "subject": {
+    "$oid": "68d29460dccbf5227b8d79ff"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad41"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad42"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad43"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad44"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad45"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad46"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad47"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad48"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad49"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4a"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4b"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4c"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4d"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4e"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad4f"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad50"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad51"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad52"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad53"
+    },
+    {
+      "$oid": "6adb15d5b5ac32b5d3b6ad54"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915d1"
+    },
+    {
+      "$oid": "6ac4a8b6c727382f42d9159d"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": false,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:07:15.864Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T10:19:49.785Z"
+  },
+  "__v": 4
+},
+{
+  "_id": {
+    "$oid": "6adb1657b5ac32b5d3b6ad7e"
+  },
+  "title": "COMPUTER MID TERM EXAM",
+  "subject": {
+    "$oid": "68c5508044dc59aedc899eab"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb1"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb2"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb3"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb4"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb5"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb6"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb7"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb8"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adb9"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adba"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adbb"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adbc"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adbd"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adbe"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adbf"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adc0"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adc1"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adc2"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adc3"
+    },
+    {
+      "$oid": "6adb1662b5ac32b5d3b6adc4"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915d1"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:09:59.164Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T08:55:25.070Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "6adb167cb5ac32b5d3b6adda"
+  },
+  "title": "SOCIAL STUDIES MID TERM EXAM",
+  "subject": {
+    "$oid": "6919f3f6a1f7894cb96a141d"
+  },
+  "duration": 20,
+  "questions": [
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae0d"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae0e"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae0f"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae10"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae11"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae12"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae13"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae14"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae15"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae16"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae17"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae18"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae19"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1a"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1b"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1c"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1d"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1e"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae1f"
+    },
+    {
+      "$oid": "6adb1688b5ac32b5d3b6ae20"
+    }
+  ],
+  "numberOfQuestions": 20,
+  "taken": [
+    {
+      "$oid": "6ac4a8b6c727382f42d915d1"
+    }
+  ],
+  "teachers": [],
+  "startDate": {
+    "$date": "2026-10-23T00:00:00.000Z"
+  },
+  "startTime": "08:00",
+  "endTime": "20:00",
+  "class": {
+    "$oid": "68f3601098086fbe04ba3fab"
+  },
+  "arm": [
+    {
+      "$oid": "6915fecee62cef47bf28482c"
+    },
+    {
+      "$oid": "6915fed3e62cef47bf284833"
+    },
+    {
+      "$oid": "6915fedde62cef47bf28483a"
+    },
+    {
+      "$oid": "6915ff3fe62cef47bf28484a"
+    },
+    {
+      "$oid": "6915ff44e62cef47bf284851"
+    },
+    {
+      "$oid": "6915ff4be62cef47bf284858"
+    },
+    {
+      "$oid": "6915ff50e62cef47bf28485f"
+    },
+    {
+      "$oid": "6915ff58e62cef47bf284866"
+    },
+    {
+      "$oid": "6915ff79e62cef47bf284870"
+    },
+    {
+      "$oid": "6915ff7fe62cef47bf284877"
+    },
+    {
+      "$oid": "6915ff87e62cef47bf28487e"
+    },
+    {
+      "$oid": "6915ffa9e62cef47bf284888"
+    },
+    {
+      "$oid": "69167c1ae62cef47bf2852e3"
+    }
+  ],
+  "session": {
+    "$oid": "6aabf6c9fe918aaa23f28245"
+  },
+  "term": {
+    "$oid": "6ad23855ba97e63fcc418c99"
+  },
+  "isActive": true,
+  "shuffle": true,
+  "allowSameOptions": false,
+  "createdAt": {
+    "$date": "2026-10-23T08:10:36.581Z"
+  },
+  "updatedAt": {
+    "$date": "2026-10-23T08:58:34.003Z"
+  },
+  "__v": 3
+}]
