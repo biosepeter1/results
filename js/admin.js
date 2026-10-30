@@ -1,4 +1,4 @@
-﻿// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // ADMINISTRATOR PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -1380,14 +1380,14 @@ async function deleteCBTSubmission(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!confirm(`Delete exam "${sub?.title || 'this submission'}"?`)) return;
   try {
-    try {
-      await deleteDoc(doc(db, "cbt_submissions", docId));
-    } catch(fbErr) { console.warn("Firebase delete note:", fbErr); }
-
     if (window.dbClient && window.dbClient.isSupabaseActive()) {
       try {
         await window.dbClient.deleteSubmission(docId);
       } catch(sbErr) { console.warn("Supabase delete note:", sbErr); }
+    } else {
+      try {
+        await deleteDoc(doc(db, "cbt_submissions", docId));
+      } catch(fbErr) { console.warn("Firebase delete note:", fbErr); }
     }
     await loadCBTSubmissions();
   } catch (err) {
@@ -1450,24 +1450,26 @@ async function saveAdminQuestionsToCloud(msg) {
   if (!activePreviewSubmission) return;
   try {
     const qCount = activePreviewSubmission.questions.length;
-    try {
-      await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
-        questions: activePreviewSubmission.questions,
-        numberOfQuestions: qCount
-      }, { merge: true });
-    } catch (fbErr) {
-      console.warn("Firebase note:", fbErr);
-    }
+    activePreviewSubmission.numberOfQuestions = qCount;
 
+    // Use Supabase as primary database to support questions with diagrams exceeding 1MB
     if (window.dbClient && window.dbClient.isSupabaseActive()) {
       try {
         await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
       } catch (sbErr) {
-        console.warn("Supabase note:", sbErr);
+        console.error("Supabase saveSubmission note:", sbErr);
+        throw sbErr;
+      }
+    } else {
+      try {
+        await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
+          questions: activePreviewSubmission.questions,
+          numberOfQuestions: qCount
+        }, { merge: true });
+      } catch (fbErr) {
+        console.warn("Firebase note:", fbErr);
       }
     }
-
-    activePreviewSubmission.numberOfQuestions = qCount;
     const idx = allCbtSubmissions.findIndex(s => s.docId === activePreviewSubmission.docId);
     if (idx >= 0) {
       allCbtSubmissions[idx].questions = activePreviewSubmission.questions;
@@ -1829,22 +1831,23 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     btn.textContent = "Saving...";
 
     try {
-      await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
-        launchDate: newLaunch,
-        examDate: newLaunch,
-        startTime: newGateOpen,
-        endTime: newGateClose,
-        gateOpen: newGateOpen,
-        gateClose: newGateClose,
-        shuffle: newShuffle
-      }, { merge: true });
-
       if (window.dbClient && window.dbClient.isSupabaseActive()) {
         try {
           await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
         } catch (sbErr) {
           console.warn("Supabase schedule note:", sbErr);
+          throw sbErr;
         }
+      } else {
+        await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
+          launchDate: newLaunch,
+          examDate: newLaunch,
+          startTime: newGateOpen,
+          endTime: newGateClose,
+          gateOpen: newGateOpen,
+          gateClose: newGateClose,
+          shuffle: newShuffle
+        }, { merge: true });
       }
 
       if ($("cbtScheduleSummaryPill")) {
