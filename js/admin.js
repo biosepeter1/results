@@ -1380,7 +1380,15 @@ async function deleteCBTSubmission(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!confirm(`Delete exam "${sub?.title || 'this submission'}"?`)) return;
   try {
-    await deleteDoc(doc(db, "cbt_submissions", docId));
+    try {
+      await deleteDoc(doc(db, "cbt_submissions", docId));
+    } catch(fbErr) { console.warn("Firebase delete note:", fbErr); }
+
+    if (window.dbClient && window.dbClient.isSupabaseActive()) {
+      try {
+        await window.dbClient.deleteSubmission(docId);
+      } catch(sbErr) { console.warn("Supabase delete note:", sbErr); }
+    }
     await loadCBTSubmissions();
   } catch (err) {
     alert("Delete failed: " + err.message);

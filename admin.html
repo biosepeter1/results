@@ -1,694 +1,795 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<title>Academic Administration Portal</title>
-<meta name="description" content="Institutional examination administration and teacher access management.">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/admin.css">
+  <meta charset="utf-8">
+  <title>Academic Administration Portal</title>
+  <meta name="description" content="Institutional examination administration and teacher access management.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="stylesheet" href="css/admin.css">
 </head>
+
 <body>
 
-<!-- ══════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
      ADMIN LOGIN VIEW
      ══════════════════════════════════════════════════════════ -->
-<div id="viewLogin" class="login-wrap">
-  <div class="login-card">
-    <div class="login-card-head">
-      <h1 class="login-title">Administration Sign In</h1>
-    </div>
-
-    <form id="loginForm" onsubmit="return false;">
-      <div class="form-field">
-        <label class="form-label" for="adminPwInput">Administrator Password</label>
-        <input class="form-input" id="adminPwInput" type="password" autocomplete="current-password" placeholder="Enter password">
+  <div id="viewLogin" class="login-wrap">
+    <div class="login-card">
+      <div class="login-card-head">
+        <h1 class="login-title">Administration Sign In</h1>
       </div>
-      <button class="btn" style="width:100%" id="loginSubmitBtn" type="submit">Sign In</button>
-      <div class="form-msg" id="loginErrorMsg"></div>
-    </form>
-  </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════════
+      <form id="loginForm" onsubmit="return false;">
+        <div class="form-field">
+          <label class="form-label" for="adminPwInput">Administrator Password</label>
+          <input class="form-input" id="adminPwInput" type="password" autocomplete="current-password"
+            placeholder="Enter password">
+        </div>
+        <button class="btn" style="width:100%" id="loginSubmitBtn" type="submit">Sign In</button>
+        <div class="form-msg" id="loginErrorMsg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
      ADMIN MAIN APP SHELL
      ══════════════════════════════════════════════════════════ -->
-<div id="viewApp" style="display:none">
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="school-identity">
-        <h1 class="school-title">Academic Administration Portal</h1>
+  <div id="viewApp" style="display:none">
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="school-identity">
+          <h1 class="school-title">Academic Administration Portal</h1>
+        </div>
+        <div class="header-actions">
+          <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">Teacher portal</a>
+          <button class="btn btn-secondary btn-sm" id="adminSignOutBtn" type="button">Sign out</button>
+        </div>
       </div>
-      <div class="header-actions">
-        <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">Teacher portal</a>
-        <button class="btn btn-secondary btn-sm" id="adminSignOutBtn" type="button">Sign out</button>
+    </header>
+
+    <main class="main-content">
+      <!-- Notice -->
+      <div class="notice-box">
+        <strong>Institutional Administration:</strong> Review student examination scores and grade distributions, manage
+        teacher login accounts, publish term scores, and export offline CBT exam packages.
       </div>
-    </div>
-  </header>
 
-  <main class="main-content">
-    <!-- Notice -->
-    <div class="notice-box">
-      <strong>Institutional Administration:</strong> Review student examination scores and grade distributions, manage teacher login accounts, publish term scores, and export offline CBT exam packages.
-    </div>
-
-    <!-- Main Navigation Tabs -->
-    <nav class="nav-tabs" aria-label="Administration Sections">
-      <button class="nav-tab active" id="tabScores" type="button">
-        Student scores
-      </button>
-      <button class="nav-tab" id="tabTeachers" type="button">
-        Manage teachers <span class="tab-badge" id="teacherCountBadge">0</span>
-      </button>
-      <button class="nav-tab" id="tabUpload" type="button">
-        Upload exam scores
-      </button>
-      <button class="nav-tab" id="tabCBT" type="button">
-        CBT Exams &amp; Offline JSON <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
-      </button>
-    </nav>
-
-    <!-- ══════════════════════════════════════════════════════
-         SECTION 1: STUDENT SCORES VIEWER
-         ══════════════════════════════════════════════════════ -->
-    <section id="paneScores">
-
-      <!-- Examination Period Navigation -->
-      <nav class="term-navigation" aria-label="Examination Period">
-        <div class="term-nav-header">Examination Period</div>
-        <div class="term-nav-tabs" id="scoresTermTabs"></div>
+      <!-- Main Navigation Tabs -->
+      <nav class="nav-tabs" aria-label="Administration Sections">
+        <button class="nav-tab active" id="tabScores" type="button">
+          Student scores
+        </button>
+        <button class="nav-tab" id="tabTeachers" type="button">
+          Manage teachers <span class="tab-badge" id="teacherCountBadge">0</span>
+        </button>
+        <button class="nav-tab" id="tabUpload" type="button">
+          Upload exam scores
+        </button>
+        <button class="nav-tab" id="tabCBT" type="button">
+          CBT Exams &amp; Offline JSON <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
+        </button>
       </nav>
 
-      <!-- Top Filters Row: CLASS | SUBJECT | ARM | SEARCH -->
-      <section class="filters-container" aria-label="Filter Results">
-        <div class="filters-row">
-          <div class="filter-control">
-            <label for="scoresFilterClass">CLASS</label>
-            <select id="scoresFilterClass"><option value="">All classes</option></select>
-          </div>
-          <div class="filter-control">
-            <label for="scoresFilterSubject">SUBJECT</label>
-            <select id="scoresFilterSubject"><option value="">All subjects</option></select>
-          </div>
-          <div class="filter-control">
-            <label for="scoresFilterArm">ARM</label>
-            <select id="scoresFilterArm"><option value="">All arms</option></select>
-          </div>
-          <div class="filter-control">
-            <label for="scoresSearchInput">SEARCH</label>
-            <input id="scoresSearchInput" type="search" placeholder="Filter by student name or reg number">
-          </div>
-        </div>
-      </section>
+      <!-- ══════════════════════════════════════════════════════
+         SECTION 1: STUDENT SCORES VIEWER
+         ══════════════════════════════════════════════════════ -->
+      <section id="paneScores">
 
-      <!-- SCORE DISTRIBUTION OVERVIEW -->
-      <section class="chart-container" aria-label="Score Distribution Chart">
-        <div class="chart-header">
-          <span class="chart-title">SCORE DISTRIBUTION OVERVIEW</span>
-          <span id="scoresChartTotalLabel" style="font-size:11px;color:var(--text-muted)">0 records analyzed</span>
-        </div>
-        <div class="chart-grid-bars">
-          <div class="chart-row">
-            <span class="chart-row-label">Below 50% (Fail)</span>
-            <div class="chart-row-track"><div id="scores-bar-fail" class="chart-row-fill" style="width:0%"></div></div>
-            <span id="scores-lbl-fail" class="chart-row-stat">0 (0%)</span>
-          </div>
-          <div class="chart-row">
-            <span class="chart-row-label">50% – 59% (Pass)</span>
-            <div class="chart-row-track"><div id="scores-bar-50" class="chart-row-fill" style="width:0%"></div></div>
-            <span id="scores-lbl-50" class="chart-row-stat">0 (0%)</span>
-          </div>
-          <div class="chart-row">
-            <span class="chart-row-label">60% – 69% (Credit)</span>
-            <div class="chart-row-track"><div id="scores-bar-60" class="chart-row-fill" style="width:0%"></div></div>
-            <span id="scores-lbl-60" class="chart-row-stat">0 (0%)</span>
-          </div>
-          <div class="chart-row">
-            <span class="chart-row-label">70% – 79% (Good)</span>
-            <div class="chart-row-track"><div id="scores-bar-70" class="chart-row-fill" style="width:0%"></div></div>
-            <span id="scores-lbl-70" class="chart-row-stat">0 (0%)</span>
-          </div>
-          <div class="chart-row">
-            <span class="chart-row-label">80% – 100% (Distinction)</span>
-            <div class="chart-row-track"><div id="scores-bar-80" class="chart-row-fill" style="width:0%"></div></div>
-            <span id="scores-lbl-80" class="chart-row-stat">0 (0%)</span>
-          </div>
-        </div>
-      </section>
+        <!-- Examination Period Navigation -->
+        <nav class="term-navigation" aria-label="Examination Period">
+          <div class="term-nav-header">Examination Period</div>
+          <div class="term-nav-tabs" id="scoresTermTabs"></div>
+        </nav>
 
-      <!-- Results Table Area -->
-      <section class="table-container" aria-label="Student Results Table">
-        <div class="table-header-toolbar">
-          <div>
-            <span class="table-heading" id="scoresTableHeadingText">Examination Scores</span>
-            <span class="table-meta-counts" id="scoresRowCount"> · Loading records…</span>
-            <span class="table-meta-counts" id="adminFreshnessBadge" style="font-size:12px;color:var(--text-muted)"></span>
-          </div>
-          <div class="table-actions">
-            <button type="button" class="btn btn-secondary btn-sm" id="scoresRefreshBtn" title="Fetch latest scores from cloud">↻ Refresh Cloud</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="scoresExportCsvBtn">Download CSV</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="scoresPrintBtn">Print report</button>
-          </div>
-        </div>
-
-        <!-- 24-Hour Cache & Quota Status Banner -->
-        <div id="scoresCacheNotice" style="display:none;background:var(--accent-tint);border-bottom:1px solid var(--accent-tint-border);padding:8px 16px;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;gap:8px">
-          <span id="scoresCacheNoticeText"></span>
-          <button type="button" class="btn btn-secondary btn-sm" id="scoresCacheRetryBtn" style="font-size:11px;padding:2px 8px">Retry Cloud</button>
-        </div>
-
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th class="sortable" data-sort="index">#<span class="sort-indicator" id="si-index"></span></th>
-                <th class="sortable" data-sort="student">STUDENT NAME<span class="sort-indicator" id="si-student"></span></th>
-                <th class="sortable" data-sort="reg">REG NUMBER<span class="sort-indicator" id="si-reg"></span></th>
-                <th class="sortable" data-sort="subject">SUBJECT<span class="sort-indicator" id="si-subject"></span></th>
-                <th class="sortable" data-sort="class">CLASS<span class="sort-indicator" id="si-class"></span></th>
-                <th class="sortable" data-sort="arm">ARM<span class="sort-indicator" id="si-arm"></span></th>
-                <th class="sortable numeric" data-sort="score">SCORE<span class="sort-indicator" id="si-score"></span></th>
-                <th class="sortable numeric" data-sort="pct">PERCENTAGE<span class="sort-indicator" id="si-pct"></span></th>
-                <th class="sortable" data-sort="status">STATUS<span class="sort-indicator" id="si-status"></span></th>
-                <th class="sortable" data-sort="date">DATE &amp; TIME<span class="sort-indicator" id="si-date"></span></th>
-              </tr>
-            </thead>
-            <tbody id="scoresTbody">
-              <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records…</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Full Pagination Bar -->
-        <footer class="pagination-bar" id="scoresPaginationBar">
-          <div class="pagination-info" id="scoresPaginationInfo">
-            Showing 0 to 0 of 0 records
-          </div>
-          <div class="pagination-controls">
-            <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
-              Rows:
-              <select class="page-size-select" id="scoresPageSizeSelect">
-                <option value="15">15</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
+        <!-- Top Filters Row: CLASS | SUBJECT | ARM | SEARCH -->
+        <section class="filters-container" aria-label="Filter Results">
+          <div class="filters-row">
+            <div class="filter-control">
+              <label for="scoresFilterClass">CLASS</label>
+              <select id="scoresFilterClass">
+                <option value="">All classes</option>
               </select>
-            </label>
-            <button type="button" class="page-btn" id="scoresFirstPageBtn" title="First page" disabled>&laquo;</button>
-            <button type="button" class="page-btn" id="scoresPrevPageBtn" title="Previous page" disabled>&lsaquo;</button>
-            <div id="scoresPageButtonsGroup" style="display:flex;gap:4px"></div>
-            <button type="button" class="page-btn" id="scoresNextPageBtn" title="Next page" disabled>&rsaquo;</button>
-            <button type="button" class="page-btn" id="scoresLastPageBtn" title="Last page" disabled>&raquo;</button>
+            </div>
+            <div class="filter-control">
+              <label for="scoresFilterSubject">SUBJECT</label>
+              <select id="scoresFilterSubject">
+                <option value="">All subjects</option>
+              </select>
+            </div>
+            <div class="filter-control">
+              <label for="scoresFilterArm">ARM</label>
+              <select id="scoresFilterArm">
+                <option value="">All arms</option>
+              </select>
+            </div>
+            <div class="filter-control">
+              <label for="scoresSearchInput">SEARCH</label>
+              <input id="scoresSearchInput" type="search" placeholder="Filter by student name or reg number">
+            </div>
           </div>
-        </footer>
+        </section>
+
+        <!-- SCORE DISTRIBUTION OVERVIEW -->
+        <section class="chart-container" aria-label="Score Distribution Chart">
+          <div class="chart-header">
+            <span class="chart-title">SCORE DISTRIBUTION OVERVIEW</span>
+            <span id="scoresChartTotalLabel" style="font-size:11px;color:var(--text-muted)">0 records analyzed</span>
+          </div>
+          <div class="chart-grid-bars">
+            <div class="chart-row">
+              <span class="chart-row-label">Below 50% (Fail)</span>
+              <div class="chart-row-track">
+                <div id="scores-bar-fail" class="chart-row-fill" style="width:0%"></div>
+              </div>
+              <span id="scores-lbl-fail" class="chart-row-stat">0 (0%)</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-row-label">50% – 59% (Pass)</span>
+              <div class="chart-row-track">
+                <div id="scores-bar-50" class="chart-row-fill" style="width:0%"></div>
+              </div>
+              <span id="scores-lbl-50" class="chart-row-stat">0 (0%)</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-row-label">60% – 69% (Credit)</span>
+              <div class="chart-row-track">
+                <div id="scores-bar-60" class="chart-row-fill" style="width:0%"></div>
+              </div>
+              <span id="scores-lbl-60" class="chart-row-stat">0 (0%)</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-row-label">70% – 79% (Good)</span>
+              <div class="chart-row-track">
+                <div id="scores-bar-70" class="chart-row-fill" style="width:0%"></div>
+              </div>
+              <span id="scores-lbl-70" class="chart-row-stat">0 (0%)</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-row-label">80% – 100% (Distinction)</span>
+              <div class="chart-row-track">
+                <div id="scores-bar-80" class="chart-row-fill" style="width:0%"></div>
+              </div>
+              <span id="scores-lbl-80" class="chart-row-stat">0 (0%)</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Results Table Area -->
+        <section class="table-container" aria-label="Student Results Table">
+          <div class="table-header-toolbar">
+            <div>
+              <span class="table-heading" id="scoresTableHeadingText">Examination Scores</span>
+              <span class="table-meta-counts" id="scoresRowCount"> · Loading records…</span>
+              <span class="table-meta-counts" id="adminFreshnessBadge"
+                style="font-size:12px;color:var(--text-muted)"></span>
+            </div>
+            <div class="table-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="scoresRefreshBtn"
+                title="Fetch latest scores from cloud">↻ Refresh Cloud</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="scoresExportCsvBtn">Download CSV</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="scoresPrintBtn">Print report</button>
+            </div>
+          </div>
+
+          <!-- 24-Hour Cache & Quota Status Banner -->
+          <div id="scoresCacheNotice"
+            style="display:none;background:var(--accent-tint);border-bottom:1px solid var(--accent-tint-border);padding:8px 16px;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;gap:8px">
+            <span id="scoresCacheNoticeText"></span>
+            <button type="button" class="btn btn-secondary btn-sm" id="scoresCacheRetryBtn"
+              style="font-size:11px;padding:2px 8px">Retry Cloud</button>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="index">#<span class="sort-indicator" id="si-index"></span></th>
+                  <th class="sortable" data-sort="student">STUDENT NAME<span class="sort-indicator"
+                      id="si-student"></span></th>
+                  <th class="sortable" data-sort="reg">REG NUMBER<span class="sort-indicator" id="si-reg"></span></th>
+                  <th class="sortable" data-sort="subject">SUBJECT<span class="sort-indicator" id="si-subject"></span>
+                  </th>
+                  <th class="sortable" data-sort="class">CLASS<span class="sort-indicator" id="si-class"></span></th>
+                  <th class="sortable" data-sort="arm">ARM<span class="sort-indicator" id="si-arm"></span></th>
+                  <th class="sortable numeric" data-sort="score">SCORE<span class="sort-indicator" id="si-score"></span>
+                  </th>
+                  <th class="sortable numeric" data-sort="pct">PERCENTAGE<span class="sort-indicator"
+                      id="si-pct"></span></th>
+                  <th class="sortable" data-sort="status">STATUS<span class="sort-indicator" id="si-status"></span></th>
+                  <th class="sortable" data-sort="date">DATE &amp; TIME<span class="sort-indicator" id="si-date"></span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="scoresTbody">
+                <tr>
+                  <td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination
+                    records…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Full Pagination Bar -->
+          <footer class="pagination-bar" id="scoresPaginationBar">
+            <div class="pagination-info" id="scoresPaginationInfo">
+              Showing 0 to 0 of 0 records
+            </div>
+            <div class="pagination-controls">
+              <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                Rows:
+                <select class="page-size-select" id="scoresPageSizeSelect">
+                  <option value="15">15</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <button type="button" class="page-btn" id="scoresFirstPageBtn" title="First page"
+                disabled>&laquo;</button>
+              <button type="button" class="page-btn" id="scoresPrevPageBtn" title="Previous page"
+                disabled>&lsaquo;</button>
+              <div id="scoresPageButtonsGroup" style="display:flex;gap:4px"></div>
+              <button type="button" class="page-btn" id="scoresNextPageBtn" title="Next page" disabled>&rsaquo;</button>
+              <button type="button" class="page-btn" id="scoresLastPageBtn" title="Last page" disabled>&raquo;</button>
+            </div>
+          </footer>
+        </section>
+
       </section>
 
-    </section>
-
-    <!-- ══════════════════════════════════════════════════════
+      <!-- ══════════════════════════════════════════════════════
          SECTION 2: MANAGE TEACHERS
          ══════════════════════════════════════════════════════ -->
-    <section id="paneTeachers" style="display:none">
-      <div class="card">
-        <div class="teacher-toolbar" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <div class="teacher-search" style="flex:1;min-width:260px">
-            <input type="search" class="search-input" id="teacherSearchInput" placeholder="Filter by teacher name, username, or subject...">
+      <section id="paneTeachers" style="display:none">
+        <div class="card">
+          <div class="teacher-toolbar"
+            style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="teacher-search" style="flex:1;min-width:260px">
+              <input type="search" class="search-input" id="teacherSearchInput"
+                placeholder="Filter by teacher name, username, or subject...">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-secondary btn-sm" id="refreshTeachersBtn" type="button"
+                title="Fetch latest teachers from database">↻ Refresh</button>
+              <button class="btn btn-sm" id="openAddTeacherBtn" type="button">+ Add new teacher</button>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn btn-secondary btn-sm" id="refreshTeachersBtn" type="button" title="Fetch latest teachers from database">↻ Refresh</button>
-            <button class="btn btn-sm" id="openAddTeacherBtn" type="button">+ Add new teacher</button>
+
+          <div class="table-wrap">
+            <table class="inst-table">
+              <thead>
+                <tr>
+                  <th>Teacher Name</th>
+                  <th>Username</th>
+                  <th>Password</th>
+                  <th>Assigned Subjects</th>
+                  <th>Assigned Classes &amp; Arms</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="teachersTbody">
+                <tr>
+                  <td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher
+                    accounts…</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+
+          <!-- Teacher Pagination Bar -->
+          <footer class="pagination-bar" id="teachersPaginationBar">
+            <div class="pagination-info" id="teachersPaginationInfo">
+              Showing 0 to 0 of 0 teachers
+            </div>
+            <div class="pagination-controls">
+              <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                Rows:
+                <select class="page-size-select" id="teachersPageSizeSelect">
+                  <option value="10">10</option>
+                  <option value="15" selected>15</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <button type="button" class="page-btn" id="teachersFirstPageBtn" title="First page"
+                disabled>&laquo;</button>
+              <button type="button" class="page-btn" id="teachersPrevPageBtn" title="Previous page"
+                disabled>&lsaquo;</button>
+              <div id="teachersPageButtonsGroup" style="display:flex;gap:4px"></div>
+              <button type="button" class="page-btn" id="teachersNextPageBtn" title="Next page"
+                disabled>&rsaquo;</button>
+              <button type="button" class="page-btn" id="teachersLastPageBtn" title="Last page"
+                disabled>&raquo;</button>
+            </div>
+          </footer>
         </div>
+      </section>
 
-        <div class="table-wrap">
-          <table class="inst-table">
-            <thead>
-              <tr>
-                <th>Teacher Name</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Assigned Subjects</th>
-                <th>Assigned Classes &amp; Arms</th>
-                <th style="text-align:right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="teachersTbody">
-              <tr>
-                <td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher accounts…</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Teacher Pagination Bar -->
-        <footer class="pagination-bar" id="teachersPaginationBar">
-          <div class="pagination-info" id="teachersPaginationInfo">
-            Showing 0 to 0 of 0 teachers
-          </div>
-          <div class="pagination-controls">
-            <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
-              Rows:
-              <select class="page-size-select" id="teachersPageSizeSelect">
-                <option value="10">10</option>
-                <option value="15" selected>15</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </label>
-            <button type="button" class="page-btn" id="teachersFirstPageBtn" title="First page" disabled>&laquo;</button>
-            <button type="button" class="page-btn" id="teachersPrevPageBtn" title="Previous page" disabled>&lsaquo;</button>
-            <div id="teachersPageButtonsGroup" style="display:flex;gap:4px"></div>
-            <button type="button" class="page-btn" id="teachersNextPageBtn" title="Next page" disabled>&rsaquo;</button>
-            <button type="button" class="page-btn" id="teachersLastPageBtn" title="Last page" disabled>&raquo;</button>
-          </div>
-        </footer>
-      </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════════════════
+      <!-- ══════════════════════════════════════════════════════
          SECTION 3: UPLOAD EXAM SCORES
          ══════════════════════════════════════════════════════ -->
-    <section id="paneUpload" style="display:none">
-      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px" class="upload-grid">
-        <!-- Left: Upload Step -->
-        <div>
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h2 class="card-title">Step 1 — Choose Test / Term</h2>
-                <p class="card-sub">Select the term for this scores export</p>
-              </div>
-            </div>
-
-            <div class="term-selector" id="termSelector">
-              <button type="button" class="term-btn active" data-term="First Test">
-                <div class="term-btn-title">First Test</div>
-                <div class="term-btn-meta" id="metaFirstTest">Checking…</div>
-              </button>
-              <button type="button" class="term-btn" data-term="Mid Term Test">
-                <div class="term-btn-title">Mid Term Test</div>
-                <div class="term-btn-meta" id="metaMidTerm">Checking…</div>
-              </button>
-              <button type="button" class="term-btn" data-term="Third Term Examination">
-                <div class="term-btn-title">Third Term Examination</div>
-                <div class="term-btn-meta" id="metaThirdTerm">Checking…</div>
-              </button>
-              <button type="button" class="term-btn" data-term="__custom">
-                <div class="term-btn-title">Custom Term</div>
-                <div class="term-btn-meta">Other test name</div>
-              </button>
-            </div>
-
-            <div class="form-field" id="customTermGroup" style="display:none">
-              <label class="form-label" for="customTermInput">Custom Term Name</label>
-              <input class="form-input" id="customTermInput" type="text" placeholder="e.g. Mock Examination 2026">
-            </div>
-
-            <div class="card-header" style="margin-top:20px">
-              <div>
-                <h2 class="card-title">Step 2 — Select CSV File</h2>
-                <p class="card-sub">Drop the daily Academic_Records.csv export</p>
-              </div>
-            </div>
-
-            <div class="dropzone" id="csvDropZone">
-              <div class="dropzone-title" id="dropTitle">Click or drag Academic Records CSV here</div>
-              <div class="dropzone-sub" id="dropSub">Accepts standard .csv format</div>
-              <input type="file" id="csvFileInput" accept=".csv" style="display:none">
-            </div>
-
-            <div id="csvPreviewSection" style="display:none;margin-bottom:16px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span style="font-size:12px;color:var(--text-muted)">File parsed: <strong id="csvRecordCount" style="color:var(--text)">0</strong> records</span>
-                <button type="button" class="btn btn-secondary btn-sm" id="csvClearBtn">Clear</button>
-              </div>
-              <div class="table-wrap" style="max-height:220px;overflow-y:auto">
-                <table class="inst-table">
-                  <thead id="csvPreviewHead"></thead>
-                  <tbody id="csvPreviewBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="progress-wrap" id="uploadProgressWrap">
-              <div class="progress-track"><div class="progress-bar" id="uploadProgressBar"></div></div>
-              <div class="progress-text" id="uploadProgressText">Uploading…</div>
-            </div>
-
-            <div class="upload-success" id="uploadSuccessBox"></div>
-
-            <div style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-              <div style="font-size:13px;color:var(--text-muted)">
-                Target: <strong id="targetTermLabel" style="color:var(--text)">First Test</strong>
-              </div>
-              <button class="btn" id="uploadScoresBtn" type="button" disabled>Upload &amp; update scores</button>
-            </div>
-            <div class="form-msg" id="uploadErrorMsg"></div>
-          </div>
-        </div>
-
-        <!-- Right: Live Scores -->
-        <div>
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h2 class="card-title">Live Test Scores</h2>
-                <p class="card-sub">Currently published to teachers</p>
-              </div>
-              <button type="button" class="btn btn-secondary btn-sm" id="refreshTermsBtn">Refresh</button>
-            </div>
-            <div id="liveTermsList">
-              <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading…</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 4: CBT EXAMS & OFFLINE JSON DOWNLOADS -->
-    <section id="paneCBT" style="display:none">
-      <div class="notice-box" style="margin-bottom:16px">
-        <strong>Offline CBT App Workflow:</strong> Teachers upload their exam questions from home using simple Notepad (.txt) or Word (.docx). The system automatically compiles them into the exact <code>exams.json</code> and <code>questions.json</code> formats required by the offline exam system. Click <strong>Download</strong> on any exam below to get the JSON files for your offline CBT server.
-      </div>
-
-      <!-- School-Wide Active Examination Term for Teacher CBT Uploads -->
-      <div class="card" style="margin-bottom:20px;border-left:4px solid var(--accent)">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+      <section id="paneUpload" style="display:none">
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px" class="upload-grid">
+          <!-- Left: Upload Step -->
           <div>
-            <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Active Examination Term for Teacher Uploads</h3>
-            <p style="font-size:12px;color:var(--text-muted);margin:0">Set the active examination term. When teachers prepare exams, their exam titles will automatically format with this term (e.g. <code>YEAR 8 FRENCH MID TERM EXAMINATION</code>).</p>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div id="cbtAdminTermSelector" style="display:flex;gap:6px">
-              <button type="button" class="btn btn-secondary btn-sm cbt-term-btn" data-cbt-term="FIRST TERM EXAMINATION">First Term</button>
-              <button type="button" class="btn btn-secondary btn-sm cbt-term-btn active" data-cbt-term="MID TERM EXAMINATION">Mid Term</button>
-              <button type="button" class="btn btn-secondary btn-sm cbt-term-btn" data-cbt-term="THIRD TERM EXAMINATION">Third Term</button>
-              <button type="button" class="btn btn-secondary btn-sm cbt-term-btn" data-cbt-term="__custom">Custom...</button>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Step 1 — Choose Test / Term</h2>
+                  <p class="card-sub">Select the term for this scores export</p>
+                </div>
+              </div>
+
+              <div class="term-selector" id="termSelector">
+                <button type="button" class="term-btn active" data-term="First Test">
+                  <div class="term-btn-title">First Test</div>
+                  <div class="term-btn-meta" id="metaFirstTest">Checking…</div>
+                </button>
+                <button type="button" class="term-btn" data-term="Mid Term Test">
+                  <div class="term-btn-title">Mid Term Test</div>
+                  <div class="term-btn-meta" id="metaMidTerm">Checking…</div>
+                </button>
+                <button type="button" class="term-btn" data-term="Third Term Examination">
+                  <div class="term-btn-title">Third Term Examination</div>
+                  <div class="term-btn-meta" id="metaThirdTerm">Checking…</div>
+                </button>
+                <button type="button" class="term-btn" data-term="__custom">
+                  <div class="term-btn-title">Custom Term</div>
+                  <div class="term-btn-meta">Other test name</div>
+                </button>
+              </div>
+
+              <div class="form-field" id="customTermGroup" style="display:none">
+                <label class="form-label" for="customTermInput">Custom Term Name</label>
+                <input class="form-input" id="customTermInput" type="text" placeholder="e.g. Mock Examination 2026">
+              </div>
+
+              <div class="card-header" style="margin-top:20px">
+                <div>
+                  <h2 class="card-title">Step 2 — Select CSV File</h2>
+                  <p class="card-sub">Drop the daily Academic_Records.csv export</p>
+                </div>
+              </div>
+
+              <div class="dropzone" id="csvDropZone">
+                <div class="dropzone-title" id="dropTitle">Click or drag Academic Records CSV here</div>
+                <div class="dropzone-sub" id="dropSub">Accepts standard .csv format</div>
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none">
+              </div>
+
+              <div id="csvPreviewSection" style="display:none;margin-bottom:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <span style="font-size:12px;color:var(--text-muted)">File parsed: <strong id="csvRecordCount"
+                      style="color:var(--text)">0</strong> records</span>
+                  <button type="button" class="btn btn-secondary btn-sm" id="csvClearBtn">Clear</button>
+                </div>
+                <div class="table-wrap" style="max-height:220px;overflow-y:auto">
+                  <table class="inst-table">
+                    <thead id="csvPreviewHead"></thead>
+                    <tbody id="csvPreviewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="progress-wrap" id="uploadProgressWrap">
+                <div class="progress-track">
+                  <div class="progress-bar" id="uploadProgressBar"></div>
+                </div>
+                <div class="progress-text" id="uploadProgressText">Uploading…</div>
+              </div>
+
+              <div class="upload-success" id="uploadSuccessBox"></div>
+
+              <div
+                style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div style="font-size:13px;color:var(--text-muted)">
+                  Target: <strong id="targetTermLabel" style="color:var(--text)">First Test</strong>
+                </div>
+                <button class="btn" id="uploadScoresBtn" type="button" disabled>Upload &amp; update scores</button>
+              </div>
+              <div class="form-msg" id="uploadErrorMsg"></div>
             </div>
-            <div id="cbtAdminCustomTermWrap" style="display:none;align-items:center;gap:6px">
-              <input type="text" id="cbtAdminCustomTermInput" class="form-input" style="padding:4px 10px;font-size:12px;width:170px" placeholder="e.g. MOCK EXAMINATION">
-              <button type="button" class="btn btn-sm" id="cbtAdminSaveCustomTermBtn" style="font-size:12px;padding:4px 10px">Set</button>
+          </div>
+
+          <!-- Right: Live Scores -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Live Test Scores</h2>
+                  <p class="card-sub">Currently published to teachers</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="refreshTermsBtn">Refresh</button>
+              </div>
+              <div id="liveTermsList">
+                <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading…</div>
+              </div>
             </div>
           </div>
         </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
-          <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay" style="color:var(--accent);letter-spacing:0.5px">MID TERM EXAMINATION</strong></span>
-          <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated for all teachers!</span>
-        </div>
-      </div>
+      </section>
 
-      <!-- Live Submissions from Teachers -->
-      <div class="card" style="margin-bottom:24px">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Teacher Uploaded CBT Exams</h2>
-            <p class="card-sub">Exams uploaded by academic staff ready for offline CBT deployment</p>
+      <!-- SECTION 4: CBT EXAMS & OFFLINE JSON DOWNLOADS -->
+      <section id="paneCBT" style="display:none">
+        <div class="notice-box" style="margin-bottom:16px">
+          <strong>Offline CBT App Workflow:</strong> Teachers upload their exam questions from home using simple Notepad
+          (.txt) or Word (.docx). The system automatically compiles them into the exact <code>exams.json</code> and
+          <code>questions.json</code> formats required by the offline exam system. Click <strong>Download</strong> on
+          any exam below to get the JSON files for your offline CBT server.
+        </div>
+
+        <!-- School-Wide Active Examination Term for Teacher CBT Uploads -->
+        <div class="card" style="margin-bottom:20px;border-left:4px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+            <div>
+              <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Active Examination Term for
+                Teacher Uploads</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin:0">Set the active examination term. When teachers
+                prepare exams, their exam titles will automatically format with this term (e.g.
+                <code>YEAR 8 FRENCH MID TERM EXAMINATION</code>).</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div id="cbtAdminTermSelector" style="display:flex;gap:6px">
+                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
+                  data-cbt-term="FIRST TERM EXAMINATION">First Term</button>
+                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn active"
+                  data-cbt-term="MID TERM EXAMINATION">Mid Term</button>
+                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
+                  data-cbt-term="THIRD TERM EXAMINATION">Third Term</button>
+                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
+                  data-cbt-term="__custom">Custom...</button>
+              </div>
+              <div id="cbtAdminCustomTermWrap" style="display:none;align-items:center;gap:6px">
+                <input type="text" id="cbtAdminCustomTermInput" class="form-input"
+                  style="padding:4px 10px;font-size:12px;width:170px" placeholder="e.g. MOCK EXAMINATION">
+                <button type="button" class="btn btn-sm" id="cbtAdminSaveCustomTermBtn"
+                  style="font-size:12px;padding:4px 10px">Set</button>
+              </div>
+            </div>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="refreshCBTSubmissionsBtn">Refresh submissions</button>
-        </div>
-
-        <div class="table-wrap">
-          <table class="inst-table">
-            <thead>
-              <tr>
-                <th>Exam Title</th>
-                <th>Teacher</th>
-                <th>Subject &amp; Class</th>
-                <th>Duration</th>
-                <th>Questions</th>
-                <th>Date Uploaded</th>
-                <th style="text-align:right">Offline JSON Downloads</th>
-              </tr>
-            </thead>
-            <tbody id="cbtSubmissionsTbody">
-              <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher submissions…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- CBT Subjects & MongoDB Catalog Manager -->
-      <div class="card" style="margin-top:24px" id="cbtSubjectsManagerCard">
-        <div class="card-header" style="flex-wrap:wrap;gap:12px">
-          <div>
-            <h2 class="card-title">CBT Subjects &amp; MongoDB Catalog</h2>
-            <p class="card-sub">Create, edit, or add new subjects and their exact MongoDB ObjectIds for offline CBT exports</p>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="search" class="search-input" id="cbtSubjectSearchInput" placeholder="Filter subjects or IDs..." style="width:200px">
-            <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn" title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn" title="Reset catalog to standard 45 subjects">Reset Defaults</button>
-            <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
+          <div
+            style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay"
+                style="color:var(--accent);letter-spacing:0.5px">MID TERM EXAMINATION</strong></span>
+            <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
+              for all teachers!</span>
           </div>
         </div>
 
-        <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted)">
-          <span id="cbtSubjectCountLabel">Loading subjects…</span>
-          <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
+        <!-- Live Submissions from Teachers -->
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Teacher Uploaded CBT Exams</h2>
+              <p class="card-sub">Exams uploaded by academic staff ready for offline CBT deployment</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="refreshCBTSubmissionsBtn">Refresh
+              submissions</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="inst-table">
+              <thead>
+                <tr>
+                  <th>Exam Title</th>
+                  <th>Teacher</th>
+                  <th>Subject &amp; Class</th>
+                  <th>Duration</th>
+                  <th>Questions</th>
+                  <th>Date Uploaded</th>
+                  <th style="text-align:right">Offline JSON Downloads</th>
+                </tr>
+              </thead>
+              <tbody id="cbtSubmissionsTbody">
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher
+                    submissions…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="table-wrap" style="max-height:360px;overflow-y:auto">
-          <table class="inst-table">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th>Subject Name</th>
-                <th>MongoDB ObjectId (24-hex)</th>
-                <th>Catalog Type</th>
-                <th style="text-align:right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="cbtSubjectsTbody">
-              <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…</td></tr>
-            </tbody>
-          </table>
+        <!-- CBT Subjects & MongoDB Catalog Manager -->
+        <div class="card" style="margin-top:24px" id="cbtSubjectsManagerCard">
+          <div class="card-header" style="flex-wrap:wrap;gap:12px">
+            <div>
+              <h2 class="card-title">CBT Subjects &amp; MongoDB Catalog</h2>
+              <p class="card-sub">Create, edit, or add new subjects and their exact MongoDB ObjectIds for offline CBT
+                exports</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="search" class="search-input" id="cbtSubjectSearchInput"
+                placeholder="Filter subjects or IDs..." style="width:200px">
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn"
+                title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn"
+                title="Reset catalog to standard 45 subjects">Reset Defaults</button>
+              <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
+            </div>
+          </div>
+
+          <div
+            style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+            <span id="cbtSubjectCountLabel">Loading subjects…</span>
+            <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
+          </div>
+
+          <div class="table-wrap" style="max-height:360px;overflow-y:auto">
+            <table class="inst-table">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Subject Name</th>
+                  <th>MongoDB ObjectId (24-hex)</th>
+                  <th>Catalog Type</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cbtSubjectsTbody">
+                <tr>
+                  <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-  </main>
-</div>
+    </main>
+  </div>
 
-<!-- ══════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
      CBT EXAM QUESTIONS PREVIEW MODAL
      ══════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="cbtPreviewModal">
-  <div class="modal-box modal-wide">
-    <div class="modal-head">
-      <div>
-        <h3 class="modal-title" id="cbtPreviewModalTitle">Exam Questions Preview</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin-top:2px" id="cbtPreviewModalMeta"></p>
+  <div class="modal-overlay" id="cbtPreviewModal">
+    <div class="modal-box modal-wide">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title" id="cbtPreviewModalTitle">Exam Questions Preview</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:2px" id="cbtPreviewModalMeta"></p>
+        </div>
+        <button class="btn-close" id="cbtPreviewModalCloseBtn" type="button">Close</button>
       </div>
-      <button class="btn-close" id="cbtPreviewModalCloseBtn" type="button">Close</button>
-    </div>
 
-    <!-- Exam Schedule & Launch Parameters (Collapsible) -->
-    <details id="cbtScheduleAccordion" class="cbt-schedule-accordion" style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;padding:8px 12px;flex-shrink:0">
-      <summary style="font-size:12px;font-weight:700;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
-        <span style="display:inline-flex;align-items:center;gap:6px">📅 Exam Launch Date &amp; Gate Schedule <span style="font-size:11px;color:var(--accent);font-weight:normal">(Click to adjust schedule)</span></span>
-        <span id="cbtScheduleSummaryPill" style="font-size:11px;background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:12px;color:var(--text-muted);font-weight:600">29 Oct 2026 · 08:00 – 20:00 · 🔀 Shuffled</span>
-      </summary>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-subtle);display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;align-items:end">
-        <div>
-          <label class="form-label" style="font-size:11px;color:var(--status-good);font-weight:700">LAUNCH DATE</label>
-          <input type="date" class="form-input" id="cbtPreviewLaunchDate" style="padding:5px 8px;font-size:12px">
+      <!-- Exam Schedule & Launch Parameters (Collapsible) -->
+      <details id="cbtScheduleAccordion" class="cbt-schedule-accordion"
+        style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;padding:8px 12px;flex-shrink:0">
+        <summary
+          style="font-size:12px;font-weight:700;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
+          <span style="display:inline-flex;align-items:center;gap:6px">📅 Exam Launch Date &amp; Gate Schedule <span
+              style="font-size:11px;color:var(--accent);font-weight:normal">(Click to adjust schedule)</span></span>
+          <span id="cbtScheduleSummaryPill"
+            style="font-size:11px;background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:12px;color:var(--text-muted);font-weight:600">29
+            Oct 2026 · 08:00 – 20:00 · 🔀 Shuffled</span>
+        </summary>
+        <div
+          style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-subtle);display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;align-items:end">
+          <div>
+            <label class="form-label" style="font-size:11px;color:var(--status-good);font-weight:700">LAUNCH
+              DATE</label>
+            <input type="date" class="form-input" id="cbtPreviewLaunchDate" style="padding:5px 8px;font-size:12px">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;color:var(--status-good);font-weight:700">GATE OPEN</label>
+            <input type="time" class="form-input" id="cbtPreviewGateOpen" value="08:00"
+              style="padding:5px 8px;font-size:12px">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;color:var(--status-fail);font-weight:700">GATE CLOSE</label>
+            <input type="time" class="form-input" id="cbtPreviewGateClose" value="20:00"
+              style="padding:5px 8px;font-size:12px">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px">
+            <input type="checkbox" id="cbtPreviewShuffle" checked style="width:16px;height:16px;cursor:pointer">
+            <label for="cbtPreviewShuffle" style="font-size:12px;font-weight:600;cursor:pointer">Shuffle</label>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" id="cbtPreviewSaveScheduleBtn"
+              style="width:100%;font-size:12px;min-height:30px">💾 Save Schedule</button>
+          </div>
         </div>
-        <div>
-          <label class="form-label" style="font-size:11px;color:var(--status-good);font-weight:700">GATE OPEN</label>
-          <input type="time" class="form-input" id="cbtPreviewGateOpen" value="08:00" style="padding:5px 8px;font-size:12px">
-        </div>
-        <div>
-          <label class="form-label" style="font-size:11px;color:var(--status-fail);font-weight:700">GATE CLOSE</label>
-          <input type="time" class="form-input" id="cbtPreviewGateClose" value="20:00" style="padding:5px 8px;font-size:12px">
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px">
-          <input type="checkbox" id="cbtPreviewShuffle" checked style="width:16px;height:16px;cursor:pointer">
-          <label for="cbtPreviewShuffle" style="font-size:12px;font-weight:600;cursor:pointer">Shuffle</label>
-        </div>
-        <div>
-          <button type="button" class="btn btn-secondary btn-sm" id="cbtPreviewSaveScheduleBtn" style="width:100%;font-size:12px;min-height:30px">💾 Save Schedule</button>
-        </div>
+      </details>
+
+      <div id="cbtPreviewNotice"
+        style="display:none;padding:10px 14px;border-radius:6px;background:rgba(36,107,62,0.12);color:var(--status-good);font-size:13px;font-weight:600;margin-bottom:12px">
       </div>
-    </details>
 
-    <div id="cbtPreviewNotice" style="display:none;padding:10px 14px;border-radius:6px;background:rgba(36,107,62,0.12);color:var(--status-good);font-size:13px;font-weight:600;margin-bottom:12px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)" id="cbtPreviewCountDisplay">Questions</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="cbtPreviewAddQuestionBtn">➕ Add Question</button>
+      </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;font-weight:600;color:var(--text)" id="cbtPreviewCountDisplay">Questions</span>
-      <button type="button" class="btn btn-secondary btn-sm" id="cbtPreviewAddQuestionBtn">➕ Add Question</button>
-    </div>
+      <div class="q-preview-list" id="cbtPreviewModalQuestionsList"></div>
 
-    <div class="q-preview-list" id="cbtPreviewModalQuestionsList"></div>
-
-    <div class="modal-actions" style="justify-content:space-between">
-      <div style="font-size:12px;color:var(--text-muted)" id="cbtPreviewModalFootnote"></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" id="cbtModalDownloadExamsBtn" type="button">Download exams.json</button>
-        <button class="btn btn-secondary" id="cbtModalDownloadQuestionsBtn" type="button">Download questions.json</button>
-        <button class="btn" id="cbtModalDownloadBothBtn" type="button">Download Both</button>
+      <div class="modal-actions" style="justify-content:space-between">
+        <div style="font-size:12px;color:var(--text-muted)" id="cbtPreviewModalFootnote"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" id="cbtModalDownloadExamsBtn" type="button">Download exams.json</button>
+          <button class="btn btn-secondary" id="cbtModalDownloadQuestionsBtn" type="button">Download
+            questions.json</button>
+          <button class="btn" id="cbtModalDownloadBothBtn" type="button">Download Both</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
      TEACHER ADD / EDIT MODAL
      ══════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="teacherModal">
-  <div class="modal-box">
-    <div class="modal-head">
-      <h3 class="modal-title" id="modalTitle">Add New Teacher</h3>
-      <button class="btn-close" id="modalCloseBtn" type="button">Close</button>
-    </div>
+  <div class="modal-overlay" id="teacherModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 class="modal-title" id="modalTitle">Add New Teacher</h3>
+        <button class="btn-close" id="modalCloseBtn" type="button">Close</button>
+      </div>
 
-    <input type="hidden" id="editTeacherDocId">
+      <input type="hidden" id="editTeacherDocId">
 
-    <div class="form-field">
-      <label class="form-label" for="tNameInput">Full Name</label>
-      <input class="form-input" id="tNameInput" type="text" placeholder="e.g. Mr Sitema or Mrs Adeyemi">
-    </div>
+      <div class="form-field">
+        <label class="form-label" for="tNameInput">Full Name</label>
+        <input class="form-input" id="tNameInput" type="text" placeholder="e.g. Mr Sitema or Mrs Adeyemi">
+      </div>
 
-    <div class="form-field">
-      <label class="form-label" for="tUserInput">Username (Sign In Identifier)</label>
-      <input class="form-input" id="tUserInput" type="text" placeholder="e.g. mrsitema" autocapitalize="off">
-    </div>
+      <div class="form-field">
+        <label class="form-label" for="tUserInput">Username (Sign In Identifier)</label>
+        <input class="form-input" id="tUserInput" type="text" placeholder="e.g. mrsitema" autocapitalize="off">
+      </div>
 
-    <div class="form-field">
-      <label class="form-label" for="tPassInput">Password</label>
-      <input class="form-input" id="tPassInput" type="text" placeholder="e.g. MrSitema">
-    </div>
+      <div class="form-field">
+        <label class="form-label" for="tPassInput">Password</label>
+        <input class="form-input" id="tPassInput" type="text" placeholder="e.g. MrSitema">
+      </div>
 
-    <div class="form-field">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <label class="form-label">Assigned Subjects</label>
-        <div style="display:flex;gap:6px">
-          <button type="button" class="btn btn-secondary btn-sm" id="btnSelectAllSubjects">Select all</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnClearAllSubjects">Clear</button>
+      <div class="form-field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label class="form-label">Assigned Subjects</label>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSelectAllSubjects">Select all</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnClearAllSubjects">Clear</button>
+          </div>
+        </div>
+        <div class="check-grid" id="subjectsCheckGrid"></div>
+      </div>
+
+      <div class="form-field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label class="form-label">Assigned Classes</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="chkAllClasses"> All classes
+          </label>
+        </div>
+        <div id="classCheckboxes" style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 7"> Year 7
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 8"> Year 8
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 9"> Year 9
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 10"> Year 10
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 11"> Year 11
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="cls-chk" value="Year 12"> Year 12
+          </label>
         </div>
       </div>
-      <div class="check-grid" id="subjectsCheckGrid"></div>
-    </div>
 
-    <div class="form-field">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label class="form-label">Assigned Classes</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-          <input type="checkbox" id="chkAllClasses"> All classes
-        </label>
+      <div class="form-field">
+        <label class="form-label" for="tArmsInput">Assigned Arms (Optional)</label>
+        <input class="form-input" id="tArmsInput" type="text"
+          placeholder="e.g. FRANKLIN, CHURCHILL (leave empty for All Arms)">
+        <span style="font-size:11px;color:var(--text-subtle);margin-top:4px">Comma-separated arms. If blank, teacher can
+          view students in all arms.</span>
       </div>
-      <div id="classCheckboxes" style="display:flex;gap:16px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 7"> Year 7
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 8"> Year 8
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 9"> Year 9
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 10"> Year 10
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 11"> Year 11
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" class="cls-chk" value="Year 12"> Year 12
-        </label>
+
+      <div class="form-msg" id="modalErrorMsg"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="modalCancelBtn" type="button">Cancel</button>
+        <button class="btn" id="modalSaveBtn" type="button">Save teacher</button>
       </div>
-    </div>
-
-    <div class="form-field">
-      <label class="form-label" for="tArmsInput">Assigned Arms (Optional)</label>
-      <input class="form-input" id="tArmsInput" type="text" placeholder="e.g. FRANKLIN, CHURCHILL (leave empty for All Arms)">
-      <span style="font-size:11px;color:var(--text-subtle);margin-top:4px">Comma-separated arms. If blank, teacher can view students in all arms.</span>
-    </div>
-
-    <div class="form-msg" id="modalErrorMsg"></div>
-
-    <div class="modal-actions">
-      <button class="btn btn-secondary" id="modalCancelBtn" type="button">Cancel</button>
-      <button class="btn" id="modalSaveBtn" type="button">Save teacher</button>
     </div>
   </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
      ADD / EDIT CBT SUBJECT MODAL
      ══════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="cbtSubjectModal">
-  <div class="modal-box" style="max-width:540px">
-    <div class="modal-head">
-      <div>
-        <h3 class="modal-title" id="cbtSubjectModalTitle">Add New CBT Subject</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin-top:2px">Configure subject name and MongoDB reference ObjectId</p>
-      </div>
-      <button class="btn-close" id="cbtSubjectModalCloseBtn" type="button">&times;</button>
-    </div>
-
-    <form id="cbtSubjectForm" onsubmit="return false;" style="margin-top:16px">
-      <input type="hidden" id="cbtSubjectOrigKey" value="">
-
-      <div class="form-field">
-        <label class="form-label" for="cbtSubjectNameInput">Subject Name *</label>
-        <input class="form-input" id="cbtSubjectNameInput" type="text" placeholder="e.g. Artificial Intelligence, Data Science, etc." required>
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px">The exact subject name displayed on offline exams and student results.</span>
-      </div>
-
-      <div class="form-field">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <label class="form-label" for="cbtSubjectIdInput" style="margin:0">MongoDB ObjectId (24-hex) *</label>
-          <button type="button" class="btn btn-secondary btn-sm" id="cbtGenerateSubjectIdBtn" style="font-size:11px;padding:2px 8px">✨ Generate ObjectId</button>
+  <div class="modal-overlay" id="cbtSubjectModal">
+    <div class="modal-box" style="max-width:540px">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title" id="cbtSubjectModalTitle">Add New CBT Subject</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:2px">Configure subject name and MongoDB reference
+            ObjectId</p>
         </div>
-        <input class="form-input" id="cbtSubjectIdInput" type="text" placeholder="e.g. 68acd2b5b81c01af321d0998" pattern="^[0-9a-fA-F]{24}$" style="font-family:monospace;letter-spacing:0.5px" required>
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px">Paste the <code>_id</code> from your MongoDB Compass <code>cbtApp_v2.subjects</code>, or click Generate.</span>
+        <button class="btn-close" id="cbtSubjectModalCloseBtn" type="button">&times;</button>
       </div>
 
-      <div class="form-msg" id="cbtSubjectModalErrorMsg"></div>
+      <form id="cbtSubjectForm" onsubmit="return false;" style="margin-top:16px">
+        <input type="hidden" id="cbtSubjectOrigKey" value="">
 
-      <div class="modal-actions" style="margin-top:20px">
-        <button class="btn btn-secondary" id="cbtSubjectModalCancelBtn" type="button">Cancel</button>
-        <button class="btn" id="cbtSubjectModalSaveBtn" type="button">Save Subject</button>
-      </div>
-    </form>
+        <div class="form-field">
+          <label class="form-label" for="cbtSubjectNameInput">Subject Name *</label>
+          <input class="form-input" id="cbtSubjectNameInput" type="text"
+            placeholder="e.g. Artificial Intelligence, Data Science, etc." required>
+          <span style="font-size:11px;color:var(--text-muted);margin-top:4px">The exact subject name displayed on
+            offline exams and student results.</span>
+        </div>
+
+        <div class="form-field">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <label class="form-label" for="cbtSubjectIdInput" style="margin:0">MongoDB ObjectId (24-hex) *</label>
+            <button type="button" class="btn btn-secondary btn-sm" id="cbtGenerateSubjectIdBtn"
+              style="font-size:11px;padding:2px 8px">✨ Generate ObjectId</button>
+          </div>
+          <input class="form-input" id="cbtSubjectIdInput" type="text" placeholder="e.g. 68acd2b5b81c01af321d0998"
+            pattern="^[0-9a-fA-F]{24}$" style="font-family:monospace;letter-spacing:0.5px" required>
+          <span style="font-size:11px;color:var(--text-muted);margin-top:4px">Paste the <code>_id</code> from your
+            MongoDB Compass <code>cbtApp_v2.subjects</code>, or click Generate.</span>
+        </div>
+
+        <div class="form-msg" id="cbtSubjectModalErrorMsg"></div>
+
+        <div class="modal-actions" style="margin-top:20px">
+          <button class="btn btn-secondary" id="cbtSubjectModalCancelBtn" type="button">Cancel</button>
+          <button class="btn" id="cbtSubjectModalSaveBtn" type="button">Save Subject</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Lightbox Modal for Full-Size Diagram Inspection -->
-<div class="modal-overlay" id="cbtImageLightboxModal" style="z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
-  <div style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative" onclick="event.stopPropagation()">
-    <button type="button" class="btn-close" style="position:absolute;top:-36px;right:0;color:#ffffff;font-size:22px;font-weight:700;cursor:pointer" id="cbtLightboxCloseBtn">&times; Close</button>
-    <img id="cbtLightboxImg" src="" style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);background:#fff">
+  <!-- Lightbox Modal for Full-Size Diagram Inspection -->
+  <div class="modal-overlay" id="cbtImageLightboxModal"
+    style="z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
+    <div
+      style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative"
+      onclick="event.stopPropagation()">
+      <button type="button" class="btn-close"
+        style="position:absolute;top:-36px;right:0;color:#ffffff;font-size:22px;font-weight:700;cursor:pointer"
+        id="cbtLightboxCloseBtn">&times; Close</button>
+      <img id="cbtLightboxImg" src=""
+        style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);background:#fff">
+    </div>
   </div>
-</div>
 
-<script src="js/mammoth.browser.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <script src="js/mammoth.browser.min.js"
+    onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M",
-  authDomain: "school-exam-portal-2de06.firebaseapp.com",
-  projectId: "school-exam-portal-2de06",
-  storageBucket: "school-exam-portal-2de06.firebasestorage.app",
-  messagingSenderId: "797572003782",
-  appId: "1:797572003782:web:14126bc63b4fa956d1a4c7",
-  measurementId: "G-E6F2MHWZYD"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M",
+      authDomain: "school-exam-portal-2de06.firebaseapp.com",
+      projectId: "school-exam-portal-2de06",
+      storageBucket: "school-exam-portal-2de06.firebasestorage.app",
+      messagingSenderId: "797572003782",
+      appId: "1:797572003782:web:14126bc63b4fa956d1a4c7",
+      measurementId: "G-E6F2MHWZYD"
+    };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, "default");
-window.FirebaseDB = db;
-window.FirebaseSDK = { initializeApp, getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch, query, where };
-window.dispatchEvent(new CustomEvent('firebase-ready'));
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js"></script>
-<script src="js/cbt-catalog.js"></script>
-<script src="js/admin.js"></script>
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app, "default");
+    window.FirebaseDB = db;
+    window.FirebaseSDK = { initializeApp, getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch, query, where };
+    window.dispatchEvent(new CustomEvent('firebase-ready'));
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/cbt-catalog.js"></script>
+  <script src="js/admin.js"></script>
 </body>
+
 </html>

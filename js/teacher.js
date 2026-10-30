@@ -1855,7 +1855,7 @@ $("tCbtSubmitBtn").onclick = async () => {
       selectedArms = classInfo.arms;
     }
 
-    await setDoc(doc(db, "cbt_submissions", examId), {
+    const subPayload = {
       examId: examId,
       title: title,
       subjectName: subject,
@@ -1880,7 +1880,21 @@ $("tCbtSubmitBtn").onclick = async () => {
       arm: selectedArms.map(a => ({ "$oid": a })),
       createdAt: new Date().toISOString(),
       status: "Ready for Admin"
-    });
+    };
+
+    try {
+      await setDoc(doc(db, "cbt_submissions", examId), subPayload);
+    } catch (fbErr) {
+      console.warn("Firebase submit note:", fbErr);
+    }
+
+    if (window.dbClient && window.dbClient.isSupabaseActive()) {
+      try {
+        await window.dbClient.saveSubmission(examId, subPayload);
+      } catch (sbErr) {
+        console.warn("Supabase submit note:", sbErr);
+      }
+    }
 
     // Clear and hide Step 3 review section so questions do not linger after submission!
     $("tCbtReviewCard").style.display = "none";
@@ -1911,6 +1925,22 @@ async function loadTeacherSubmissions() {
   $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Loading your submissions…</td></tr>`;
 
   try {
+    // 1. Try Supabase
+    if (window.dbClient && window.dbClient.isSupabaseActive()) {
+      try {
+        const sbSubs = await window.dbClient.getSubmissions();
+        if (Array.isArray(sbSubs) && sbSubs.length > 0) {
+          teacherSubmissions = sbSubs.filter(sub => !sub.teacherUser || sub.teacherUser === cleanUser || (sub.teacherName && sub.teacherName === teacher.name));
+          teacherSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          renderTeacherSubmissions();
+          return;
+        }
+      } catch (sbErr) {
+        console.warn("Supabase teacher submissions note:", sbErr);
+      }
+    }
+
+    // 2. Fallback to Firebase
     const snap = await getDocs(collection(db, "cbt_submissions"));
     teacherSubmissions = [];
     snap.docs.forEach(d => {
@@ -2010,7 +2040,18 @@ async function loadTeacherSubmissions() {
       b.onclick = async () => {
         if (!confirm("Are you sure you want to delete this exam submission?")) return;
         try {
-          await deleteDoc(doc(db, "cbt_submissions", b.dataset.delMyExam));
+          try {
+            await deleteDoc(doc(db, "cbt_submissions", b.dataset.delMyExam));
+          } catch (fbErr) {
+            console.warn("Firebase delete note:", fbErr);
+          }
+          if (window.dbClient && window.dbClient.isSupabaseActive()) {
+            try {
+              await window.dbClient.deleteSubmission(b.dataset.delMyExam);
+            } catch (sbErr) {
+              console.warn("Supabase delete note:", sbErr);
+            }
+          }
           loadTeacherSubmissions();
         } catch (e) {
           alert("Error deleting: " + e.message);
@@ -2036,10 +2077,22 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
   if (!activeTeacherPreviewSub) return;
   try {
     const qCount = activeTeacherPreviewSub.questions.length;
-    await setDoc(doc(db, "cbt_submissions", activeTeacherPreviewSub.docId), {
-      questions: activeTeacherPreviewSub.questions,
-      numberOfQuestions: qCount
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, "cbt_submissions", activeTeacherPreviewSub.docId), {
+        questions: activeTeacherPreviewSub.questions,
+        numberOfQuestions: qCount
+      }, { merge: true });
+    } catch (fbErr) {
+      console.warn("Firebase save note:", fbErr);
+    }
+
+    if (window.dbClient && window.dbClient.isSupabaseActive()) {
+      try {
+        await window.dbClient.saveSubmission(activeTeacherPreviewSub.docId, activeTeacherPreviewSub);
+      } catch (sbErr) {
+        console.warn("Supabase save note:", sbErr);
+      }
+    }
 
     activeTeacherPreviewSub.numberOfQuestions = qCount;
     const found = teacherSubmissions.find(s => s.docId === activeTeacherPreviewSub.docId);
