@@ -1,4 +1,4 @@
-﻿// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -711,30 +711,44 @@ $nextPageBtn.addEventListener("click", () => {
 [$fs, $fc, $fa].forEach(el => el.addEventListener("change", onFilterChange));
 $q.addEventListener("input", onFilterChange);
 
-// ── Export to CSV ──
+// Helpers for Teacher CSV Abbreviation
+function formatClassAbbr(className) {
+  if (!className) return "";
+  const c = String(className).trim();
+  const m = c.match(/(?:Year|Yr|Grade)\s*(\d+)/i);
+  if (m) return "Y" + m[1];
+  if (/^Y\d+$/i.test(c)) return c.toUpperCase();
+  return c;
+}
+
+function formatArmAbbr(armName) {
+  if (!armName) return "";
+  let a = String(armName).trim();
+  if (/^Arm\s+/i.test(a)) a = a.replace(/^Arm\s+/i, "").trim();
+  return a.charAt(0).toUpperCase();
+}
+
+// ── Export to CSV (Customized for Teachers) ──
+// Excludes: Reg Number, Status, Percentage, Date, Term
+// Abbreviates: Year 7 -> Y7, Holmes -> H
 $("exportBtn").addEventListener("click", () => {
   if (!activeFilteredRows.length) {
     alert("No records to export."); return;
   }
-  const headers = ["Subject", "Class", "Arm", "Student", "Reg Number", "Score", "Percentage", "Status", "Date", "Term"];
+  const headers = ["Subject", "Class", "Arm", "Student", "Score"];
   const csvContent = [
     headers.join(","),
     ...activeFilteredRows.map(r => {
       const rawScore = parseFloat(r.score) || 0;
       const dispScore = applyTeacherScoreConversion(rawScore);
-      const convPct = applyTeacherPctConversion(rawScore);
-      const pctVal = convPct !== null ? convPct : (r.pct || 0);
+      const classAbbr = formatClassAbbr(r.class);
+      const armAbbr = formatArmAbbr(r.arm);
       return [
         `"${(r.subject || "").replace(/"/g, '""')}"`,
-        `"${(r.class || "").replace(/"/g, '""')}"`,
-        `"${(r.arm || "").replace(/"/g, '""')}"`,
+        `"${classAbbr.replace(/"/g, '""')}"`,
+        `"${armAbbr.replace(/"/g, '""')}"`,
         `"${(r.student || "").replace(/"/g, '""')}"`,
-        `"${(r.reg || "").replace(/"/g, '""')}"`,
-        `"${dispScore}"`,
-        `"${pctVal}%"`,
-        `"${pctVal >= PASS_MARK ? "Pass" : "Fail"}"`,
-        `"${(r.date || "").replace(/"/g, '""')}"`,
-        `"${(r.term || "").replace(/"/g, '""')}"`
+        `"${dispScore}"`
       ].join(",");
     })
   ].join("\n");
