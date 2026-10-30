@@ -104,7 +104,7 @@ function switchTab(target) {
     loadCBTSubmissions();
     refreshCbtSubjectsCatalog();
   }
-  if (target === "scores") loadStudentScores();
+  if (target === "scores") { initConversionPanel(); loadStudentScores(); }
 }
 $("tabScores").onclick = () => switchTab("scores");
 $("tabTeachers").onclick = () => switchTab("teachers");
@@ -2454,26 +2454,24 @@ if ($("scoresCacheRetryBtn")) $("scoresCacheRetryBtn").onclick = () => loadStude
 // Print Report
 $("scoresPrintBtn").onclick = () => window.print();
 
-// Score Conversion Controls
-(function initConversionPanel() {
-  const origEl = document.getElementById("convOrigMax");
-  const tgtEl  = document.getElementById("convTargetMax");
+// Score Conversion Controls — wired lazily when scores pane opens
+let _convPanelWired = false;
+function initConversionPanel() {
+  if (_convPanelWired) { refreshConversionUI(); return; }
+  const origEl   = document.getElementById("convOrigMax");
+  const tgtEl    = document.getElementById("convTargetMax");
   const applyBtn = document.getElementById("convApplyBtn");
   const resetBtn = document.getElementById("convResetBtn");
-  if (!origEl) return;
+  if (!origEl || !applyBtn) return;
+  _convPanelWired = true;
 
   refreshConversionUI();
 
-  // Live multiplier preview as user types
   function updatePreview() {
     const o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
     const multLbl = document.getElementById("convMultiplierLabel");
-    if (o > 0 && t > 0) {
-      multLbl.textContent = "× " + (t / o).toFixed(4).replace(/\.?0+$/, "");
-    } else {
-      multLbl.textContent = "";
-    }
+    if (multLbl) multLbl.textContent = (o > 0 && t > 0) ? ("x " + (t / o).toFixed(3).replace(/\.?0+$/, "")) : "";
   }
   origEl.addEventListener("input", updatePreview);
   tgtEl.addEventListener("input", updatePreview);
@@ -2482,7 +2480,7 @@ $("scoresPrintBtn").onclick = () => window.print();
     const o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
     if (!o || o <= 0 || !t || t <= 0) {
-      alert("Please enter valid positive numbers for both Original Max and Target Max.");
+      alert("Please enter valid numbers for Original Max and Target Max.");
       return;
     }
     setScoreConversion({ originalMax: o, targetMax: t });
@@ -2497,7 +2495,7 @@ $("scoresPrintBtn").onclick = () => window.print();
     refreshConversionUI();
     renderScoresTableOnly();
   };
-})();
+}
 
 // Export CSV
 $("scoresExportCsvBtn").onclick = () => {
