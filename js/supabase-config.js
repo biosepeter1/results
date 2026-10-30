@@ -254,6 +254,54 @@ const dbClient = {
       }
     }
     return false;
+  },
+
+  // 4. Global Score Conversion Configuration (Synced to Supabase & Firebase)
+  async getScoreConversionCloud() {
+    const sb = getSupabase();
+    if (sb) {
+      try {
+        const { data, error } = await sb.from("exam_meta").select("meta").eq("key", "score_conversion").maybeSingle();
+        if (!error && data && data.meta && Object.keys(data.meta).length > 0) {
+          return data.meta;
+        }
+      } catch (err) {
+        console.warn("Supabase getScoreConversionCloud error:", err);
+      }
+    }
+    try {
+      if (window.FirebaseDB && window.FirebaseSDK && window.FirebaseSDK.getDoc && window.FirebaseSDK.doc) {
+        const snap = await window.FirebaseSDK.getDoc(window.FirebaseSDK.doc(window.FirebaseDB, "metadata", "score_conversion"));
+        if (snap.exists()) return snap.data();
+      }
+    } catch (e) {
+      console.warn("Firebase getScoreConversionCloud fallback error:", e);
+    }
+    return null;
+  },
+
+  async saveScoreConversion(setting) {
+    const sb = getSupabase();
+    if (sb) {
+      try {
+        const payload = {
+          key: "score_conversion",
+          last_updated: new Date().toISOString(),
+          meta: setting || {}
+        };
+        const { error } = await sb.from("exam_meta").upsert(payload, { onConflict: "key" });
+        if (error) console.warn("Supabase saveScoreConversion error:", error);
+      } catch (err) {
+        console.warn("Supabase saveScoreConversion error:", err);
+      }
+    }
+    try {
+      if (window.FirebaseDB && window.FirebaseSDK && window.FirebaseSDK.setDoc && window.FirebaseSDK.doc) {
+        await window.FirebaseSDK.setDoc(window.FirebaseSDK.doc(window.FirebaseDB, "metadata", "score_conversion"), setting || { disabled: true });
+      }
+    } catch (e) {
+      console.warn("Firebase saveScoreConversion fallback error:", e);
+    }
   }
 };
 

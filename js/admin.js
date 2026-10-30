@@ -2476,27 +2476,44 @@ function initConversionPanel() {
   origEl.addEventListener("input", updatePreview);
   tgtEl.addEventListener("input", updatePreview);
 
-  applyBtn.onclick = () => {
+  applyBtn.onclick = async () => {
     const o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
     if (!o || o <= 0 || !t || t <= 0) {
       alert("Please enter valid numbers for Original Max and Target Max.");
       return;
     }
-    setScoreConversion({ originalMax: o, targetMax: t });
+    const setting = { originalMax: o, targetMax: t };
+    setScoreConversion(setting);
     refreshConversionUI();
     renderScoresTableOnly();
+    if (window.dbClient && window.dbClient.saveScoreConversion) {
+      await window.dbClient.saveScoreConversion(setting);
+    }
   };
 
-  resetBtn.onclick = () => {
+  resetBtn.onclick = async () => {
     setScoreConversion(null);
     origEl.value = "";
     tgtEl.value = "";
     refreshConversionUI();
     renderScoresTableOnly();
+    if (window.dbClient && window.dbClient.saveScoreConversion) {
+      await window.dbClient.saveScoreConversion(null);
+    }
   };
-}
 
+  // Sync latest score conversion from cloud (Supabase / Firebase)
+  if (window.dbClient && window.dbClient.getScoreConversionCloud) {
+    window.dbClient.getScoreConversionCloud().then(cloudConv => {
+      if (cloudConv && cloudConv.originalMax && cloudConv.targetMax) {
+        setScoreConversion(cloudConv);
+        refreshConversionUI();
+        renderScoresTableOnly();
+      }
+    }).catch(e => console.warn("Admin cloud score conversion sync error:", e));
+  }
+}
 // Export CSV
 $("scoresExportCsvBtn").onclick = () => {
   const sorted = getSortedAdminRows();
