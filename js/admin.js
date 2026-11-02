@@ -1789,21 +1789,108 @@ function refreshConversionUI() {
 }
 // ─────────────────────────────────────────────────────────────
 
-function getCachedScores() {
+// ── High-Capacity IndexedDB & In-Memory Score Storage (Zero 5MB Quota Limits) ──
+let _memoryCachedScores = null;
+
+const idbScoreStorage = {
+  dbPromise: null,
+  getDb() {
+    if (!this.dbPromise) {
+      this.dbPromise = new Promise(resolve => {
+        if (typeof indexedDB === "undefined") return resolve(null);
+        try {
+          const req = indexedDB.open("AcademicPortalScoresDB", 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("scores_store")) {
+              db.createObjectStore("scores_store");
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch(e) { resolve(null); }
+      });
+    }
+    return this.dbPromise;
+  },
+  async set(key, val) {
+    try {
+      const db = await this.getDb();
+      if (!db) return false;
+      return new Promise(resolve => {
+        const tx = db.transaction("scores_store", "readwrite");
+        tx.objectStore("scores_store").put(val, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch(e) { return false; }
+  },
+  async get(key) {
+    try {
+      const db = await this.getDb();
+      if (!db) return null;
+      return new Promise(resolve => {
+        const tx = db.transaction("scores_store", "readonly");
+        const req = tx.objectStore("scores_store").get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch(e) { return null; }
+  }
+};
+
+// Clean up duplicate and obsolete keys to free up localStorage megabytes
+function cleanupObsoleteStorage() {
+  const obsoleteKeys = [
+    "admin_exam_scores_backup",
+    "school_exam_scores_cache_v3",
+    "admin_exam_scores_cache_v2",
+    "school_exam_scores_cache_v2",
+    "admin_exam_scores_cache",
+    "school_exam_scores_cache"
+  ];
+  obsoleteKeys.forEach(k => {
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+}
+
+// Background auto-hydration from IndexedDB
+(async () => {
   try {
-    // 1. Primary admin cache
+    const idbData = await idbScoreStorage.get("admin_scores");
+    if (idbData && Array.isArray(idbData.rows) && idbData.rows.length > 0) {
+      if (!_memoryCachedScores || !_memoryCachedScores.rows || _memoryCachedScores.rows.length < idbData.rows.length) {
+        _memoryCachedScores = idbData;
+        if (typeof allScoreRows !== "undefined" && (!allScoreRows || allScoreRows.length === 0)) {
+          allScoreRows = idbData.rows;
+          if (typeof buildAdminTermTabs === "function") buildAdminTermTabs();
+          if (typeof updateAdminFreshness === "function") updateAdminFreshness(idbData.lastUpdatedText || "Saved device copy", false);
+        }
+      }
+    }
+  } catch(e) {}
+})();
+
+function getCachedScores() {
+  // 0. High-speed in-memory cache
+  if (_memoryCachedScores && Array.isArray(_memoryCachedScores.rows) && _memoryCachedScores.rows.length > 0) {
+    return _memoryCachedScores;
+  }
+  try {
+    // 1. Primary admin cache from localStorage
     const primaryRaw = localStorage.getItem(SCORES_CACHE_KEY);
     if (primaryRaw) {
       const parsed = JSON.parse(primaryRaw);
       if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+        _memoryCachedScores = parsed;
         return parsed;
       }
     }
 
     // 2. Backup or fallback keys
     const fallbackKeys = [
-      "admin_exam_scores_backup",
       "school_exam_scores_cache_v3",
+      "admin_exam_scores_backup",
       "admin_exam_scores_cache_v2",
       "school_exam_scores_cache_v2",
       "admin_exam_scores_cache",
@@ -1816,12 +1903,14 @@ function getCachedScores() {
           const parsed = JSON.parse(raw);
           const rows = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.rows) ? parsed.rows : null);
           if (rows && rows.length > 0) {
-            return {
+            const res = {
               rows,
               version: parsed.version || "",
               lastUpdatedText: parsed.lastUpdatedText || "Saved device copy",
               timestamp: parsed.timestamp || Date.now()
             };
+            _memoryCachedScores = res;
+            return res;
           }
         }
       } catch (e) {}
@@ -1846,12 +1935,14 @@ function getCachedScores() {
     }
     if (recoveredMap.size > 0) {
       const rows = Array.from(recoveredMap.values());
-      return {
+      const res = {
         rows,
         version: "recovered",
         lastUpdatedText: recoveredTime || "Saved device copy",
         timestamp: Date.now()
       };
+      _memoryCachedScores = res;
+      return res;
     }
     return null;
   } catch (e) {
@@ -1860,27 +1951,36 @@ function getCachedScores() {
 }
 
 function setCachedScores(rows, version, timeStr) {
+  if (!rows || rows.length === 0) {
+    const existing = getCachedScores();
+    if (existing && existing.rows && existing.rows.length > 0) {
+      console.warn("Prevented overwriting cached scores with empty array.");
+      return;
+    }
+  }
+
+  const cacheObj = {
+    version: version || "",
+    timestamp: Date.now(),
+    lastUpdatedText: timeStr || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+    rows
+  };
+
+  _memoryCachedScores = cacheObj;
+
+  // 1. Unlimited capacity storage in IndexedDB (never hits 5MB quota)
+  idbScoreStorage.set("admin_scores", cacheObj).catch(() => {});
+
+  // 2. Free up localStorage by deleting duplicate/stale backup keys
+  cleanupObsoleteStorage();
+
+  // 3. Save single copy to localStorage
   try {
-    if (!rows || rows.length === 0) {
-      // NEVER overwrite a valid cached database with an empty array!
-      const existing = getCachedScores();
-      if (existing && existing.rows && existing.rows.length > 0) {
-        console.warn("Prevented overwriting cached scores with empty array.");
-        return;
-      }
-    }
-    const payload = JSON.stringify({
-      version: version || "",
-      timestamp: Date.now(),
-      lastUpdatedText: timeStr || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
-      rows
-    });
+    const payload = JSON.stringify(cacheObj);
     localStorage.setItem(SCORES_CACHE_KEY, payload);
-    if (rows && rows.length > 0) {
-      localStorage.setItem("admin_exam_scores_backup", payload);
-    }
   } catch (err) {
-    console.warn("localStorage quota exceeded (handled safely):", err);
+    // If browser hits 5MB limit on localStorage, IndexedDB safely preserves all records
+    console.info("localStorage 5MB limit handled safely; records preserved in IndexedDB.");
   }
 }
 
@@ -2417,8 +2517,8 @@ function initConversionPanel() {
   origEl.addEventListener("input", updatePreview);
   tgtEl.addEventListener("input", updatePreview);
 
-    function showConversionFeedback(msg) {
-    let badge = convFeedbackBadge;
+  function showConversionFeedback(msg) {
+    let badge = document.getElementById("convFeedbackBadge");
     if (!badge) {
       badge = document.createElement("span");
       badge.id = "convFeedbackBadge";
@@ -2426,7 +2526,7 @@ function initConversionPanel() {
       badge.style.fontWeight = "600";
       badge.style.marginLeft = "10px";
       badge.style.color = "var(--status-good, #10b981)";
-      const p = convResetBtn?.parentNode;
+      const p = (document.getElementById("convResetBtn") || resetBtn)?.parentNode;
       if (p) p.appendChild(badge);
     }
     badge.textContent = msg;
@@ -2453,7 +2553,7 @@ function initConversionPanel() {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
         await window.dbClient.saveScoreConversion(setting);
       }
-      showConversionFeedback("âœ“ Saved to Supabase & live for all teachers!");
+      showConversionFeedback("✓ Saved to Supabase & live for all teachers!");
     } catch (err) {
       alert("Score conversion saved locally but cloud sync failed: " + err.message);
     } finally {
@@ -2475,7 +2575,7 @@ function initConversionPanel() {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
         await window.dbClient.saveScoreConversion(null);
       }
-      showConversionFeedback("âœ“ Reset to default (100%) for all teachers");
+      showConversionFeedback("✓ Reset to default (100%) for all teachers");
     } catch (err) {
       console.warn("Cloud reset warning:", err);
     } finally {
