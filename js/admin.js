@@ -2,6 +2,8 @@
 // ADMINISTRATOR PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
+function $(id) { return document.getElementById(id); }
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Independent Supabase Engine Active (Zero Firebase Dependency)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -43,8 +45,6 @@ function renderTeacherModalSubjects(selectedSubjects = []) {
     <label class="check-item"><input type="checkbox" class="sub-chk" value="${esc(s)}" ${selSet.has(s) ? 'checked' : ''}> ${esc(s)}</label>
   `).join("");
 }
-
-const $ = id => document.getElementById(id);
 
 // ── Admin Sign In ──
 $("loginForm").onsubmit = (e) => {

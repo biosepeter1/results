@@ -2,6 +2,8 @@
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
+function $(id) { return document.getElementById(id); }
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Independent Supabase Engine Active (Zero Firebase Dependency)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -114,12 +116,14 @@ async function syncTeacherScoreConversion(triggerRender = false) {
 
 // Auto-sync scaling from admin in background and on window focus
 window.addEventListener("focus", () => {
-  if (typeof $app !== "undefined" && $app && $app.style.display !== "none") {
+  const appEl = $("app");
+  if (appEl && appEl.style.display !== "none") {
     syncTeacherScoreConversion(true);
   }
 });
 setInterval(() => {
-  if (typeof $app !== "undefined" && $app && $app.style.display !== "none") {
+  const appEl = $("app");
+  if (appEl && appEl.style.display !== "none") {
     syncTeacherScoreConversion(true);
   }
 }, 10000);
@@ -146,7 +150,6 @@ if ($("teacherRefreshScoresBtn")) {
 let teacherParsedQuestions = [];
 let teacherSubmissions = [];
 
-const $ = id => document.getElementById(id);
 const $login = $("login"), $app = $("app"), $u = $("u"), $p = $("p"), $go = $("go"), $msg = $("msg");
 const $tb = $("tb"), $loader = $("loader"), $empty = $("empty"), $fs = $("fs"), $fc = $("fc"), $fa = $("fa"), $q = $("q");
 const $activeFilterTags = $("activeFilterTags");
