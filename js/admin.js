@@ -1971,6 +1971,9 @@ async function loadStudentScores(force = false) {
       setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
       updateAdminFreshness(timeStr, false);
       buildAdminTermTabs();
+      // Hide push button since Supabase already has data
+      const pushBtn = $("scoresPushCloudBtn");
+      if (pushBtn) pushBtn.style.display = "none";
     } else {
       // Supabase table returned 0 rows
       const savedCache = getCachedScores();
@@ -1979,13 +1982,30 @@ async function loadStudentScores(force = false) {
         updateAdminFreshness(savedCache.lastUpdatedText || "Saved device copy", false);
         buildAdminTermTabs();
 
+        // Show the "Push to Cloud" button so admin can migrate with one click
+        const pushBtn = $("scoresPushCloudBtn");
+        if (pushBtn) { pushBtn.style.display = ""; pushBtn.disabled = false; pushBtn.innerHTML = "&#8679; Push to Cloud"; }
+
         // Auto-seed Supabase with the cached records in background!
         console.log("Auto-seeding Supabase with " + allScoreRows.length + " cached records...");
-        window.dbClient.saveScoresBatch(allScoreRows).then(() => {
-          console.log("Supabase score seeding completed.");
-        }).catch(err => {
-          console.warn("Supabase auto-seed warning:", err);
+        // Group by term for proper seeding
+        const termMap = {};
+        allScoreRows.forEach(r => {
+          const t = r.term || "Unknown Term";
+          if (!termMap[t]) termMap[t] = [];
+          termMap[t].push(r);
         });
+        (async () => {
+          try {
+            for (const [term, termRows] of Object.entries(termMap)) {
+              await window.dbClient.saveScoresBatch(termRows, term);
+            }
+            console.log("Supabase score seeding completed.");
+            if (pushBtn) pushBtn.style.display = "none";
+          } catch (err) {
+            console.warn("Supabase auto-seed warning:", err);
+          }
+        })();
       } else {
         allScoreRows = [];
         updateAdminFreshness("No records", false);
@@ -2006,9 +2026,51 @@ async function loadStudentScores(force = false) {
   } finally {
     const refBtn = $("scoresRefreshBtn");
     if (refBtn) {
-      refBtn.textContent = "↻ Refresh Cloud";
+      refBtn.innerHTML = "&#8635; Refresh Cloud";
       refBtn.disabled = false;
     }
+  }
+}
+
+// ── Push Cached Scores to Supabase Cloud ──────────────────────────────────────
+async function pushCachedScoresToCloud() {
+  const cached = getCachedScores();
+  if (!cached || !Array.isArray(cached.rows) || cached.rows.length === 0) {
+    alert("No saved device scores found to push. Please upload a CSV first.");
+    return;
+  }
+
+  const pushBtn = $("scoresPushCloudBtn");
+  if (pushBtn) { pushBtn.disabled = true; pushBtn.textContent = "Pushing..."; }
+
+  try {
+    const rows = cached.rows;
+    // Group rows by term
+    const termMap = {};
+    rows.forEach(r => {
+      const t = r.term || "Unknown Term";
+      if (!termMap[t]) termMap[t] = [];
+      termMap[t].push(r);
+    });
+
+    const terms = Object.keys(termMap);
+    console.log("Pushing " + rows.length + " cached records across " + terms.length + " term(s) to Supabase...");
+
+    for (const term of terms) {
+      const termRows = termMap[term];
+      console.log("  -> Uploading " + termRows.length + " rows for term: " + term);
+      await window.dbClient.saveScoresBatch(termRows, term);
+    }
+
+    // Reload from Supabase to confirm
+    await loadStudentScores(true);
+
+    if (pushBtn) { pushBtn.style.display = "none"; }
+    alert("Successfully pushed " + rows.length.toLocaleString() + " records to Supabase! All portals now have access.");
+  } catch (err) {
+    console.error("Push to cloud error:", err);
+    alert("Push failed: " + err.message + "\nCheck browser console for details.");
+    if (pushBtn) { pushBtn.disabled = false; pushBtn.innerHTML = "&#8679; Push to Cloud"; }
   }
 }
 
@@ -2331,6 +2393,10 @@ $("scoresSearchInput").oninput = () => {
 // Refresh Cloud Buttons
 $("scoresRefreshBtn").onclick = () => loadStudentScores(true);
 
+// Push cached scores to Supabase cloud
+if ($("scoresPushCloudBtn")) {
+  $("scoresPushCloudBtn").onclick = () => pushCachedScoresToCloud();
+}
 
 // Print Report
 $("scoresPrintBtn").onclick = () => window.print();
