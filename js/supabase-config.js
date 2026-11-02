@@ -286,32 +286,39 @@ const dbClient = {
   },
 
   // ══════════════════════════════════════════════════════════
-  // 3. STUDENT EXAMINATION SCORES (Unlimited Paginated Fetch)
+  // 3. STUDENT EXAMINATION SCORES (Parallel Paginated Fetch)
   // ══════════════════════════════════════════════════════════
   async getScores(term) {
     const sb = getSupabase();
     if (!sb) return [];
     try {
       const pageSize = 1000;
-      let all = [];
-      let from = 0;
-      let more = true;
-      while (more) {
-        let q = sb.from("exam_results").select("*").range(from, from + pageSize - 1);
-        if (term) q = q.eq("term", term);
-        const { data, error } = await q;
-        if (error) {
-          console.warn("Supabase getScores page error:", error);
-          break;
+      const SELECT_COLS = "id,term,student,reg,subject,class,arm,score,pct,exam_date";
+
+      // 1. Fetch first page to learn total count
+      let q0 = sb.from("exam_results").select(SELECT_COLS, { count: "exact" }).range(0, pageSize - 1);
+      if (term) q0 = q0.eq("term", term);
+      const { data: firstPage, error: firstErr, count } = await q0;
+      if (firstErr) { console.warn("Supabase getScores error:", firstErr); return []; }
+
+      let all = firstPage || [];
+
+      // 2. If there are more pages, fetch them all in parallel
+      if (count && count > pageSize) {
+        const totalPages = Math.ceil(count / pageSize);
+        const pagePromises = [];
+        for (let page = 1; page < totalPages; page++) {
+          const from = page * pageSize;
+          let qp = sb.from("exam_results").select(SELECT_COLS).range(from, from + pageSize - 1);
+          if (term) qp = qp.eq("term", term);
+          pagePromises.push(qp);
         }
-        if (data && data.length > 0) {
-          all.push(...data);
-          if (data.length < pageSize) more = false;
-          else from += pageSize;
-        } else {
-          more = false;
-        }
+        const results = await Promise.all(pagePromises);
+        results.forEach(({ data, error }) => {
+          if (!error && data) all.push(...data);
+        });
       }
+
       return all.map(r => ({
         id: r.id,
         term: r.term,

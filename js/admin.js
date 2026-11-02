@@ -54,8 +54,8 @@ $("loginForm").onsubmit = (e) => {
     $("viewLogin").style.display = "none";
     $("viewApp").style.display = "block";
     switchTab("scores");
-    loadTeachers();
-    loadLiveTerms();
+    // Run teachers and live-terms in parallel — don't block the scores tab
+    Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => {});
   } else {
     $("loginErrorMsg").textContent = "Invalid administrator password.";
   }
@@ -1898,62 +1898,61 @@ function updateAdminFreshness(timeStr, isOffline = false) {
 async function loadStudentScores(force = false) {
   const cached = getCachedScores();
 
-  // If in-memory records are already loaded and not forcing, apply current filters
+  // If in-memory records are already loaded and not forcing, just re-apply filters
   if (!force && allScoreRows.length) {
     applyScoreFilters();
     return;
   }
 
-  // Immediately render cached scores if available so there is zero waiting
-  if (cached && Array.isArray(cached.rows) && cached.rows.length > 0 && !allScoreRows.length) {
+  // ── INSTANT DISPLAY: show cached scores immediately, zero wait ──
+  if (cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allScoreRows = cached.rows;
     updateAdminFreshness(cached.lastUpdatedText || "Saved device copy", false);
     buildAdminTermTabs();
-  }
 
-  // 1. Check version in Supabase
-  let cloudVersion = null;
-  let isCloudAvailable = false;
-
-  if (!force) {
-    try {
-      if (window.dbClient && window.dbClient.getVersion) {
-        cloudVersion = await window.dbClient.getVersion();
-        isCloudAvailable = true;
-      }
-    } catch (e) {
-      console.warn("Version check notice:", e);
-      isCloudAvailable = false;
+    // If not forced, do a background version check — if cache matches cloud, we're done
+    if (!force) {
+      (async () => {
+        try {
+          if (!window.dbClient || !window.dbClient.getVersion) return;
+          const cloudVersion = await window.dbClient.getVersion();
+          // Cache is up to date — nothing more to do
+          if (cloudVersion && cached.version && cached.version === cloudVersion) return;
+          // Version mismatch or new data — fetch silently in background
+          const freshRows = await window.dbClient.getScores();
+          if (freshRows && freshRows.length > 0) {
+            allScoreRows = freshRows;
+            const now = new Date();
+            const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+            setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
+            updateAdminFreshness(timeStr, false);
+            buildAdminTermTabs();
+            const pushBtn = $("scoresPushCloudBtn");
+            if (pushBtn) pushBtn.style.display = "none";
+          } else if (!cloudVersion) {
+            // Supabase empty — show push button
+            const pushBtn = $("scoresPushCloudBtn");
+            if (pushBtn) { pushBtn.style.display = ""; pushBtn.disabled = false; pushBtn.innerHTML = "&#8679; Push to Cloud"; }
+            _autoSeedSupabaseFromCache(allScoreRows);
+          }
+        } catch (e) {
+          console.warn("Background version check:", e);
+        }
+      })();
+      return; // Return immediately — scores already on screen!
     }
   }
 
-  // 2. If cached data matches cloudVersion, skip the full query completely!
-  if (!force && isCloudAvailable && cloudVersion && cached && cached.version && cached.version === cloudVersion && Array.isArray(cached.rows) && cached.rows.length > 0) {
-    allScoreRows = cached.rows;
-    updateAdminFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), false);
-    buildAdminTermTabs();
-    return;
-  }
-
-  // 3. Fallback: If cloud is unreachable, but we have cached records:
-  if (!force && !isCloudAvailable && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
-    allScoreRows = cached.rows;
-    updateAdminFreshness(cached.lastUpdatedText || "Earlier session", true);
-    buildAdminTermTabs();
-    return;
-  }
-
-  // Display placeholder if first-time load
+  // ── FORCED REFRESH or first-ever load with no cache ──
   if (!allScoreRows.length) {
     const tbody = $("scoresTbody");
     if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabase...</td></tr>';
   }
 
-  // 4. Fetch full data from Supabase
   try {
     const refBtn = $("scoresRefreshBtn");
     if (force && refBtn) {
-      refBtn.textContent = "↻ Refreshing...";
+      refBtn.innerHTML = "&#8635; Refreshing...";
       refBtn.disabled = true;
     }
     const freshRows = await window.dbClient.getScores();
@@ -1962,50 +1961,23 @@ async function loadStudentScores(force = false) {
       allScoreRows = freshRows;
       const now = new Date();
       const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-
-      if (!cloudVersion) {
-        cloudVersion = now.toISOString();
-        await window.dbClient.setVersion({ lastUpdated: cloudVersion });
-      }
-
-      setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
+      const cloudVersion = now.toISOString();
+      await window.dbClient.setVersion({ lastUpdated: cloudVersion });
+      setCachedScores(allScoreRows, cloudVersion, timeStr);
       updateAdminFreshness(timeStr, false);
       buildAdminTermTabs();
-      // Hide push button since Supabase already has data
       const pushBtn = $("scoresPushCloudBtn");
       if (pushBtn) pushBtn.style.display = "none";
     } else {
-      // Supabase table returned 0 rows
+      // Supabase returned 0 rows
       const savedCache = getCachedScores();
       if (savedCache && Array.isArray(savedCache.rows) && savedCache.rows.length > 0) {
         allScoreRows = savedCache.rows;
         updateAdminFreshness(savedCache.lastUpdatedText || "Saved device copy", false);
         buildAdminTermTabs();
-
-        // Show the "Push to Cloud" button so admin can migrate with one click
         const pushBtn = $("scoresPushCloudBtn");
         if (pushBtn) { pushBtn.style.display = ""; pushBtn.disabled = false; pushBtn.innerHTML = "&#8679; Push to Cloud"; }
-
-        // Auto-seed Supabase with the cached records in background!
-        console.log("Auto-seeding Supabase with " + allScoreRows.length + " cached records...");
-        // Group by term for proper seeding
-        const termMap = {};
-        allScoreRows.forEach(r => {
-          const t = r.term || "Unknown Term";
-          if (!termMap[t]) termMap[t] = [];
-          termMap[t].push(r);
-        });
-        (async () => {
-          try {
-            for (const [term, termRows] of Object.entries(termMap)) {
-              await window.dbClient.saveScoresBatch(termRows, term);
-            }
-            console.log("Supabase score seeding completed.");
-            if (pushBtn) pushBtn.style.display = "none";
-          } catch (err) {
-            console.warn("Supabase auto-seed warning:", err);
-          }
-        })();
+        _autoSeedSupabaseFromCache(allScoreRows);
       } else {
         allScoreRows = [];
         updateAdminFreshness("No records", false);
@@ -2030,6 +2002,28 @@ async function loadStudentScores(force = false) {
       refBtn.disabled = false;
     }
   }
+}
+
+// Background helper: seeds Supabase from cached rows grouped by term
+function _autoSeedSupabaseFromCache(rows) {
+  const termMap = {};
+  rows.forEach(r => {
+    const t = r.term || "Unknown Term";
+    if (!termMap[t]) termMap[t] = [];
+    termMap[t].push(r);
+  });
+  (async () => {
+    try {
+      for (const [term, termRows] of Object.entries(termMap)) {
+        await window.dbClient.saveScoresBatch(termRows, term);
+      }
+      console.log("Supabase auto-seed completed:", rows.length, "records.");
+      const pushBtn = $("scoresPushCloudBtn");
+      if (pushBtn) pushBtn.style.display = "none";
+    } catch (err) {
+      console.warn("Supabase auto-seed warning:", err);
+    }
+  })();
 }
 
 // ── Push Cached Scores to Supabase Cloud ──────────────────────────────────────
