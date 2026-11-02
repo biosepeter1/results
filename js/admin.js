@@ -362,8 +362,8 @@ async function importTeachersFromFirebase() {
   }
 
   try {
-    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-    const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     const firebaseConfig = {
       apiKey: "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M",
@@ -374,15 +374,31 @@ async function importTeachersFromFirebase() {
       appId: "1:797572003782:web:14126bc63b4fa956d1a4c7"
     };
 
-    const fbApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig, "migrationApp");
-    const fbDb = getFirestore(fbApp);
+    const fbApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig, "migrationApp_" + Date.now());
+    let fbDb;
+    try {
+      fbDb = getFirestore(fbApp, "default");
+    } catch(e) {
+      fbDb = getFirestore(fbApp);
+    }
 
     if (btn) btn.textContent = "Fetching teachers from Firebase...";
 
     // Try "exam_teachers" first, then "teachers" if empty
-    let snap = await getDocs(collection(fbDb, "exam_teachers"));
-    if (snap.empty) {
-      snap = await getDocs(collection(fbDb, "teachers"));
+    let snap;
+    try {
+      snap = await getDocs(collection(fbDb, "exam_teachers"));
+    } catch(err1) {
+      console.warn("Query exam_teachers with 'default' db failed, retrying (default):", err1);
+      const fallbackDb = getFirestore(fbApp);
+      snap = await getDocs(collection(fallbackDb, "exam_teachers"));
+    }
+    if (!snap || snap.empty) {
+      try {
+        snap = await getDocs(collection(fbDb, "teachers"));
+      } catch(err2) {
+        console.warn("Query teachers failed:", err2);
+      }
     }
 
     if (snap.empty) {
