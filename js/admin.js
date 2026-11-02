@@ -1962,6 +1962,38 @@ function populateConversionTermSelect(terms) {
   }
 }
 
+function detectOriginalMaxForTerm(rows, term) {
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const termRows = rows.filter(r => !term || term === "__ALL__" || r.term === term);
+  if (!termRows.length) return null;
+  const counts = {};
+  for (let i = 0; i < Math.min(termRows.length, 500); i++) {
+    const r = termRows[i];
+    const m = String(r.score || "").match(/(?:of|\/)\s*(\d+(?:\.\d+)?)/i);
+    let val = null;
+    if (m) {
+      val = Math.round(parseFloat(m[1]));
+    } else {
+      const s = parseFloat(r.score);
+      const p = parseFloat(r.pct);
+      if (s > 0 && p > 0) {
+        const d = (s / (p / 100));
+        val = Math.round(d * 10) / 10;
+        if (Math.abs(val - Math.round(val)) < 0.05) val = Math.round(val);
+      }
+    }
+    if (val && val > 0 && val <= 1000) counts[val] = (counts[val] || 0) + 1;
+  }
+  let best = null, maxCount = 0;
+  for (const [val, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      best = parseFloat(val);
+    }
+  }
+  return best;
+}
+
 function refreshConversionUI() {
   const sel = document.getElementById("convTermSelect");
   const selectedTerm = sel ? sel.value : (adminCurrentTerm || "__ALL__");
@@ -1969,6 +2001,7 @@ function refreshConversionUI() {
   const tgtEl = document.getElementById("convTargetMax");
   const multLbl = document.getElementById("convMultiplierLabel");
   const activeLbl = document.getElementById("convActiveLabel");
+  const autoBadge = document.getElementById("convOrigAutoBadge");
   if (!origEl) return;
 
   const config = getConversionConfig();
@@ -1977,10 +2010,22 @@ function refreshConversionUI() {
   if (termSetting && termSetting.originalMax && termSetting.targetMax) {
     origEl.value = termSetting.originalMax;
     tgtEl.value = termSetting.targetMax;
+    if (autoBadge) autoBadge.style.display = "none";
     const f = (termSetting.targetMax / termSetting.originalMax).toFixed(4).replace(/\.?0+$/, "");
     if (multLbl) multLbl.textContent = "× " + f;
   } else {
-    origEl.value = "";
+    // Auto-detect original max from the term's scores
+    const detected = detectOriginalMaxForTerm(allScoreRows, selectedTerm);
+    if (detected) {
+      origEl.value = detected;
+      if (autoBadge) {
+        autoBadge.style.display = "inline";
+        autoBadge.textContent = `(auto: /${detected})`;
+      }
+    } else {
+      origEl.value = "";
+      if (autoBadge) autoBadge.style.display = "none";
+    }
     tgtEl.value = "";
     if (multLbl) multLbl.textContent = "";
   }
@@ -2774,10 +2819,26 @@ function initConversionPanel() {
 
   applyBtn.onclick = async () => {
     const targetTerm = termSel ? termSel.value : (adminCurrentTerm || "__ALL__");
-    const o = parseFloat(origEl.value);
+    let o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
-    if (!o || o <= 0 || !t || t <= 0) {
-      alert("Please enter valid numbers for Original Max and Target Max.");
+
+    // Auto-fallback: if user didn't enter Original Max, use auto-detected max
+    if (!o || o <= 0) {
+      const detected = detectOriginalMaxForTerm(allScoreRows, targetTerm);
+      if (detected) {
+        o = detected;
+        origEl.value = detected;
+      }
+    }
+
+    if (!o || o <= 0) {
+      alert("Please provide the Original Max score (e.g. 20) or select a term with uploaded scores.");
+      origEl.focus();
+      return;
+    }
+    if (!t || t <= 0) {
+      alert("Please enter the Target Max score you want to scale to (e.g. 30).");
+      tgtEl.focus();
       return;
     }
     const config = getConversionConfig();
