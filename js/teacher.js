@@ -2,28 +2,9 @@
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Firebase SDK Proxies (works seamlessly on file:/// and http://)
-function getFb() { return window.FirebaseSDK || {}; }
-const doc = (...args) => (getFb().doc)(...args);
-const getDoc = (...args) => (getFb().getDoc)(...args);
-const setDoc = (...args) => (getFb().setDoc)(...args);
-const deleteDoc = (...args) => (getFb().deleteDoc)(...args);
-const collection = (...args) => (getFb().collection)(...args);
-const getDocs = (...args) => (getFb().getDocs)(...args);
-const query = (...args) => (getFb().query)(...args);
-const where = (...args) => (getFb().where)(...args);
-const writeBatch = (...args) => (getFb().writeBatch)(...args);
-
-let _db = null;
-function getActiveDb() {
-  if (!_db && window.FirebaseDB) _db = window.FirebaseDB;
-  return _db;
-}
-Object.defineProperty(window, 'db', {
-  get() { return getActiveDb(); },
-  set(v) { _db = v; },
-  configurable: true
-});
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Independent Supabase Engine Active (Zero Firebase Dependency)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // ════════════════════════════════════════
 // TEACHERS & PERMISSIONS (Fallback)
@@ -110,13 +91,14 @@ function updateTeacherConvNotice() {
     notice.style.display = "none";
   }
 }
-async function syncTeacherScoreConversion() {
+async function syncTeacherScoreConversion(triggerRender = false) {
+  const prevSetting = JSON.stringify(getTeacherScoreConversion());
   if (window.dbClient && window.dbClient.getScoreConversionCloud) {
     try {
       const cloudConv = await window.dbClient.getScoreConversionCloud();
-      if (cloudConv && cloudConv.originalMax && cloudConv.targetMax) {
+      if (cloudConv && cloudConv.originalMax && cloudConv.targetMax && !cloudConv.disabled) {
         setTeacherScoreConversion(cloudConv);
-      } else if (cloudConv && (cloudConv.disabled || Object.keys(cloudConv).length === 0)) {
+      } else {
         setTeacherScoreConversion(null);
       }
     } catch(e) {
@@ -124,6 +106,42 @@ async function syncTeacherScoreConversion() {
     }
   }
   updateTeacherConvNotice();
+  const nextSetting = JSON.stringify(getTeacherScoreConversion());
+  if ((triggerRender || prevSetting !== nextSetting) && typeof render === "function" && typeof allRows !== "undefined" && allRows.length > 0) {
+    render();
+  }
+}
+
+// Auto-sync scaling from admin in background and on window focus
+window.addEventListener("focus", () => {
+  if (typeof $app !== "undefined" && $app && $app.style.display !== "none") {
+    syncTeacherScoreConversion(true);
+  }
+});
+setInterval(() => {
+  if (typeof $app !== "undefined" && $app && $app.style.display !== "none") {
+    syncTeacherScoreConversion(true);
+  }
+}, 10000);
+
+if ($("teacherRefreshScoresBtn")) {
+  $("teacherRefreshScoresBtn").addEventListener("click", async () => {
+    const btn = $("teacherRefreshScoresBtn");
+    btn.textContent = "â†» Refreshingâ€¦";
+    btn.disabled = true;
+    try {
+      if (typeof teacher !== "undefined" && teacher && teacher.username) {
+        clearTeacherCache(teacher.username);
+      }
+      await loadData();
+      render();
+    } catch (e) {
+      alert("Refresh error: " + e.message);
+    } finally {
+      btn.textContent = "â†» Refresh";
+      btn.disabled = false;
+    }
+  });
 }
 let teacherParsedQuestions = [];
 let teacherSubmissions = [];
@@ -154,14 +172,13 @@ async function doLogin() {
   $go.textContent = "Signing in...";
 
   let found = null;
-  // 1. Live Firestore teacher account check
+  // 1. Supabase teacher account check
   try {
-    const docSnap = await getDoc(doc(db, "exam_teachers", clean));
-    if (docSnap.exists()) {
-      found = docSnap.data();
+    if (window.dbClient && window.dbClient.getTeacher) {
+      found = await window.dbClient.getTeacher(clean);
     }
   } catch(e) {
-    console.warn("Firestore teacher fetch error, checking backup:", e);
+    console.warn("Supabase teacher fetch error, checking backup:", e);
   }
 
   // 2. Fallback to embedded dictionary
@@ -247,80 +264,64 @@ async function loadData() {
   const hasSubjectRestriction = teacher.subjects && teacher.subjects.length > 0;
   const hasClassRestriction   = teacher.classes && teacher.classes.length > 0;
 
-  // 1. Read the tiny version document (EXACTLY 1 small read!)
+  // 1. Read the tiny version document from Supabase
   let cloudVersion = null;
   let isCloudAvailable = false;
   try {
-    const vSnap = await getDoc(doc(db, "exam_meta", "version"));
-    isCloudAvailable = true; // Connection to Firestore succeeded!
-    if (vSnap.exists()) {
-      cloudVersion = vSnap.data().lastUpdated;
+    if (window.dbClient && window.dbClient.getVersion) {
+      cloudVersion = await window.dbClient.getVersion();
+      isCloudAvailable = true;
     }
   } catch (e) {
-    console.warn("Version check failed (quota/network):", e);
+    console.warn("Version check failed:", e);
     isCloudAvailable = false;
   }
 
-  // 2. If cached data matches cloud version, USE IT DIRECTLY! (Only 1 read consumed!)
+  // 2. If cached data matches cloud version, USE IT DIRECTLY!
   if (isCloudAvailable && cloudVersion && cached && cached.version && cached.version === cloudVersion && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allRows = cached.rows;
     showTeacherFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }), false);
     return;
   }
 
-  // 3. Fallback: If cloud quota exceeded or offline, but this teacher loaded before:
+  // 3. Fallback: If offline, but this teacher loaded before:
   if (!isCloudAvailable && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allRows = cached.rows;
     showTeacherFreshness(cached.lastUpdatedText || "Earlier session", true);
     return;
   }
 
-  // 4. Version changed or first time loading: Fetch ONLY this teacher's assigned subjects!
+  // 4. Fetch latest scores from Supabase
   try {
-    let rawDocs = [];
-    if (hasSubjectRestriction) {
-      const subList = teacher.subjects.slice(0, 30);
-      const q = query(collection(db, "exam_results"), where("subject", "in", subList));
-      const snap = await getDocs(q);
-      rawDocs = snap.docs;
-    } else {
-      const snap = await getDocs(collection(db, "exam_results"));
-      rawDocs = snap.docs;
-    }
-
+    const rawScores = await window.dbClient.getScores();
     const authorizedRows = [];
-    rawDocs.forEach(docSnap => {
-      const data = docSnap.data();
-      if (Array.isArray(data.rows)) {
-        data.rows.forEach(r => {
-          // Class restriction filter
-          if (hasClassRestriction && teacher.classes.length > 0) {
-            const rowClass = (r.class || "").trim();
-            if (!teacher.classes.includes(rowClass)) return;
-          }
-          const studentName = (r.student || r.name || "").toUpperCase();
-          const regNum = r.reg || r.regNo || r.admNo || r.admissionNumber || "";
-          const className = r.class || r.className || "";
-          const armName = r.arm || "";
-          const subjectName = data.subject || r.subject || "";
-          const scoreDisplay = r.score !== undefined ? String(r.score) : "";
-          const pctVal = r.pct !== undefined ? Number(r.pct) : (r.percentage !== undefined ? Number(r.percentage) : (parseFloat(scoreDisplay) || 0));
-          const dateStr = r.date || r.dateTime || (data.uploadedAt ? new Date(data.uploadedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "-");
+    rawScores.forEach(r => {
+      // Subject restriction filter
+      if (hasSubjectRestriction && !teacher.subjects.includes(r.subject)) return;
+      // Class restriction filter
+      if (hasClassRestriction && teacher.classes.length > 0 && !teacher.classes.includes((r.class || "").trim())) return;
 
-          authorizedRows.push({
-            ...r,
-            student: studentName,
-            reg: regNum,
-            class: className,
-            arm: armName,
-            subject: subjectName,
-            score: scoreDisplay,
-            pct: pctVal,
-            date: dateStr,
-            term: data.term
-          });
-        });
-      }
+      const studentName = (r.student || r.name || "").toUpperCase();
+      const regNum = r.reg || r.regNo || r.admNo || r.admissionNumber || "";
+      const className = r.class || r.className || "";
+      const armName = r.arm || "";
+      const subjectName = r.subject || "";
+      const scoreDisplay = r.score !== undefined ? String(r.score) : "";
+      const pctVal = r.pct !== undefined ? Number(r.pct) : (parseFloat(scoreDisplay) || 0);
+      const dateStr = r.date || r.dateTime || "-";
+
+      authorizedRows.push({
+        ...r,
+        student: studentName,
+        reg: regNum,
+        class: className,
+        arm: armName,
+        subject: subjectName,
+        score: scoreDisplay,
+        pct: pctVal,
+        date: dateStr,
+        term: r.term || ""
+      });
     });
 
     allRows = authorizedRows;
@@ -338,19 +339,16 @@ async function loadData() {
     showTeacherFreshness(timeStr, false);
   } catch (e) {
     console.warn("loadData fetch error:", e);
-    // If device loaded before:
     if (cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
       allRows = cached.rows;
       showTeacherFreshness(cached.lastUpdatedText || "Earlier session", true);
     } else {
-      // First-time load on exhausted quota:
-      throw new Error("Unable to load examination scores. The daily free cloud read quota is currently exhausted and no cached records exist on this device. The quota resets daily between 8:00 AM – 9:00 AM WAT.");
+      throw new Error("Unable to load examination scores from Supabase. Check your connection.");
     }
   }
 }
 
-// ── Tab Navigation ──
-function switchTeacherPortalTab(target) {
+// â”€â”€ Tab Navigation â”€â”€function switchTeacherPortalTab(target) {
   const isCbt = (target === "cbt");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
@@ -731,7 +729,8 @@ function formatArmAbbr(armName) {
 // ── Export to CSV (Customized for Teachers) ──
 // Excludes: Reg Number, Status, Percentage, Date, Term
 // Abbreviates: Year 7 -> Y7, Holmes -> H
-$("exportBtn").addEventListener("click", () => {
+$("exportBtn").addEventListener("click", async () => {
+  await syncTeacherScoreConversion(false);
   if (!activeFilteredRows.length) {
     alert("No records to export."); return;
   }
@@ -795,11 +794,13 @@ async function loadActiveCbtTerm() {
       activeCbtExamTerm = cached.toUpperCase();
       updateTeacherActiveTermUI();
     }
-    const snap = await getDoc(doc(db, "exam_meta", "cbt_active_term"));
-    if (snap.exists() && snap.data().activeTerm) {
-      activeCbtExamTerm = snap.data().activeTerm.toUpperCase();
-      localStorage.setItem("cbt_active_term", activeCbtExamTerm);
-      updateTeacherActiveTermUI();
+    if (window.dbClient && window.dbClient.getActiveCbtTerm) {
+      const cloudTerm = await window.dbClient.getActiveCbtTerm();
+      if (cloudTerm) {
+        activeCbtExamTerm = cloudTerm.toUpperCase();
+        localStorage.setItem("cbt_active_term", activeCbtExamTerm);
+        updateTeacherActiveTermUI();
+      }
     }
   } catch(e) {
     // Offline / fallback
@@ -1970,19 +1971,11 @@ $("tCbtSubmitBtn").onclick = async () => {
       status: "Ready for Admin"
     };
 
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        await window.dbClient.saveSubmission(examId, subPayload);
-      } catch (sbErr) {
-        console.error("Supabase submit error:", sbErr);
-        throw sbErr;
-      }
-    } else {
-      try {
-        await setDoc(doc(db, "cbt_submissions", examId), subPayload);
-      } catch (fbErr) {
-        console.warn("Firebase submit note:", fbErr);
-      }
+    try {
+      await window.dbClient.saveSubmission(examId, subPayload);
+    } catch (sbErr) {
+      console.error("Supabase submit error:", sbErr);
+      throw sbErr;
     }
 
     // Clear and hide Step 3 review section so questions do not linger after submission!
@@ -2056,18 +2049,11 @@ function renderTeacherSubmissions() {
     b.onclick = async () => {
       if (!confirm("Are you sure you want to delete this exam submission?")) return;
       try {
-        if (window.dbClient && window.dbClient.isSupabaseActive()) {
-          try {
-            await window.dbClient.deleteSubmission(b.dataset.delMyExam);
-          } catch (sbErr) {
-            console.warn("Supabase delete note:", sbErr);
-          }
-        } else {
-          try {
-            await deleteDoc(doc(db, "cbt_submissions", b.dataset.delMyExam));
-          } catch (fbErr) {
-            console.warn("Firebase delete note:", fbErr);
-          }
+        try {
+          await window.dbClient.deleteSubmission(b.dataset.delMyExam);
+        } catch (sbErr) {
+          console.error("Supabase delete error:", sbErr);
+          throw sbErr;
         }
         loadTeacherSubmissions();
       } catch (e) {
@@ -2080,147 +2066,17 @@ function renderTeacherSubmissions() {
 async function loadTeacherSubmissions() {
   if (!teacher) return;
   const cleanUser = (teacher.username || teacher.name || "teacher").toLowerCase().replace(/[^a-z0-9]/g, "");
-  $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Loading your submissions…</td></tr>`;
+  $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Loading your submissions from Supabase...</td></tr>`;
 
   try {
-    // 1. Try Supabase
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        const sbSubs = await window.dbClient.getSubmissions();
-        if (Array.isArray(sbSubs) && sbSubs.length > 0) {
-          teacherSubmissions = sbSubs.filter(sub => !sub.teacherUser || sub.teacherUser === cleanUser || (sub.teacherName && sub.teacherName === teacher.name));
-          teacherSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          renderTeacherSubmissions();
-          return;
-        }
-      } catch (sbErr) {
-        console.warn("Supabase teacher submissions note:", sbErr);
-      }
-    }
-
-    // 2. Fallback to Firebase
-    const snap = await getDocs(collection(db, "cbt_submissions"));
-    teacherSubmissions = [];
-    snap.docs.forEach(d => {
-      const data = d.data();
-      const sub = { docId: d.id, ...data };
-
-      // Auto-detect & auto-repair subject if missing or empty
-      let subName = sub.subjectName || (typeof sub.subject === "string" ? sub.subject : "");
-      if (!subName || subName.trim() === "" || subName === "—" || subName === "-") {
-        let detectedName = "";
-        let detectedId = "";
-        const sId = sub.subjectId || (sub.subject && typeof sub.subject === "object" ? sub.subject.$oid : "");
-        if (sId && typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
-          for (const [k, id] of Object.entries(CBT_CONFIG.subjects)) {
-            if (id === sId) { detectedName = k; detectedId = id; break; }
-          }
-        }
-        if (!detectedName && (sub.title || sub.examTitle)) {
-          const tText = (sub.title || sub.examTitle || "").toLowerCase();
-          if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
-            for (const [k, id] of Object.entries(CBT_CONFIG.subjects)) {
-              if (tText.includes(k.toLowerCase())) {
-                detectedName = k;
-                detectedId = id;
-                break;
-              }
-            }
-          }
-        }
-        if (!detectedName && typeof resolveCbtSubject === "function") {
-          const res = resolveCbtSubject(sub.title || "");
-          if (res && res.name && res.name !== "Social Studies") {
-            detectedName = res.name;
-            detectedId = res.id;
-          }
-        }
-        if (detectedName) {
-          sub.subjectName = detectedName;
-          sub.subjectId = detectedId;
-          try {
-            setDoc(doc(db, "cbt_submissions", d.id), { subjectName: detectedName, subjectId: detectedId }, { merge: true });
-          } catch(e) {}
-        }
-      }
-
-      if (!sub.teacherUser || sub.teacherUser === cleanUser || (sub.teacherName && sub.teacherName === teacher.name)) {
-        teacherSubmissions.push(sub);
-      }
-    });
-
-    teacherSubmissions.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-    if (!teacherSubmissions.length) {
-      $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No exams submitted yet. Parse questions above and click "Submit Exam" to send to the admin.</td></tr>`;
-      return;
-    }
-
-    $("tCbtMyExamsTbody").innerHTML = teacherSubmissions.map(sub => {
-      const qCount = Array.isArray(sub.questions) ? sub.questions.length : (sub.numberOfQuestions || 0);
-      const rawDate = sub.launchDate || sub.examDate || sub.startDate;
-      let launchDisplay = "27 Oct 2026";
-      if (rawDate) {
-        const dStr = (typeof rawDate === "object" && rawDate.$date) ? rawDate.$date : rawDate;
-        const d = new Date(dStr.includes("T") ? dStr : dStr + "T00:00:00");
-        if (!isNaN(d.getTime())) launchDisplay = d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
-      }
-      const timeDisplay = `${sub.startTime || sub.gateOpen || "08:00"} – ${sub.endTime || sub.gateClose || "20:00"}`;
-      const shuffleDisplay = sub.shuffle !== false ? "🔀 Shuffled" : "Sequential";
-
-      const resolvedSubName = sub.subjectName || (typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "—";
-
-      return `
-        <tr>
-          <td style="font-weight:600">${esc(sub.title)}</td>
-          <td>${esc(resolvedSubName)}</td>
-          <td>${esc(sub.className || "—")}</td>
-          <td>${sub.duration || 30} mins</td>
-          <td>${qCount}</td>
-          <td style="font-size:12px">
-            <strong style="color:var(--accent)">📅 ${esc(launchDisplay)}</strong>
-            <div style="font-size:11px;color:var(--text-muted)">${esc(timeDisplay)} · ${shuffleDisplay}</div>
-          </td>
-          <td><span style="color:var(--status-good);font-weight:600;font-size:12px">● ${esc(sub.status || "Ready")}</span></td>
-          <td style="text-align:right">
-            <button type="button" class="btn btn-secondary btn-sm" data-preview-teacher-exam="${esc(sub.docId)}" style="margin-right:6px">👁️ Preview &amp; Edit</button>
-            <button type="button" class="btn-text" data-del-my-exam="${esc(sub.docId)}" style="color:var(--status-fail)">Delete</button>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    document.querySelectorAll("[data-preview-teacher-exam]").forEach(b => {
-      b.onclick = () => openTeacherExamPreview(b.dataset.previewTeacherExam);
-    });
-
-    document.querySelectorAll("[data-del-my-exam]").forEach(b => {
-      b.onclick = async () => {
-        if (!confirm("Are you sure you want to delete this exam submission?")) return;
-        try {
-          try {
-            await deleteDoc(doc(db, "cbt_submissions", b.dataset.delMyExam));
-          } catch (fbErr) {
-            console.warn("Firebase delete note:", fbErr);
-          }
-          if (window.dbClient && window.dbClient.isSupabaseActive()) {
-            try {
-              await window.dbClient.deleteSubmission(b.dataset.delMyExam);
-            } catch (sbErr) {
-              console.warn("Supabase delete note:", sbErr);
-            }
-          }
-          loadTeacherSubmissions();
-        } catch (e) {
-          alert("Error deleting: " + e.message);
-        }
-      };
-    });
+    const sbSubs = await window.dbClient.getSubmissions();
+    teacherSubmissions = (sbSubs || []).filter(sub => !sub.teacherUser || sub.teacherUser === cleanUser || (sub.teacherName && sub.teacherName === teacher.name));
+    teacherSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    renderTeacherSubmissions();
   } catch (err) {
     $("tCbtMyExamsTbody").innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--status-fail)">Failed to load submissions: ${esc(err.message)}</td></tr>`;
   }
 }
-
 $("tCbtRefreshMyExamsBtn").onclick = loadTeacherSubmissions;
 
 // ══════════════════════════════════════════════════════════════
@@ -2237,22 +2093,11 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
     const qCount = activeTeacherPreviewSub.questions.length;
     activeTeacherPreviewSub.numberOfQuestions = qCount;
 
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        await window.dbClient.saveSubmission(activeTeacherPreviewSub.docId, activeTeacherPreviewSub);
-      } catch (sbErr) {
-        console.error("Supabase save error:", sbErr);
-        throw sbErr;
-      }
-    } else {
-      try {
-        await setDoc(doc(db, "cbt_submissions", activeTeacherPreviewSub.docId), {
-          questions: activeTeacherPreviewSub.questions,
-          numberOfQuestions: qCount
-        }, { merge: true });
-      } catch (fbErr) {
-        console.warn("Firebase save note:", fbErr);
-      }
+    try {
+      await window.dbClient.saveSubmission(activeTeacherPreviewSub.docId, activeTeacherPreviewSub);
+    } catch (sbErr) {
+      console.error("Supabase save error:", sbErr);
+      throw sbErr;
     }
 
     activeTeacherPreviewSub.numberOfQuestions = qCount;

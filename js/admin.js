@@ -1,30 +1,10 @@
-// ══════════════════════════════════════════════════════════════════════════════
+﻿// ══════════════════════════════════════════════════════════════════════════════
 // ADMINISTRATOR PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Firebase SDK Proxies (works seamlessly on file:/// and http://)
-function getFb() { return window.FirebaseSDK || {}; }
-const doc = (...args) => (getFb().doc)(...args);
-const getDoc = (...args) => (getFb().getDoc)(...args);
-const setDoc = (...args) => (getFb().setDoc)(...args);
-const updateDoc = (...args) => (getFb().updateDoc || getFb().setDoc)(...args);
-const deleteDoc = (...args) => (getFb().deleteDoc)(...args);
-const collection = (...args) => (getFb().collection)(...args);
-const getDocs = (...args) => (getFb().getDocs)(...args);
-const query = (...args) => (getFb().query)(...args);
-const where = (...args) => (getFb().where)(...args);
-const writeBatch = (...args) => (getFb().writeBatch)(...args);
-
-let _db = null;
-function getActiveDb() {
-  if (!_db && window.FirebaseDB) _db = window.FirebaseDB;
-  return _db;
-}
-Object.defineProperty(window, 'db', {
-  get() { return getActiveDb(); },
-  set(v) { _db = v; },
-  configurable: true
-});
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Independent Supabase Engine Active (Zero Firebase Dependency)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const ADMIN_PASSWORD = "admin";
 
@@ -161,19 +141,18 @@ async function loadTeachers(force = false) {
     renderTeachersTable();
   }
 
-  // 2. If not forced and refreshed less than 15 seconds ago, save Firestore reads
+  // 2. If not forced and refreshed less than 15 seconds ago, use cache
   const isVeryRecent = cached && (Date.now() - cached.timestamp < 15 * 1000);
   if (!force && isVeryRecent && allTeachers.length > 0) {
     return;
   }
 
-  // 3. Fetch latest live teachers from Firestore
+  // 3. Fetch latest live teachers from Supabase
   try {
-    const snap = await getDocs(collection(db, "exam_teachers"));
-    const fresh = [];
-    snap.docs.forEach(d => {
-      fresh.push({ id: d.id, ...d.data() });
-    });
+    let fresh = await window.dbClient.getTeachers();
+    if (!fresh || fresh.length === 0) {
+      fresh = await window.dbClient.seedDefaultTeachers();
+    }
     fresh.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     allTeachers = fresh;
     $("teacherCountBadge").textContent = allTeachers.length;
@@ -393,11 +372,11 @@ $("modalSaveBtn").onclick = async () => {
     };
 
     if (origId && origId !== cleanUser) {
-      await deleteDoc(doc(db, "exam_teachers", origId));
+      await window.dbClient.deleteTeacher(origId);
       allTeachers = allTeachers.filter(x => x.id !== origId);
     }
 
-    await setDoc(doc(db, "exam_teachers", cleanUser), docData);
+    await window.dbClient.saveTeacher(docData);
 
     // Optimistically update in-memory teacher list so it renders immediately
     const newTeacherObj = { id: cleanUser, ...docData };
@@ -432,7 +411,7 @@ async function deleteTeacher(docId) {
     $("teacherCountBadge").textContent = allTeachers.length;
     renderTeachersTable();
 
-    await deleteDoc(doc(db, "exam_teachers", docId));
+    await window.dbClient.deleteTeacher(docId);
     await loadTeachers(true);
   } catch (e) {
     alert("Delete failed: " + e.message);
@@ -598,65 +577,37 @@ $("uploadScoresBtn").onclick = async () => {
 
   try {
     const subjectList = Object.keys(parsedSubjects);
-    const nowIso = new Date().toISOString();
+    setUploadProgress(15, "Preparing records across " + subjectList.length + " subjects...");
 
-    setUploadProgress(10, `Clearing old records for "${term}"…`);
-    const q = query(collection(db, "exam_results"), where("term", "==", term));
-    const oldSnap = await getDocs(q);
-    if (oldSnap.docs.length > 0) {
-      const CHUNK = 400;
-      for (let i = 0; i < oldSnap.docs.length; i += CHUNK) {
-        const batch = writeBatch(db);
-        oldSnap.docs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
-    }
-
-    for (let i = 0; i < subjectList.length; i++) {
-      const sub = subjectList[i];
+    const allRowsToSave = [];
+    for (const sub of subjectList) {
       const rows = parsedSubjects[sub];
-      const docId = safeId(`${term}___${sub}`);
-      await setDoc(doc(db, "exam_results", docId), {
-        term,
-        subject: sub,
-        count: rows.length,
-        updatedAt: nowIso,
-        rows
+      rows.forEach(r => {
+        allRowsToSave.push({
+          term,
+          student: (r.student || r.name || "").toUpperCase(),
+          reg: r.reg || r.regNo || r.admNo || "",
+          subject: sub,
+          class: r.class || "",
+          arm: r.arm || "",
+          score: String(r.score ?? ""),
+          pct: Number(r.pct) || (parseFloat(r.score) || 0),
+          date: r.date || r.dateTime || ""
+        });
       });
-      const pct = Math.round(15 + (i + 1) / subjectList.length * 80);
-      setUploadProgress(pct, `Uploaded ${sub} (${i + 1}/${subjectList.length} subjects)`);
     }
 
-    const metaRef = doc(db, "exam_meta", "terms");
-    let existingMeta = {};
-    try {
-      const snap = await getDocs(collection(db, "exam_meta"));
-      snap.forEach(d => { if (d.id === "terms") existingMeta = d.data().terms || {}; });
-    } catch (e) { }
-
-    existingMeta[term] = {
-      count: totalParsedRecords,
-      updatedAt: nowIso,
-      subjects: subjectList.sort()
-    };
-    await setDoc(metaRef, { terms: existingMeta });
-
-    // Bump global version document (1 doc, 1 read for all clients!)
-    await setDoc(doc(db, "exam_meta", "version"), {
-      lastUpdated: nowIso,
-      timestamp: Date.now(),
-      term: term,
-      totalRecords: totalParsedRecords
-    });
+    setUploadProgress(40, "Writing records to Supabase in batches...");
+    await window.dbClient.saveScoresBatch(allRowsToSave, term);
 
     setUploadProgress(100, "Update complete");
-    const el = $("uploadSuccessBox");
-    el.textContent = `Successfully uploaded ${totalParsedRecords.toLocaleString()} records across ${subjectList.length} subjects for "${term}". The portal is live with these scores.`;
+    const el = uploadSuccessBox;
+    el.textContent = "Successfully uploaded " + totalParsedRecords.toLocaleString() + " records across " + subjectList.length + " subjects for \"" + term + "\" to Supabase. The portal is live with these scores.";
     el.style.display = "block";
 
     setTimeout(() => {
-      $("csvClearBtn").click();
-      $("uploadProgressWrap").style.display = "none";
+      csvClearBtn.click();
+      uploadProgressWrap.style.display = "none";
     }, 3000);
 
     await loadLiveTerms();
@@ -674,65 +625,45 @@ function setUploadProgress(pct, text) {
 }
 
 async function loadLiveTerms() {
-  $("liveTermsList").innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms…</div>`;
+  liveTermsList.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabaseâ€¦</div>';
   try {
-    const snap = await getDocs(collection(db, "exam_results"));
+    const termList = await window.dbClient.getLiveTerms();
     const map = {};
-    snap.docs.forEach(d => {
-      const data = d.data();
-      if (!data.term) return;
-      if (!map[data.term]) map[data.term] = { count: 0, date: data.updatedAt || "", subjects: new Set() };
-      map[data.term].count += (data.count || (data.rows ? data.rows.length : 0));
-      map[data.term].subjects.add(data.subject);
-      if (data.updatedAt > map[data.term].date) map[data.term].date = data.updatedAt;
-    });
+    termList.forEach(t => { map[t.term] = t; });
 
     const metaFields = {
-      "First Test": $("metaFirstTest"),
-      "Mid Term Test": $("metaMidTerm"),
-      "Third Term Examination": $("metaThirdTerm")
+      "First Test": metaFirstTest,
+      "Mid Term Test": metaMidTerm,
+      "Third Term Examination": metaThirdTerm
     };
     Object.entries(metaFields).forEach(([t, el]) => {
       const match = map[t] || (t === "Third Term Examination" ? map["Third Term Test"] : null);
-      if (el) el.textContent = match ? `${match.count.toLocaleString()} scores` : "Not uploaded";
+      if (el) el.textContent = match ? (match.count.toLocaleString() + " scores") : "Not uploaded";
     });
 
-    const termEntries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-    if (!termEntries.length) {
-      $("liveTermsList").innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No test scores uploaded yet.</div>`;
+    if (!termList.length) {
+      liveTermsList.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No test scores uploaded yet.</div>';
       return;
     }
 
-    $("liveTermsList").innerHTML = termEntries.map(([tName, info]) => {
+    liveTermsList.innerHTML = termList.map(info => {
       const d = info.date ? new Date(info.date) : null;
-      const dateStr = d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently";
-      return `
-        <div class="live-term-item">
-          <div>
-            <div class="live-term-name">${esc(tName)}</div>
-            <div class="live-term-meta">${info.count.toLocaleString()} scores · ${info.subjects.size} subjects · ${dateStr}</div>
-          </div>
-          <button type="button" class="btn btn-danger btn-sm" data-delterm="${esc(tName)}">Delete</button>
-        </div>
-      `;
+      const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently";
+      return '<div class="live-term-item"><div><div class="live-term-name">' + esc(info.term) + '</div><div class="live-term-meta">' + info.count.toLocaleString() + ' scores Â· ' + (info.subjectsCount || 0) + ' subjects Â· ' + dateStr + '</div></div><button type="button" class="btn btn-danger btn-sm" data-delterm="' + esc(info.term) + '">Delete</button></div>';
     }).join("");
 
     document.querySelectorAll("[data-delterm]").forEach(btn => {
       btn.onclick = () => deleteTerm(btn.dataset.delterm);
     });
   } catch (e) {
-    $("liveTermsList").innerHTML = `<div style="padding:16px;color:var(--status-fail);font-size:13px">Failed to load terms: ${esc(e.message)}</div>`;
+    liveTermsList.innerHTML = '<div style="padding:16px;color:var(--status-fail);font-size:13px">Failed to load terms: ' + esc(e.message) + '</div>';
   }
 }
 
 async function deleteTerm(term) {
-  if (!confirm(`Are you sure you want to delete all scores for "${term}"?\n\nThis will remove it from all teacher portal views.`)) return;
+  if (!confirm('Are you sure you want to delete all scores for "' + term + '"?\n\nThis will remove it from all teacher portal views.')) return;
   try {
-    const q = query(collection(db, "exam_results"), where("term", "==", term));
-    const snap = await getDocs(q);
-    const b = writeBatch(db);
-    snap.docs.forEach(d => b.delete(d.ref));
-    await b.commit();
+    await window.dbClient.deleteTerm(term);
     await loadLiveTerms();
   } catch (e) {
     alert("Delete failed: " + e.message);
@@ -757,14 +688,14 @@ async function loadAdminCbtActiveTerm() {
       activeCbtExamTerm = cached.toUpperCase();
       updateAdminCbtTermUI();
     }
-    const snap = await getDoc(doc(db, "exam_meta", "cbt_active_term"));
-    if (snap.exists() && snap.data().activeTerm) {
-      activeCbtExamTerm = snap.data().activeTerm.toUpperCase();
+    const cloudTerm = await window.dbClient.getActiveCbtTerm();
+    if (cloudTerm) {
+      activeCbtExamTerm = cloudTerm.toUpperCase();
       localStorage.setItem("cbt_active_term", activeCbtExamTerm);
       updateAdminCbtTermUI();
     }
   } catch (e) {
-    console.warn("Could not load cbt_active_term:", e);
+    console.warn("Could not load cbt_active_term from Supabase:", e);
   }
 }
 
@@ -775,18 +706,14 @@ async function setAdminCbtActiveTerm(newTerm) {
   updateAdminCbtTermUI();
 
   try {
-    await setDoc(doc(db, "exam_meta", "cbt_active_term"), {
-      activeTerm: activeCbtExamTerm,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    const badge = $("cbtAdminTermSavedBadge");
+    await window.dbClient.setActiveCbtTerm(activeCbtExamTerm);
+    const badge = cbtAdminTermSavedBadge;
     if (badge) {
       badge.style.display = "inline";
       setTimeout(() => { badge.style.display = "none"; }, 3000);
     }
   } catch (err) {
-    alert("Could not update active term in cloud: " + err.message);
+    alert("Could not update active term in Supabase: " + err.message);
   }
 }
 
@@ -845,97 +772,23 @@ function triggerJsonDownload(filename, data) {
   }, 300);
 }
 
-// Load submissions created by teachers from Firestore or Supabase
+// Load submissions created by teachers from Supabase
 async function loadCBTSubmissions() {
-  $("cbtSubmissionsTbody").innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions…</td></tr>`;
+  cbtSubmissionsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions from Supabaseâ€¦</td></tr>';
   try {
-    // 1. Check Supabase First
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        const sbSubs = await window.dbClient.getSubmissions();
-        if (Array.isArray(sbSubs) && sbSubs.length > 0) {
-          allCbtSubmissions = sbSubs;
-          allCbtSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          const badge = $("cbtSubCountBadge");
-          if (badge) {
-            badge.textContent = allCbtSubmissions.length;
-            badge.style.display = allCbtSubmissions.length ? "inline-block" : "none";
-          }
-          renderCBTSubmissions();
-          return;
-        }
-      } catch (sbErr) {
-        console.warn("Supabase loadCBTSubmissions note:", sbErr);
-      }
-    }
-
-    // 2. Firebase Fallback & Auto-Migration to Supabase
-    const snap = await getDocs(collection(db, "cbt_submissions"));
-    allCbtSubmissions = [];
-    snap.docs.forEach(d => {
-      const data = d.data();
-      const sub = { docId: d.id, ...data };
-
-      // Auto-detect & auto-repair subject if missing or empty
-      let subName = sub.subjectName || (typeof sub.subject === "string" ? sub.subject : "");
-      if (!subName || subName.trim() === "" || subName === "—" || subName === "-") {
-        let detectedName = "";
-        let detectedId = "";
-        const sId = sub.subjectId || (sub.subject && typeof sub.subject === "object" ? sub.subject.$oid : "");
-        if (sId && typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
-          for (const [k, id] of Object.entries(CBT_CONFIG.subjects)) {
-            if (id === sId) { detectedName = k; detectedId = id; break; }
-          }
-        }
-        if (!detectedName && (sub.title || sub.examTitle)) {
-          const tText = (sub.title || sub.examTitle || "").toLowerCase();
-          if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
-            for (const [k, id] of Object.entries(CBT_CONFIG.subjects)) {
-              if (tText.includes(k.toLowerCase())) {
-                detectedName = k;
-                detectedId = id;
-                break;
-              }
-            }
-          }
-        }
-        if (!detectedName && typeof resolveCbtSubject === "function") {
-          const res = resolveCbtSubject(sub.title || "");
-          if (res && res.name && res.name !== "Social Studies") {
-            detectedName = res.name;
-            detectedId = res.id;
-          }
-        }
-        if (detectedName) {
-          sub.subjectName = detectedName;
-          sub.subjectId = detectedId;
-          try {
-            setDoc(doc(db, "cbt_submissions", d.id), { subjectName: detectedName, subjectId: detectedId }, { merge: true });
-          } catch(err) { /* non-fatal */ }
-        }
-      }
-
-      allCbtSubmissions.push(sub);
-    });
-    // Sort latest first
+    const sbSubs = await window.dbClient.getSubmissions();
+    allCbtSubmissions = Array.isArray(sbSubs) ? sbSubs : [];
     allCbtSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-    const badge = $("cbtSubCountBadge");
+    const badge = cbtSubCountBadge;
     if (badge) {
       badge.textContent = allCbtSubmissions.length;
       badge.style.display = allCbtSubmissions.length ? "inline-block" : "none";
     }
 
     renderCBTSubmissions();
-
-    // Auto-seed Supabase from Firebase so no existing submissions are lost
-    if (window.dbClient && window.dbClient.isSupabaseActive() && allCbtSubmissions.length > 0) {
-      allCbtSubmissions.forEach(sub => {
-        window.dbClient.saveSubmission(sub.docId, sub).catch(() => {});
-      });
-    }
   } catch (err) {
-    $("cbtSubmissionsTbody").innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ${esc(err.message)}</td></tr>`;
+    cbtSubmissionsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
   }
 }
 
@@ -1032,13 +885,7 @@ function saveCbtSubjectsStorage() {
     });
     localStorage.setItem(CBT_CUSTOM_SUBJECTS_KEY, payload);
 
-    setDoc(doc(db, "system_config", "cbt_subjects"), {
-      custom: cbtCustomSubjectsMap,
-      deleted: cbtDeletedDefaults,
-      updatedAt: new Date().toISOString()
-    }).catch(err => {
-      console.warn("Firestore sync for subjects skipped:", err.message);
-    });
+    // Custom subjects saved in local storage
   } catch (e) {
     console.warn("Storage save error for custom subjects:", e);
   }
@@ -1380,15 +1227,7 @@ async function deleteCBTSubmission(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!confirm(`Delete exam "${sub?.title || 'this submission'}"?`)) return;
   try {
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        await window.dbClient.deleteSubmission(docId);
-      } catch(sbErr) { console.warn("Supabase delete note:", sbErr); }
-    } else {
-      try {
-        await deleteDoc(doc(db, "cbt_submissions", docId));
-      } catch(fbErr) { console.warn("Firebase delete note:", fbErr); }
-    }
+    await window.dbClient.deleteSubmission(docId);
     await loadCBTSubmissions();
   } catch (err) {
     alert("Delete failed: " + err.message);
@@ -1453,23 +1292,7 @@ async function saveAdminQuestionsToCloud(msg) {
     activePreviewSubmission.numberOfQuestions = qCount;
 
     // Use Supabase as primary database to support questions with diagrams exceeding 1MB
-    if (window.dbClient && window.dbClient.isSupabaseActive()) {
-      try {
-        await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
-      } catch (sbErr) {
-        console.error("Supabase saveSubmission note:", sbErr);
-        throw sbErr;
-      }
-    } else {
-      try {
-        await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
-          questions: activePreviewSubmission.questions,
-          numberOfQuestions: qCount
-        }, { merge: true });
-      } catch (fbErr) {
-        console.warn("Firebase note:", fbErr);
-      }
-    }
+    await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
     const idx = allCbtSubmissions.findIndex(s => s.docId === activePreviewSubmission.docId);
     if (idx >= 0) {
       allCbtSubmissions[idx].questions = activePreviewSubmission.questions;
@@ -1831,26 +1654,8 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     btn.textContent = "Saving...";
 
     try {
-      if (window.dbClient && window.dbClient.isSupabaseActive()) {
-        try {
-          await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
-        } catch (sbErr) {
-          console.warn("Supabase schedule note:", sbErr);
-          throw sbErr;
-        }
-      } else {
-        await setDoc(doc(db, "cbt_submissions", activePreviewSubmission.docId), {
-          launchDate: newLaunch,
-          examDate: newLaunch,
-          startTime: newGateOpen,
-          endTime: newGateClose,
-          gateOpen: newGateOpen,
-          gateClose: newGateClose,
-          shuffle: newShuffle
-        }, { merge: true });
-      }
-
-      if ($("cbtScheduleSummaryPill")) {
+      await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
+      if (cbtScheduleSummaryPill) {
         const timeD = `${newGateOpen} – ${newGateClose}`;
         const shufD = newShuffle ? "🔀 Shuffled" : "Sequential";
         let displayLaunch = newLaunch;
@@ -2010,7 +1815,7 @@ function updateAdminFreshness(timeStr, isFallback) {
   }
   if (notice) {
     if (isFallback) {
-      $("scoresCacheNoticeText").innerHTML = `<strong>⚡ Offline / Quota Fallback:</strong> Firebase daily read quota limit reached. Displaying latest saved records (${esc(timeStr)}). All filters, search, and CSV downloads remain 100% active.`;
+      $("scoresCacheNoticeText").innerHTML = `<strong>⚡ Offline / Quota Fallback:</strong> Displaying latest saved records from Supabase. Displaying latest saved records (${esc(timeStr)}). All filters, search, and CSV downloads remain 100% active.`;
       notice.style.display = "flex";
     } else {
       notice.style.display = "none";
@@ -2026,24 +1831,21 @@ async function loadStudentScores(force = false) {
     return;
   }
 
-  // 1. Check version in cloud using exactly 1 small read!
+  // 1. Check version in Supabase using 1 small read!
   let cloudVersion = null;
   let isCloudAvailable = false;
 
   if (!force) {
     try {
-      const vSnap = await getDoc(doc(db, "exam_meta", "version"));
+      cloudVersion = await window.dbClient.getVersion();
       isCloudAvailable = true;
-      if (vSnap.exists()) {
-        cloudVersion = vSnap.data().lastUpdated;
-      }
     } catch (e) {
-      console.warn("Version check notice (quota/network):", e);
+      console.warn("Version check notice:", e);
       isCloudAvailable = false;
     }
   }
 
-  // 2. If cached data matches cloudVersion, skip the full query completely! (1 read used total)
+  // 2. If cached data matches cloudVersion, skip the full query completely!
   if (!force && isCloudAvailable && cloudVersion && cached && cached.version && cached.version === cloudVersion && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allScoreRows = cached.rows;
     updateAdminFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), false);
@@ -2051,7 +1853,7 @@ async function loadStudentScores(force = false) {
     return;
   }
 
-  // 3. Quota Fallback: If cloud is unreachable, but we have cached records:
+  // 3. Fallback: If cloud is unreachable, but we have cached records:
   if (!force && !isCloudAvailable && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allScoreRows = cached.rows;
     updateAdminFreshness(cached.lastUpdatedText || "Earlier session", true);
@@ -2061,77 +1863,43 @@ async function loadStudentScores(force = false) {
 
   // Display placeholder if first-time load
   if (!allScoreRows.length) {
-    $("scoresTbody").innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records…</td></tr>`;
+    scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabaseâ€¦</td></tr>';
   }
 
-  // 4. Fetch full data from Firestore (on force or when version changed)
+  // 4. Fetch full data from Supabase (with auto-pagination for >1000 records)
   try {
-    if (force && $("scoresRefreshBtn")) {
-      $("scoresRefreshBtn").textContent = "Refreshing…";
-      $("scoresRefreshBtn").disabled = true;
+    if (force && scoresRefreshBtn) {
+      scoresRefreshBtn.textContent = "Refreshingâ€¦";
+      scoresRefreshBtn.disabled = true;
     }
-    const snap = await getDocs(collection(db, "exam_results"));
-    const freshRows = [];
-    snap.docs.forEach(docSnap => {
-      const data = docSnap.data();
-      if (Array.isArray(data.rows)) {
-        data.rows.forEach(r => {
-          const studentName = (r.student || r.name || "").toUpperCase();
-          const regNum = r.reg || r.regNo || r.admNo || r.admissionNumber || "";
-          const className = r.class || r.className || "";
-          const armName = r.arm || "";
-          const subjectName = data.subject || r.subject || "";
-          const scoreDisplay = r.score !== undefined ? String(r.score) : "";
-          const pctVal = r.pct !== undefined ? Number(r.pct) : (r.percentage !== undefined ? Number(r.percentage) : (parseFloat(scoreDisplay) || 0));
-          const dateStr = r.date || r.dateTime || (data.uploadedAt ? new Date(data.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
+    const freshRows = await window.dbClient.getScores();
 
-          freshRows.push({
-            student: studentName,
-            reg: regNum,
-            subject: subjectName,
-            class: className,
-            arm: armName,
-            score: scoreDisplay,
-            pct: pctVal,
-            term: data.term || "",
-            date: dateStr
-          });
-        });
-      }
-    });
-
-    allScoreRows = freshRows;
+    allScoreRows = freshRows || [];
     const now = new Date();
     const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-    // Auto-create version doc if it didn't exist yet, so future loads use 1 read
-    if (!cloudVersion && freshRows.length > 0) {
-      try {
-        await setDoc(doc(db, "exam_meta", "version"), {
-          lastUpdated: now.toISOString(),
-          timestamp: Date.now()
-        }, { merge: true });
-        cloudVersion = now.toISOString();
-      } catch (err) { /* non-fatal */ }
+    // Auto-create version doc if it didn't exist yet
+    if (!cloudVersion && allScoreRows.length > 0) {
+      cloudVersion = now.toISOString();
+      await window.dbClient.setVersion({ lastUpdated: cloudVersion });
     }
 
-    setCachedScores(freshRows, cloudVersion || now.toISOString(), timeStr);
+    setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
     updateAdminFreshness(timeStr, false);
     buildAdminTermTabs();
   } catch (e) {
-    console.warn("Firestore scores fetch error:", e);
-    // Seamless fallback on quota exhaustion:
+    console.warn("Supabase scores fetch error:", e);
     if (cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
       allScoreRows = cached.rows;
       updateAdminFreshness(cached.lastUpdatedText || "Earlier session", true);
       buildAdminTermTabs();
     } else {
-      $("scoresTbody").innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load scores: ${esc(e.message)}<br><small style="color:var(--text-muted)">The daily free cloud read quota is currently exhausted and no cached records exist on this browser. The quota resets daily between 8:00 AM – 9:00 AM WAT.</small></td></tr>`;
+      scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load scores: ' + esc(e.message) + '</td></tr>';
     }
   } finally {
-    if ($("scoresRefreshBtn")) {
-      $("scoresRefreshBtn").textContent = "↻ Refresh Cloud";
-      $("scoresRefreshBtn").disabled = false;
+    if (scoresRefreshBtn) {
+      scoresRefreshBtn.textContent = "â†» Refresh Data";
+      scoresRefreshBtn.disabled = false;
     }
   }
 }
@@ -2479,6 +2247,23 @@ function initConversionPanel() {
   origEl.addEventListener("input", updatePreview);
   tgtEl.addEventListener("input", updatePreview);
 
+    function showConversionFeedback(msg) {
+    let badge = convFeedbackBadge;
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.id = "convFeedbackBadge";
+      badge.style.fontSize = "12px";
+      badge.style.fontWeight = "600";
+      badge.style.marginLeft = "10px";
+      badge.style.color = "var(--status-good, #10b981)";
+      const p = convResetBtn?.parentNode;
+      if (p) p.appendChild(badge);
+    }
+    badge.textContent = msg;
+    badge.style.display = "inline";
+    setTimeout(() => { badge.style.display = "none"; }, 4000);
+  }
+
   applyBtn.onclick = async () => {
     const o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
@@ -2487,26 +2272,49 @@ function initConversionPanel() {
       return;
     }
     const setting = { originalMax: o, targetMax: t };
+    applyBtn.disabled = true;
+    applyBtn.textContent = "Applying...";
+
     setScoreConversion(setting);
     refreshConversionUI();
     renderScoresTableOnly();
-    if (window.dbClient && window.dbClient.saveScoreConversion) {
-      await window.dbClient.saveScoreConversion(setting);
+
+    try {
+      if (window.dbClient && window.dbClient.saveScoreConversion) {
+        await window.dbClient.saveScoreConversion(setting);
+      }
+      showConversionFeedback("âœ“ Saved to Supabase & live for all teachers!");
+    } catch (err) {
+      alert("Score conversion saved locally but cloud sync failed: " + err.message);
+    } finally {
+      applyBtn.disabled = false;
+      applyBtn.textContent = "Apply";
     }
   };
 
   resetBtn.onclick = async () => {
+    resetBtn.disabled = true;
+    resetBtn.textContent = "Resetting...";
     setScoreConversion(null);
     origEl.value = "";
     tgtEl.value = "";
     refreshConversionUI();
     renderScoresTableOnly();
-    if (window.dbClient && window.dbClient.saveScoreConversion) {
-      await window.dbClient.saveScoreConversion(null);
+
+    try {
+      if (window.dbClient && window.dbClient.saveScoreConversion) {
+        await window.dbClient.saveScoreConversion(null);
+      }
+      showConversionFeedback("âœ“ Reset to default (100%) for all teachers");
+    } catch (err) {
+      console.warn("Cloud reset warning:", err);
+    } finally {
+      resetBtn.disabled = false;
+      resetBtn.textContent = "Reset";
     }
   };
 
-  // Sync latest score conversion from cloud (Supabase / Firebase)
+  // Sync latest score conversion from cloud (Supabase)
   if (window.dbClient && window.dbClient.getScoreConversionCloud) {
     window.dbClient.getScoreConversionCloud().then(cloudConv => {
       if (cloudConv && cloudConv.originalMax && cloudConv.targetMax) {
