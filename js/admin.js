@@ -113,13 +113,28 @@ const TEACHERS_CACHE_KEY = "school_exam_teachers_cache_v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24-Hour Smart Cache
 
 function getCachedTeachers() {
-  try {
-    const raw = localStorage.getItem(TEACHERS_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.teachers)) return null;
-    return parsed;
-  } catch (e) { return null; }
+  const keys = [
+    TEACHERS_CACHE_KEY,
+    "school_exam_teachers_cache",
+    "school_exam_teachers_backup",
+    "admin_teachers_cache"
+  ];
+  for (const k of keys) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.teachers) ? parsed.teachers : null);
+        if (list && list.length > 0) {
+          return {
+            timestamp: parsed.timestamp || Date.now(),
+            teachers: list
+          };
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
 }
 
 function setCachedTeachers(teachers) {
@@ -156,9 +171,34 @@ async function loadTeachers(force = false) {
       }
     }
     if (!Array.isArray(fresh)) fresh = [];
+
+    // If local cache contains additional teachers that were not in the default seed,
+    // preserve them and automatically push them into Supabase so they are never lost!
+    if (cached && Array.isArray(cached.teachers) && cached.teachers.length > fresh.length) {
+      const existingIds = new Set(fresh.map(t => (t.id || t.username || "").toLowerCase().replace(/[^a-z0-9]/g, "")));
+      const missingTeachers = cached.teachers.filter(t => {
+        const id = (t.id || t.username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return id && !existingIds.has(id);
+      });
+      if (missingTeachers.length > 0) {
+        console.log(`Auto-migrating ${missingTeachers.length} previously saved teacher(s) to Supabase...`);
+        for (const mt of missingTeachers) {
+          fresh.push(mt);
+          try {
+            await window.dbClient.saveTeacher(mt);
+          } catch(err) {
+            console.warn("Failed to auto-sync cached teacher:", mt.name, err);
+          }
+        }
+      }
+    }
+
     fresh.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     allTeachers = fresh;
     if ($("teacherCountBadge")) $("teacherCountBadge").textContent = allTeachers.length;
+    if ($("importFirebaseTeachersBtn")) {
+      $("importFirebaseTeachersBtn").style.display = (allTeachers.length >= 45) ? "none" : "inline-block";
+    }
     if (allTeachers.length > 0) {
       setCachedTeachers(allTeachers);
     }
@@ -311,6 +351,88 @@ if ($("refreshTeachersBtn")) {
     btn.textContent = orig;
     btn.disabled = false;
   };
+}
+
+// ── Migrate All 46 Teachers from Firebase Firestore into Supabase ─────────────
+async function importTeachersFromFirebase() {
+  const btn = $("importFirebaseTeachersBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Connecting to Firebase...";
+  }
+
+  try {
+    const projectId = "school-exam-portal-2de06";
+    const apiKey = "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M";
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/exam_teachers?key=${apiKey}&pageSize=100`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Firebase request failed (${res.status} ${res.statusText})`);
+    }
+
+    const data = await res.json();
+    const docs = data.documents || [];
+    if (!docs.length) {
+      alert("No teacher documents found in Firebase.");
+      return;
+    }
+
+    function parseField(f) {
+      if (!f) return undefined;
+      if ("stringValue" in f) return f.stringValue;
+      if ("integerValue" in f) return Number(f.integerValue);
+      if ("booleanValue" in f) return f.booleanValue;
+      if ("arrayValue" in f) {
+        return (f.arrayValue.values || []).map(parseField).filter(v => v !== undefined);
+      }
+      if ("mapValue" in f) {
+        const out = {};
+        for (const [k, v] of Object.entries(f.mapValue.fields || {})) {
+          out[k] = parseField(v);
+        }
+        return out;
+      }
+      return undefined;
+    }
+
+    const teachersToSave = docs.map(d => {
+      const id = d.name.split("/").pop();
+      const fields = d.fields || {};
+      const cleanId = id.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const username = (parseField(fields.username) || parseField(fields.id) || cleanId).toLowerCase().replace(/[^a-z0-9]/g, "");
+      return {
+        id: cleanId,
+        username,
+        name: (parseField(fields.name) || cleanId).trim(),
+        password: parseField(fields.password) || "",
+        subjects: parseField(fields.subjects) || [],
+        classes: parseField(fields.classes) || [],
+        arms: parseField(fields.arms) || []
+      };
+    });
+
+    for (let i = 0; i < teachersToSave.length; i++) {
+      if (btn) btn.textContent = `Saving to Supabase (${i + 1}/${teachersToSave.length})...`;
+      await window.dbClient.saveTeacher(teachersToSave[i]);
+    }
+
+    await loadTeachers(true);
+    if (btn) btn.style.display = "none";
+    alert(`Success! Successfully migrated all ${teachersToSave.length} teachers with their real assigned subjects and classes into Supabase!`);
+  } catch (err) {
+    console.error("Firebase import error:", err);
+    alert("Could not import teachers from Firebase: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "☁ Import All 46 Teachers from Firebase";
+    }
+  }
+}
+
+if ($("importFirebaseTeachersBtn")) {
+  $("importFirebaseTeachersBtn").onclick = importTeachersFromFirebase;
 }
 
 // Modal Controls: Open Edit

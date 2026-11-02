@@ -280,9 +280,14 @@
               <input type="search" class="search-input" id="teacherSearchInput"
                 placeholder="Filter by teacher name, username, or subject...">
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" id="importFirebaseTeachersBtn" type="button"
+                style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid #3b82f6;font-weight:600"
+                title="Migrate all 46 real teachers and their assigned subjects from Firebase into Supabase">
+                ☁ Import All 46 Teachers from Firebase
+              </button>
               <button class="btn btn-secondary btn-sm" id="refreshTeachersBtn" type="button"
-                title="Fetch latest teachers from database">↻ Refresh</button>
+                title="Fetch latest teachers from database">&#8635; Refresh</button>
               <button class="btn btn-sm" id="openAddTeacherBtn" type="button">+ Add new teacher</button>
             </div>
           </div>
