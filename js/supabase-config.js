@@ -364,13 +364,32 @@ const dbClient = {
         if (error) throw error;
       }
 
-      // 3. Bump version document in Supabase
+      // 3. Bump version document and update live_terms in Supabase
       const nowIso = new Date().toISOString();
       await sb.from("exam_meta").upsert({
         key: "version",
         last_updated: nowIso,
         meta: { lastUpdated: nowIso, timestamp: Date.now(), term, totalRecords: rows.length }
       }, { onConflict: "key" });
+
+      try {
+        const { data: currMeta } = await sb.from("exam_meta").select("meta").eq("key", "live_terms").maybeSingle();
+        const liveMap = (currMeta && currMeta.meta) ? { ...currMeta.meta } : {};
+        const subjectSet = new Set(rows.map(r => r.subject).filter(Boolean));
+        liveMap[term || "First Test"] = {
+          term: term || "First Test",
+          count: rows.length,
+          subjectsCount: subjectSet.size || 21,
+          date: nowIso
+        };
+        await sb.from("exam_meta").upsert({
+          key: "live_terms",
+          last_updated: nowIso,
+          meta: liveMap
+        }, { onConflict: "key" });
+      } catch (me) {
+        console.warn("live_terms update note:", me);
+      }
 
       return true;
     } catch (err) {
@@ -379,19 +398,14 @@ const dbClient = {
     }
   },
 
-  async getLiveTerms() {
-    const sb = getSupabase();
-    if (!sb) return [];
-    try {
-      const { data, error } = await sb.from("exam_results").select("term, subject, uploaded_at");
-      if (error || !data) return [];
+  async getLiveTerms(knownRows) {
+    if (Array.isArray(knownRows) && knownRows.length > 0) {
       const map = {};
-      data.forEach(r => {
+      knownRows.forEach(r => {
         if (!r.term) return;
-        if (!map[r.term]) map[r.term] = { term: r.term, count: 0, date: r.uploaded_at || "", subjects: new Set() };
+        if (!map[r.term]) map[r.term] = { term: r.term, count: 0, date: r.date || r.uploaded_at || "", subjects: new Set() };
         map[r.term].count++;
         if (r.subject) map[r.term].subjects.add(r.subject);
-        if (r.uploaded_at && r.uploaded_at > map[r.term].date) map[r.term].date = r.uploaded_at;
       });
       return Object.values(map).map(m => ({
         term: m.term,
@@ -399,6 +413,32 @@ const dbClient = {
         date: m.date,
         subjectsCount: m.subjects.size
       }));
+    }
+
+    const sb = getSupabase();
+    if (!sb) return [];
+    try {
+      // 1. Instant read from live_terms registry
+      const { data: metaDoc } = await sb.from("exam_meta").select("meta").eq("key", "live_terms").maybeSingle();
+      if (metaDoc && metaDoc.meta && Object.keys(metaDoc.meta).length > 0) {
+        return Object.values(metaDoc.meta);
+      }
+
+      // 2. Parallel fast exact count across known terms
+      const standardTerms = ["First Test", "Mid Term Test", "Third Term Examination", "Third Term Test"];
+      const checked = await Promise.all(standardTerms.map(async (t) => {
+        try {
+          const { count, error } = await sb.from("exam_results").select("id", { count: "exact", head: true }).eq("term", t);
+          if (!error && count && count > 0) {
+            return { term: t, count, date: new Date().toISOString(), subjectsCount: 21 };
+          }
+        } catch (_) {}
+        return null;
+      }));
+      const found = checked.filter(Boolean);
+      if (found.length > 0) return found;
+
+      return [];
     } catch (err) {
       console.warn("Supabase getLiveTerms error:", err);
       return [];
@@ -418,6 +458,19 @@ const dbClient = {
         last_updated: nowIso,
         meta: { lastUpdated: nowIso, timestamp: Date.now() }
       }, { onConflict: "key" });
+
+      try {
+        const { data: currMeta } = await sb.from("exam_meta").select("meta").eq("key", "live_terms").maybeSingle();
+        if (currMeta && currMeta.meta && currMeta.meta[term]) {
+          const liveMap = { ...currMeta.meta };
+          delete liveMap[term];
+          await sb.from("exam_meta").upsert({
+            key: "live_terms",
+            last_updated: nowIso,
+            meta: liveMap
+          }, { onConflict: "key" });
+        }
+      } catch (_) {}
 
       return true;
     } catch (err) {

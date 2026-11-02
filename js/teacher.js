@@ -57,58 +57,101 @@ let sortCol = "student", sortAsc = true;
 // ── Teacher Score Conversion & Sync ─────────────────────────
 const SCORE_CONVERSION_KEY = "SCORE_CONVERSION_SETTING_v1";
 
-function getTeacherScoreConversion() {
-  try { return JSON.parse(localStorage.getItem(SCORE_CONVERSION_KEY)) || null; } catch(e) { return null; }
+function getTeacherConversionConfig() {
+  try {
+    const raw = localStorage.getItem(SCORE_CONVERSION_KEY);
+    if (!raw) return { terms: {} };
+    const parsed = JSON.parse(raw);
+    if (!parsed) return { terms: {} };
+    if (parsed.terms) return parsed;
+    // Normalize legacy single-term setting
+    if (parsed.originalMax && parsed.targetMax) {
+      const tKey = parsed.targetTerm || "__ALL__";
+      return {
+        terms: {
+          [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
+        }
+      };
+    }
+    return { terms: {} };
+  } catch (e) {
+    return { terms: {} };
+  }
 }
+
+function getTeacherConversionForTerm(term) {
+  const config = getTeacherConversionConfig();
+  if (!config || !config.terms) return null;
+  if (term && config.terms[term]) {
+    const c = config.terms[term];
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  }
+  if (config.terms["__ALL__"]) {
+    const c = config.terms["__ALL__"];
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  }
+  return null;
+}
+
 function setTeacherScoreConversion(obj) {
-  if (obj && obj.originalMax && obj.targetMax) localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
-  else localStorage.removeItem(SCORE_CONVERSION_KEY);
+  if (obj && !obj.disabled && (obj.terms || (obj.originalMax && obj.targetMax))) {
+    localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
+  } else {
+    localStorage.removeItem(SCORE_CONVERSION_KEY);
+  }
 }
-function applyTeacherScoreConversion(rawScore) {
-  const c = getTeacherScoreConversion();
+
+function applyTeacherScoreConversion(rawScore, term) {
+  const c = getTeacherConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return rawScore;
   const factor = c.targetMax / c.originalMax;
   return Math.round(rawScore * factor * 100) / 100;
 }
-function applyTeacherPctConversion(rawScore) {
-  const c = getTeacherScoreConversion();
+
+function applyTeacherPctConversion(rawScore, term) {
+  const c = getTeacherConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax) return null;
-  const converted = applyTeacherScoreConversion(rawScore);
+  const converted = applyTeacherScoreConversion(rawScore, term);
   return Math.round((converted / c.targetMax) * 100 * 10) / 10;
 }
+
 function getRowEffectivePct(r) {
   const rawScore = parseFloat(r.score) || 0;
-  const conv = applyTeacherPctConversion(rawScore);
+  const conv = applyTeacherPctConversion(rawScore, r ? r.term : null);
   return conv !== null ? conv : (r.pct || 0);
 }
+
 function updateTeacherConvNotice() {
-  const c = getTeacherScoreConversion();
   const notice = $("teacherConvNotice");
   if (!notice) return;
+  const currentActiveTerm = currentTerm || (allRows && allRows[0] ? allRows[0].term : null);
+  const c = getTeacherConversionForTerm(currentActiveTerm);
   if (c && c.originalMax && c.targetMax && c.originalMax !== c.targetMax) {
     const f = (c.targetMax / c.originalMax).toFixed(3).replace(/\.?0+$/, "");
     notice.style.display = "flex";
-    notice.innerHTML = `<span>⚖️</span> <span><strong>Score Scaling Active:</strong> Admin has scaled scores from <strong>/${c.originalMax}</strong> to <strong>/${c.targetMax}</strong> (multiplier ×${f}). All scores and percentages below reflect this scaling.</span>`;
+    const termLabel = currentActiveTerm ? `for <strong>${esc(currentActiveTerm)}</strong>` : "";
+    notice.innerHTML = `<span>⚖️</span> <span><strong>Score Scaling Active ${termLabel}:</strong> Scaled from <strong>/${c.originalMax}</strong> to <strong>/${c.targetMax}</strong> (multiplier ×${f}). Scores and percentages below reflect this scaling.</span>`;
   } else {
     notice.style.display = "none";
   }
 }
+
 async function syncTeacherScoreConversion(triggerRender = false) {
-  const prevSetting = JSON.stringify(getTeacherScoreConversion());
+  const prevSetting = JSON.stringify(getTeacherConversionConfig());
   if (window.dbClient && window.dbClient.getScoreConversionCloud) {
     try {
       const cloudConv = await window.dbClient.getScoreConversionCloud();
-      if (cloudConv && cloudConv.originalMax && cloudConv.targetMax && !cloudConv.disabled) {
+      if (cloudConv && !cloudConv.disabled && ((cloudConv.terms && Object.keys(cloudConv.terms).length > 0) || (cloudConv.originalMax && cloudConv.targetMax))) {
         setTeacherScoreConversion(cloudConv);
       } else {
         setTeacherScoreConversion(null);
       }
-    } catch(e) {
+    } catch (e) {
       console.warn("Teacher score conversion sync error:", e);
     }
   }
   updateTeacherConvNotice();
-  const nextSetting = JSON.stringify(getTeacherScoreConversion());
+  const nextSetting = JSON.stringify(getTeacherConversionConfig());
   if ((triggerRender || prevSetting !== nextSetting) && typeof render === "function" && typeof allRows !== "undefined" && allRows.length > 0) {
     render();
   }
@@ -488,8 +531,8 @@ function getSortedRows() {
       va = getRowEffectivePct(a);
       vb = getRowEffectivePct(b);
     } else if (sortCol === "score") {
-      va = applyTeacherScoreConversion(parseFloat(a.score) || 0);
-      vb = applyTeacherScoreConversion(parseFloat(b.score) || 0);
+      va = applyTeacherScoreConversion(parseFloat(a.score) || 0, a.term);
+      vb = applyTeacherScoreConversion(parseFloat(b.score) || 0, b.term);
     } else if (sortCol === "index") {
       return sortAsc ? 0 : 0;
     } else {
@@ -646,8 +689,8 @@ function renderTableOnly() {
   pageRows.forEach((r, idx) => {
     const globalIdx = startIdx + idx + 1;
     const rawScore = parseFloat(r.score) || 0;
-    const dispScore = applyTeacherScoreConversion(rawScore);
-    const convPct = applyTeacherPctConversion(rawScore);
+    const dispScore = applyTeacherScoreConversion(rawScore, r.term);
+    const convPct = applyTeacherPctConversion(rawScore, r.term);
     const pctVal = convPct !== null ? convPct : (r.pct || 0);
 
     // Status: Good >= 70%, Average 50-69%, Fail < 50%
@@ -734,7 +777,7 @@ $("exportBtn").addEventListener("click", async () => {
     headers.join(","),
     ...activeFilteredRows.map(r => {
       const rawScore = parseFloat(r.score) || 0;
-      const dispScore = applyTeacherScoreConversion(rawScore);
+      const dispScore = applyTeacherScoreConversion(rawScore, r.term);
       const classAbbr = formatClassAbbr(r.class);
       const armAbbr = formatArmAbbr(r.arm);
       return [

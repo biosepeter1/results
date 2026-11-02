@@ -768,7 +768,7 @@ async function loadLiveTerms() {
   const $list = $("liveTermsList");
   if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabase...</div>';
   try {
-    const termList = await window.dbClient.getLiveTerms();
+    const termList = await window.dbClient.getLiveTerms(allScoreRows);
     const map = {};
     termList.forEach(t => { map[t.term] = t; });
 
@@ -1878,46 +1878,125 @@ let adminSortAsc = true;
 
 const SCORES_CACHE_KEY = "admin_exam_scores_cache_v3";
 
-// ── Score Conversion ──────────────────────────────────────────
+// ── Per-Term Score Conversion ──────────────────────────────────────────
 const SCORE_CONVERSION_KEY = "SCORE_CONVERSION_SETTING_v1";
 
+function getConversionConfig() {
+  try {
+    const raw = localStorage.getItem(SCORE_CONVERSION_KEY);
+    if (!raw) return { terms: {} };
+    const parsed = JSON.parse(raw);
+    if (!parsed) return { terms: {} };
+    if (parsed.terms) return parsed;
+    // Normalize legacy single-term setting:
+    if (parsed.originalMax && parsed.targetMax) {
+      const tKey = parsed.targetTerm || "__ALL__";
+      return {
+        terms: {
+          [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
+        }
+      };
+    }
+    return { terms: {} };
+  } catch (e) {
+    return { terms: {} };
+  }
+}
+
+function getConversionForTerm(term) {
+  const config = getConversionConfig();
+  if (!config || !config.terms) return null;
+  if (term && config.terms[term]) {
+    const c = config.terms[term];
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  }
+  if (config.terms["__ALL__"]) {
+    const c = config.terms["__ALL__"];
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  }
+  return null;
+}
+
 function getScoreConversion() {
-  try { return JSON.parse(localStorage.getItem(SCORE_CONVERSION_KEY)) || null; } catch(e) { return null; }
+  return getConversionConfig();
 }
-function setScoreConversion(obj) {
-  if (obj) localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
-  else localStorage.removeItem(SCORE_CONVERSION_KEY);
+
+function setScoreConversion(config) {
+  if (config && config.terms && Object.keys(config.terms).length > 0) {
+    localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(config));
+  } else {
+    localStorage.removeItem(SCORE_CONVERSION_KEY);
+  }
 }
-function applyScoreConversion(rawScore) {
-  const c = getScoreConversion();
+
+function applyScoreConversion(rawScore, term) {
+  const c = getConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return rawScore;
   const factor = c.targetMax / c.originalMax;
   return Math.round(rawScore * factor * 100) / 100;
 }
-function applyPctConversion(rawScore) {
-  const c = getScoreConversion();
+
+function applyPctConversion(rawScore, term) {
+  const c = getConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax) return null; // null = use stored pct
-  const converted = applyScoreConversion(rawScore);
+  const converted = applyScoreConversion(rawScore, term);
   return Math.round((converted / c.targetMax) * 100 * 10) / 10;
 }
+
+function populateConversionTermSelect(terms) {
+  const sel = document.getElementById("convTermSelect");
+  if (!sel) return;
+  const prevVal = sel.value;
+  const uniqueTerms = Array.isArray(terms) ? terms : [];
+  let html = '<option value="__ALL__">All Terms</option>';
+  uniqueTerms.forEach(t => {
+    html += `<option value="${esc(t)}">${esc(t)}</option>`;
+  });
+  sel.innerHTML = html;
+  if (prevVal && (prevVal === "__ALL__" || uniqueTerms.includes(prevVal))) {
+    sel.value = prevVal;
+  } else if (adminCurrentTerm && uniqueTerms.includes(adminCurrentTerm)) {
+    sel.value = adminCurrentTerm;
+  } else {
+    sel.value = "__ALL__";
+  }
+}
+
 function refreshConversionUI() {
-  const c = getScoreConversion();
+  const sel = document.getElementById("convTermSelect");
+  const selectedTerm = sel ? sel.value : (adminCurrentTerm || "__ALL__");
   const origEl = document.getElementById("convOrigMax");
   const tgtEl = document.getElementById("convTargetMax");
   const multLbl = document.getElementById("convMultiplierLabel");
   const activeLbl = document.getElementById("convActiveLabel");
   if (!origEl) return;
-  if (c && c.originalMax && c.targetMax) {
-    origEl.value = c.originalMax;
-    tgtEl.value = c.targetMax;
-    const f = (c.targetMax / c.originalMax).toFixed(4).replace(/\.?0+$/, "");
-    multLbl.textContent = "× " + f;
-    activeLbl.textContent = "✅ Active: scores shown out of " + c.targetMax;
+
+  const config = getConversionConfig();
+  const termSetting = config.terms ? config.terms[selectedTerm] : null;
+
+  if (termSetting && termSetting.originalMax && termSetting.targetMax) {
+    origEl.value = termSetting.originalMax;
+    tgtEl.value = termSetting.targetMax;
+    const f = (termSetting.targetMax / termSetting.originalMax).toFixed(4).replace(/\.?0+$/, "");
+    if (multLbl) multLbl.textContent = "× " + f;
   } else {
     origEl.value = "";
     tgtEl.value = "";
-    multLbl.textContent = "";
-    activeLbl.textContent = "No conversion – raw scores displayed";
+    if (multLbl) multLbl.textContent = "";
+  }
+
+  const activeEntries = Object.entries(config.terms || {}).filter(([_, s]) => s && s.originalMax && s.targetMax && s.originalMax !== s.targetMax);
+  if (activeEntries.length > 0) {
+    const summary = activeEntries.map(([t, s]) => `${t === "__ALL__" ? "All Terms" : t} (/${s.targetMax})`).join(", ");
+    if (activeLbl) {
+      activeLbl.textContent = "✅ Active scaling: " + summary;
+      activeLbl.style.color = "var(--status-good, #10b981)";
+    }
+  } else {
+    if (activeLbl) {
+      activeLbl.textContent = "No conversion – raw scores displayed";
+      activeLbl.style.color = "var(--text-muted, #8892b0)";
+    }
   }
 }
 // ─────────────────────────────────────────────────────────────
@@ -2306,6 +2385,8 @@ function buildAdminTermTabs() {
   const $tabs = $("scoresTermTabs");
   $tabs.innerHTML = "";
 
+  populateConversionTermSelect(terms);
+
   if (!terms.length) {
     $tabs.innerHTML = `<span style="color:var(--text-muted);font-size:13px">No examination records uploaded yet.</span>`;
     applyScoreFilters();
@@ -2323,6 +2404,12 @@ function buildAdminTermTabs() {
     updateAdminTermTabs();
     buildAdminFilters();
     applyScoreFilters();
+
+    const sel = document.getElementById("convTermSelect");
+    if (sel) {
+      sel.value = "__ALL__";
+      refreshConversionUI();
+    }
   };
   $tabs.appendChild(allTab);
 
@@ -2337,6 +2424,12 @@ function buildAdminTermTabs() {
       updateAdminTermTabs();
       buildAdminFilters();
       applyScoreFilters();
+
+      const sel = document.getElementById("convTermSelect");
+      if (sel) {
+        sel.value = term;
+        refreshConversionUI();
+      }
     };
     $tabs.appendChild(btn);
   });
@@ -2344,6 +2437,11 @@ function buildAdminTermTabs() {
   if ((!adminCurrentTerm || !terms.includes(adminCurrentTerm)) && terms.length) {
     adminCurrentTerm = terms[terms.length - 1];
   }
+  const sel = document.getElementById("convTermSelect");
+  if (sel && adminCurrentTerm) {
+    sel.value = adminCurrentTerm;
+  }
+  refreshConversionUI();
   updateAdminTermTabs();
   buildAdminFilters();
   applyScoreFilters();
@@ -2519,8 +2617,8 @@ function renderScoresTableOnly() {
   $("scoresTbody").innerHTML = pageRows.map((r, idx) => {
     const globalIdx = startIdx + idx + 1;
     const rawScore = parseFloat(r.score) || 0;
-    const dispScore = applyScoreConversion(rawScore);
-    const convPct = applyPctConversion(rawScore);
+    const dispScore = applyScoreConversion(rawScore, r.term);
+    const convPct = applyPctConversion(rawScore, r.term);
     const pctVal = convPct !== null ? convPct : (r.pct || 0);
 
     let statusClass = "status-good";
@@ -2636,8 +2734,15 @@ function initConversionPanel() {
   const tgtEl    = document.getElementById("convTargetMax");
   const applyBtn = document.getElementById("convApplyBtn");
   const resetBtn = document.getElementById("convResetBtn");
+  const termSel  = document.getElementById("convTermSelect");
   if (!origEl || !applyBtn) return;
   _convPanelWired = true;
+
+  if (termSel) {
+    termSel.addEventListener("change", () => {
+      refreshConversionUI();
+    });
+  }
 
   refreshConversionUI();
 
@@ -2668,25 +2773,30 @@ function initConversionPanel() {
   }
 
   applyBtn.onclick = async () => {
+    const targetTerm = termSel ? termSel.value : (adminCurrentTerm || "__ALL__");
     const o = parseFloat(origEl.value);
     const t = parseFloat(tgtEl.value);
     if (!o || o <= 0 || !t || t <= 0) {
       alert("Please enter valid numbers for Original Max and Target Max.");
       return;
     }
-    const setting = { originalMax: o, targetMax: t };
+    const config = getConversionConfig();
+    if (!config.terms) config.terms = {};
+    config.terms[targetTerm] = { originalMax: o, targetMax: t };
+
     applyBtn.disabled = true;
     applyBtn.textContent = "Applying...";
 
-    setScoreConversion(setting);
+    setScoreConversion(config);
     refreshConversionUI();
     renderScoresTableOnly();
 
     try {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
-        await window.dbClient.saveScoreConversion(setting);
+        await window.dbClient.saveScoreConversion(config);
       }
-      showConversionFeedback("✓ Saved to Supabase & live for all teachers!");
+      const label = targetTerm === "__ALL__" ? "All Terms" : targetTerm;
+      showConversionFeedback(`✓ Scaling for "${label}" saved to Supabase & live for teachers!`);
     } catch (err) {
       alert("Score conversion saved locally but cloud sync failed: " + err.message);
     } finally {
@@ -2696,9 +2806,18 @@ function initConversionPanel() {
   };
 
   resetBtn.onclick = async () => {
+    const targetTerm = termSel ? termSel.value : (adminCurrentTerm || "__ALL__");
+    const config = getConversionConfig();
+    if (config.terms) {
+      if (targetTerm === "__ALL__") {
+        config.terms = {};
+      } else {
+        delete config.terms[targetTerm];
+      }
+    }
     resetBtn.disabled = true;
     resetBtn.textContent = "Resetting...";
-    setScoreConversion(null);
+    setScoreConversion(config);
     origEl.value = "";
     tgtEl.value = "";
     refreshConversionUI();
@@ -2706,9 +2825,10 @@ function initConversionPanel() {
 
     try {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
-        await window.dbClient.saveScoreConversion(null);
+        await window.dbClient.saveScoreConversion(config);
       }
-      showConversionFeedback("✓ Reset to default (100%) for all teachers");
+      const label = targetTerm === "__ALL__" ? "All Terms" : targetTerm;
+      showConversionFeedback(`✓ Reset scaling for "${label}"`);
     } catch (err) {
       console.warn("Cloud reset warning:", err);
     } finally {
@@ -2720,7 +2840,7 @@ function initConversionPanel() {
   // Sync latest score conversion from cloud (Supabase)
   if (window.dbClient && window.dbClient.getScoreConversionCloud) {
     window.dbClient.getScoreConversionCloud().then(cloudConv => {
-      if (cloudConv && cloudConv.originalMax && cloudConv.targetMax) {
+      if (cloudConv && ((cloudConv.terms && Object.keys(cloudConv.terms).length > 0) || (cloudConv.originalMax && cloudConv.targetMax))) {
         setScoreConversion(cloudConv);
         refreshConversionUI();
         renderScoresTableOnly();
@@ -2735,8 +2855,8 @@ $("scoresExportCsvBtn").onclick = () => {
   const headers = ["#", "Student Name", "Reg Number", "Subject", "Class", "Arm", "Score", "Percentage", "Status", "Date & Time", "Term"];
   const rows = sorted.map((r, i) => {
     const rawScore = parseFloat(r.score) || 0;
-    const dispScore = applyScoreConversion(rawScore);
-    const convPct = applyPctConversion(rawScore);
+    const dispScore = applyScoreConversion(rawScore, r.term);
+    const convPct = applyPctConversion(rawScore, r.term);
     const pctVal = convPct !== null ? convPct : (r.pct || 0);
     return [
       i + 1,
