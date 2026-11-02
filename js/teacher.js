@@ -246,13 +246,13 @@ function clearTeacherCache(username) {
   } catch (e) {}
 }
 
-function showTeacherFreshness(timeStr, isFallback) {
-  const badge = $("teacherFreshnessBadge");
+function showTeacherFreshness(timeStr, isOffline = false) {
+  const badge = teacherFreshnessBadge;
   if (!badge) return;
-  if (isFallback) {
-    badge.innerHTML = ` · <span style="color:var(--status-fail);font-weight:600">⚡ Saved device copy (Last updated: ${esc(timeStr)}) — cloud quota exceeded</span>`;
+  if (isOffline) {
+    badge.innerHTML =  Â· <span style="color:var(--text-muted)">Saved device copy ()</span>;
   } else {
-    badge.innerHTML = ` · <span>Last updated: ${esc(timeStr)}</span>`;
+    badge.innerHTML =  Â· <span>Last updated: </span>;
   }
 }
 

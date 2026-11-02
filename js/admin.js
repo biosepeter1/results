@@ -300,7 +300,7 @@ if ($("refreshTeachersBtn")) {
   $("refreshTeachersBtn").onclick = async () => {
     const btn = $("refreshTeachersBtn");
     const orig = btn.textContent;
-    btn.textContent = "Refreshing…";
+    btn.textContent = "Refreshing...";
     btn.disabled = true;
     await loadTeachers(true);
     btn.textContent = orig;
@@ -1803,22 +1803,13 @@ function setCachedScores(rows, version, timeStr) {
   }
 }
 
-function updateAdminFreshness(timeStr, isFallback) {
-  const badge = $("adminFreshnessBadge");
-  const notice = $("scoresCacheNotice");
+function updateAdminFreshness(timeStr, isOffline = false) {
+  const badge = adminFreshnessBadge;
   if (badge) {
-    if (isFallback) {
-      badge.innerHTML = ` · <span style="color:var(--status-fail);font-weight:600">⚡ Saved device copy (Last updated: ${esc(timeStr)}) — cloud quota exceeded</span>`;
+    if (isOffline) {
+      badge.innerHTML =  Â· <span style="color:var(--text-muted)">Saved device copy ()</span>;
     } else {
-      badge.innerHTML = ` · <span>Last updated: ${esc(timeStr)}</span>`;
-    }
-  }
-  if (notice) {
-    if (isFallback) {
-      $("scoresCacheNoticeText").innerHTML = `<strong>⚡ Offline / Quota Fallback:</strong> Displaying latest saved records from Supabase. Displaying latest saved records (${esc(timeStr)}). All filters, search, and CSV downloads remain 100% active.`;
-      notice.style.display = "flex";
-    } else {
-      notice.style.display = "none";
+      badge.innerHTML =  Â· <span>Last updated: </span>;
     }
   }
 }
@@ -1863,13 +1854,13 @@ async function loadStudentScores(force = false) {
 
   // Display placeholder if first-time load
   if (!allScoreRows.length) {
-    scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabaseâ€¦</td></tr>';
+    scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabase...';
   }
 
   // 4. Fetch full data from Supabase (with auto-pagination for >1000 records)
   try {
     if (force && scoresRefreshBtn) {
-      scoresRefreshBtn.textContent = "Refreshingâ€¦";
+      scoresRefreshBtn.textContent = "Refreshing...";
       scoresRefreshBtn.disabled = true;
     }
     const freshRows = await window.dbClient.getScores();
@@ -2220,7 +2211,7 @@ $("scoresSearchInput").oninput = () => {
 
 // Refresh Cloud Buttons
 $("scoresRefreshBtn").onclick = () => loadStudentScores(true);
-if ($("scoresCacheRetryBtn")) $("scoresCacheRetryBtn").onclick = () => loadStudentScores(true);
+
 
 // Print Report
 $("scoresPrintBtn").onclick = () => window.print();
