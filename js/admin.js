@@ -151,12 +151,17 @@ async function loadTeachers(force = false) {
   try {
     let fresh = await window.dbClient.getTeachers();
     if (!fresh || fresh.length === 0) {
-      fresh = await window.dbClient.seedDefaultTeachers();
+      if (window.dbClient.seedDefaultTeachers) {
+        fresh = await window.dbClient.seedDefaultTeachers();
+      }
     }
+    if (!Array.isArray(fresh)) fresh = [];
     fresh.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     allTeachers = fresh;
-    $("teacherCountBadge").textContent = allTeachers.length;
-    setCachedTeachers(allTeachers);
+    if ($("teacherCountBadge")) $("teacherCountBadge").textContent = allTeachers.length;
+    if (allTeachers.length > 0) {
+      setCachedTeachers(allTeachers);
+    }
     renderTeachersTable();
   } catch (e) {
     console.warn("loadTeachers network warning:", e);

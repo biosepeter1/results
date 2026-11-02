@@ -84,6 +84,40 @@ function mapSubFromSupabase(row) {
   };
 }
 
+const DEFAULT_TEACHERS = {
+  "mrsitema": { "password": "MrSitema", "name": "Mr Sitema", "subjects": ["French Language"], "classes": ["Year 7", "Year 8", "Year 9"] },
+  "ayomideadeyemi": { "password": "AyomideAdeyemi", "name": "Ayomide Adeyemi", "subjects": ["Civic Education", "Social and Citizenship Studies"], "classes": ["Year 8", "Year 9"] },
+  "balogunmr": { "password": "BalogunMr", "name": "Balogun Mr", "subjects": ["Yoruba Language"], "classes": ["Year 7", "Year 9"] },
+  "godwinawomoye": { "password": "GodwinAwomoye", "name": "Godwin Awomoye", "subjects": ["Cultural and Creative Art"], "classes": ["Year 7", "Year 8", "Year 9"] },
+  "janetkura": { "password": "JanetKura", "name": "Janet Kura", "subjects": ["Christian Religious Studies"], "classes": ["Year 8"] },
+  "missakinwale": { "password": "MissAkinwale", "name": "Miss Akinwale", "subjects": ["Home Economics"], "classes": ["Year 9"] },
+  "misschristian": { "password": "MissChristian", "name": "Miss Christian", "subjects": ["Christian Religious Studies"], "classes": ["Year 8"] },
+  "missodili": { "password": "Miss Odili", "name": "Miss Odili", "subjects": ["French Language"], "classes": ["Year 7", "Year 8"] },
+  "mradegbite": { "password": "MrAdegbite", "name": "Mr Adegbite", "subjects": ["Biology (Checkpoint)"], "classes": ["Year 9"] },
+  "mrandero": { "password": "MrAndero", "name": "Mr Andero", "subjects": ["Basic Science"], "classes": ["Year 7"] },
+  "mrbada": { "password": "MrBada", "name": "Mr Bada", "subjects": ["Physical Health Education"], "classes": ["Year 7", "Year 8", "Year 9"] },
+  "mremmanuel": { "password": "MrEmmanuel", "name": "Mr Emmanuel", "subjects": ["History"], "classes": ["Year 7", "Year 8", "Year 9"] },
+  "mrhassan": { "password": "MrHassan", "name": "Mr Hassan", "subjects": ["English Language"], "classes": ["Year 8"] },
+  "mrsaluko": { "password": "MrsAluko", "name": "Mrs Aluko", "subjects": ["Social Studies"], "classes": ["Year 7"] },
+  "mrsanaba": { "password": "MrsAnaba", "name": "Mrs Anaba", "subjects": ["English Language"], "classes": ["Year 9"] },
+  "mrsbakare": { "password": "MrsBakare", "name": "Mrs Bakare", "subjects": ["Christian Religious Studies"], "classes": ["Year 7", "Year 9"] },
+  "mrseka": { "password": "MrsEka", "name": "Mrs Eka", "subjects": ["Civic Education"], "classes": ["Year 7"] },
+  "mrsfalohun": { "password": "MrsFalohun", "name": "Mrs Falohun", "subjects": ["Horticulture and Crop Production"], "classes": ["Year 9"] },
+  "mrsibitoye": { "password": "MrsIbitoye", "name": "Mrs Ibitoye", "subjects": ["Yoruba Language"], "classes": ["Year 8"] },
+  "mrsmatohor": { "password": "MrsMatohor", "name": "Mrs Matohor", "subjects": ["Home Economics"], "classes": ["Year 7", "Year 8"] },
+  "mrsnkem": { "password": "MrsNkem", "name": "Mrs Nkem", "subjects": ["Agricultural Science"], "classes": ["Year 7", "Year 8"] },
+  "mrsodeyemi": { "password": "MrsOdeyemi", "name": "Mrs Odeyemi", "subjects": ["Islamic Religious Studies"], "classes": ["Year 7", "Year 8", "Year 9"] },
+  "mrsolapoju": { "password": "MrsOlapoju", "name": "Mrs Olapoju", "subjects": ["Christian Religious Studies"], "classes": ["Year 7"] },
+  "mrsolateju": { "password": "MrsOlateju", "name": "Mrs Olateju", "subjects": ["Basic Technology"], "classes": ["Year 9"] },
+  "mrsonibiyo": { "password": "MrsOnibiyo", "name": "Mrs Onibiyo", "subjects": ["Basic Technology"], "classes": ["Year 7", "Year 8"] },
+  "mrsoyerogba": { "password": "MrsOyerogba", "name": "Mrs Oyerogba", "subjects": ["Social Studies"], "classes": ["Year 8"] },
+  "mrssekoni": { "password": "MrsSekoni", "name": "Mrs Sekoni", "subjects": ["Basic Science"], "classes": ["Year 8"] },
+  "mrssunday": { "password": "MrsSunday", "name": "Mrs Sunday", "subjects": ["Christian Religious Studies"], "classes": ["Year 8"] },
+  "olamideoribamise": { "password": "OlamideOribamise", "name": "Olamide Oribamise", "subjects": ["Mathematics"], "classes": ["Year 7"] },
+  "olasojiolaposi": { "password": "OlasojiOlaposi", "name": "Olasoji Olaposi", "subjects": ["Basic Technology"], "classes": ["Year 9"] },
+  "taiwoaguomba": { "password": "TaiwoAguomba", "name": "Taiwo Aguomba", "subjects": ["History"], "classes": ["Year 9"] }
+};
+
 // ── Complete Independent Database Engine ──
 const dbClient = {
   isSupabaseActive() {
@@ -219,26 +253,36 @@ const dbClient = {
     }
   },
 
-  async seedDefaultTeachers(teachersMap) {
+  async seedDefaultTeachers(customMap) {
     const sb = getSupabase();
-    if (!sb || !teachersMap) return;
-    try {
-      const { count } = await sb.from("exam_teachers").select("*", { count: "exact", head: true });
-      if (count && count > 0) return; // already seeded
-      const rows = Object.entries(teachersMap).map(([userKey, t]) => ({
-        id: userKey.toLowerCase().replace(/[^a-z0-9]/g, ""),
-        username: userKey.toLowerCase().replace(/[^a-z0-9]/g, ""),
-        name: t.name || userKey,
-        password: t.password || "password",
-        subjects: t.subjects || [],
-        classes: t.classes || [],
-        arms: t.arms || [],
-        updated_at: new Date().toISOString()
-      }));
-      await sb.from("exam_teachers").upsert(rows, { onConflict: "id" });
-    } catch (e) {
-      console.warn("Teacher seed note:", e);
+    const map = (customMap && Object.keys(customMap).length > 0) ? customMap : (typeof DEFAULT_TEACHERS !== "undefined" ? DEFAULT_TEACHERS : {});
+    const rows = Object.entries(map).map(([userKey, t]) => ({
+      id: userKey.toLowerCase().replace(/[^a-z0-9]/g, ""),
+      username: userKey.toLowerCase().replace(/[^a-z0-9]/g, ""),
+      name: t.name || userKey,
+      password: t.password || "password",
+      subjects: t.subjects || [],
+      classes: t.classes || [],
+      arms: t.arms || [],
+      updated_at: new Date().toISOString()
+    }));
+    if (sb && rows.length > 0) {
+      try {
+        await sb.from("exam_teachers").upsert(rows, { onConflict: "id" });
+      } catch (e) {
+        console.warn("Teacher seed note:", e);
+      }
     }
+    return rows.map(t => ({
+      id: t.id,
+      docId: t.id,
+      username: t.username,
+      name: t.name,
+      password: t.password,
+      subjects: t.subjects,
+      classes: t.classes,
+      arms: t.arms
+    }));
   },
 
   // ══════════════════════════════════════════════════════════
