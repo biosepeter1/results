@@ -1,4 +1,4 @@
-﻿// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // ADMINISTRATOR PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -601,19 +601,21 @@ $("uploadScoresBtn").onclick = async () => {
     await window.dbClient.saveScoresBatch(allRowsToSave, term);
 
     setUploadProgress(100, "Update complete");
-    const el = uploadSuccessBox;
-    el.textContent = "Successfully uploaded " + totalParsedRecords.toLocaleString() + " records across " + subjectList.length + " subjects for \"" + term + "\" to Supabase. The portal is live with these scores.";
-    el.style.display = "block";
+    const el = $("uploadSuccessBox");
+    if (el) {
+      el.textContent = `Successfully uploaded ${totalParsedRecords.toLocaleString()} records across ${subjectList.length} subjects for "${term}" to Supabase. The portal is live with these scores.`;
+      el.style.display = "block";
+    }
 
     setTimeout(() => {
-      csvClearBtn.click();
-      uploadProgressWrap.style.display = "none";
+      $("csvClearBtn")?.click();
+      if ($("uploadProgressWrap")) $("uploadProgressWrap").style.display = "none";
     }, 3000);
 
     await loadLiveTerms();
   } catch (e) {
     setUploadProgress(0, "");
-    $("uploadProgressWrap").style.display = "none";
+    if ($("uploadProgressWrap")) $("uploadProgressWrap").style.display = "none";
     setUploadError("Upload failed: " + e.message);
   }
   $("uploadScoresBtn").disabled = false;
@@ -625,16 +627,17 @@ function setUploadProgress(pct, text) {
 }
 
 async function loadLiveTerms() {
-  liveTermsList.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabaseâ€¦</div>';
+  const $list = $("liveTermsList");
+  if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabase...</div>';
   try {
     const termList = await window.dbClient.getLiveTerms();
     const map = {};
     termList.forEach(t => { map[t.term] = t; });
 
     const metaFields = {
-      "First Test": metaFirstTest,
-      "Mid Term Test": metaMidTerm,
-      "Third Term Examination": metaThirdTerm
+      "First Test": $("metaFirstTest"),
+      "Mid Term Test": $("metaMidTerm"),
+      "Third Term Examination": $("metaThirdTerm")
     };
     Object.entries(metaFields).forEach(([t, el]) => {
       const match = map[t] || (t === "Third Term Examination" ? map["Third Term Test"] : null);
@@ -642,26 +645,28 @@ async function loadLiveTerms() {
     });
 
     if (!termList.length) {
-      liveTermsList.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No test scores uploaded yet.</div>';
+      if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No test scores uploaded yet.</div>';
       return;
     }
 
-    liveTermsList.innerHTML = termList.map(info => {
-      const d = info.date ? new Date(info.date) : null;
-      const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently";
-      return '<div class="live-term-item"><div><div class="live-term-name">' + esc(info.term) + '</div><div class="live-term-meta">' + info.count.toLocaleString() + ' scores Â· ' + (info.subjectsCount || 0) + ' subjects Â· ' + dateStr + '</div></div><button type="button" class="btn btn-danger btn-sm" data-delterm="' + esc(info.term) + '">Delete</button></div>';
-    }).join("");
+    if ($list) {
+      $list.innerHTML = termList.map(info => {
+        const d = info.date ? new Date(info.date) : null;
+        const dateStr = d && !isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently";
+        return `<div class="live-term-item"><div><div class="live-term-name">${esc(info.term)}</div><div class="live-term-meta">${info.count.toLocaleString()} scores · ${(info.subjectsCount || 0)} subjects · ${dateStr}</div></div><button type="button" class="btn btn-danger btn-sm" data-delterm="${esc(info.term)}">Delete</button></div>`;
+      }).join("");
 
-    document.querySelectorAll("[data-delterm]").forEach(btn => {
-      btn.onclick = () => deleteTerm(btn.dataset.delterm);
-    });
+      document.querySelectorAll("[data-delterm]").forEach(btn => {
+        btn.onclick = () => deleteTerm(btn.dataset.delterm);
+      });
+    }
   } catch (e) {
-    liveTermsList.innerHTML = '<div style="padding:16px;color:var(--status-fail);font-size:13px">Failed to load terms: ' + esc(e.message) + '</div>';
+    if ($list) $list.innerHTML = '<div style="padding:16px;color:var(--status-fail);font-size:13px">Failed to load terms: ' + esc(e.message) + '</div>';
   }
 }
 
 async function deleteTerm(term) {
-  if (!confirm('Are you sure you want to delete all scores for "' + term + '"?\n\nThis will remove it from all teacher portal views.')) return;
+  if (!confirm(`Are you sure you want to delete all scores for "${term}"?\n\nThis will remove it from all teacher portal views.`)) return;
   try {
     await window.dbClient.deleteTerm(term);
     await loadLiveTerms();
@@ -707,7 +712,7 @@ async function setAdminCbtActiveTerm(newTerm) {
 
   try {
     await window.dbClient.setActiveCbtTerm(activeCbtExamTerm);
-    const badge = cbtAdminTermSavedBadge;
+    const badge = $("cbtAdminTermSavedBadge");
     if (badge) {
       badge.style.display = "inline";
       setTimeout(() => { badge.style.display = "none"; }, 3000);
@@ -1781,16 +1786,84 @@ function refreshConversionUI() {
 
 function getCachedScores() {
   try {
-    const raw = localStorage.getItem(SCORES_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.rows)) return null;
-    return parsed;
-  } catch (e) { return null; }
+    // 1. Primary admin cache
+    const primaryRaw = localStorage.getItem(SCORES_CACHE_KEY);
+    if (primaryRaw) {
+      const parsed = JSON.parse(primaryRaw);
+      if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+        return parsed;
+      }
+    }
+
+    // 2. Backup or fallback keys
+    const fallbackKeys = [
+      "admin_exam_scores_backup",
+      "school_exam_scores_cache_v3",
+      "admin_exam_scores_cache_v2",
+      "school_exam_scores_cache_v2",
+      "admin_exam_scores_cache",
+      "school_exam_scores_cache"
+    ];
+    for (const key of fallbackKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const rows = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.rows) ? parsed.rows : null);
+          if (rows && rows.length > 0) {
+            return {
+              rows,
+              version: parsed.version || "",
+              lastUpdatedText: parsed.lastUpdatedText || "Saved device copy",
+              timestamp: parsed.timestamp || Date.now()
+            };
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Recover from teacher score caches on this device if any exist
+    const recoveredMap = new Map();
+    let recoveredTime = "";
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith("school_teacher_scores_") || k.includes("teacher_scores"))) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(k));
+          const rows = parsed && Array.isArray(parsed.rows) ? parsed.rows : (Array.isArray(parsed) ? parsed : []);
+          if (rows.length > 0 && !recoveredTime) recoveredTime = parsed.lastUpdatedText || "";
+          rows.forEach(r => {
+            const uid = (r.reg || r.student) + "___" + (r.subject || "") + "___" + (r.term || "");
+            if (!recoveredMap.has(uid)) recoveredMap.set(uid, r);
+          });
+        } catch (e) {}
+      }
+    }
+    if (recoveredMap.size > 0) {
+      const rows = Array.from(recoveredMap.values());
+      return {
+        rows,
+        version: "recovered",
+        lastUpdatedText: recoveredTime || "Saved device copy",
+        timestamp: Date.now()
+      };
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function setCachedScores(rows, version, timeStr) {
   try {
+    if (!rows || rows.length === 0) {
+      // NEVER overwrite a valid cached database with an empty array!
+      const existing = getCachedScores();
+      if (existing && existing.rows && existing.rows.length > 0) {
+        console.warn("Prevented overwriting cached scores with empty array.");
+        return;
+      }
+    }
     const payload = JSON.stringify({
       version: version || "",
       timestamp: Date.now(),
@@ -1798,18 +1871,21 @@ function setCachedScores(rows, version, timeStr) {
       rows
     });
     localStorage.setItem(SCORES_CACHE_KEY, payload);
+    if (rows && rows.length > 0) {
+      localStorage.setItem("admin_exam_scores_backup", payload);
+    }
   } catch (err) {
     console.warn("localStorage quota exceeded (handled safely):", err);
   }
 }
 
 function updateAdminFreshness(timeStr, isOffline = false) {
-  const badge = adminFreshnessBadge;
+  const badge = $("adminFreshnessBadge");
   if (badge) {
     if (isOffline) {
-      badge.innerHTML =  Â· <span style="color:var(--text-muted)">Saved device copy ()</span>;
+      badge.innerHTML = ` · <span style="color:var(--text-muted)">Saved device copy (${esc(timeStr)})</span>`;
     } else {
-      badge.innerHTML =  Â· <span>Last updated: </span>;
+      badge.innerHTML = ` · <span>Last updated: ${esc(timeStr)}</span>`;
     }
   }
 }
@@ -1817,19 +1893,29 @@ function updateAdminFreshness(timeStr, isOffline = false) {
 async function loadStudentScores(force = false) {
   const cached = getCachedScores();
 
+  // If in-memory records are already loaded and not forcing, apply current filters
   if (!force && allScoreRows.length) {
     applyScoreFilters();
     return;
   }
 
-  // 1. Check version in Supabase using 1 small read!
+  // Immediately render cached scores if available so there is zero waiting
+  if (cached && Array.isArray(cached.rows) && cached.rows.length > 0 && !allScoreRows.length) {
+    allScoreRows = cached.rows;
+    updateAdminFreshness(cached.lastUpdatedText || "Saved device copy", false);
+    buildAdminTermTabs();
+  }
+
+  // 1. Check version in Supabase
   let cloudVersion = null;
   let isCloudAvailable = false;
 
   if (!force) {
     try {
-      cloudVersion = await window.dbClient.getVersion();
-      isCloudAvailable = true;
+      if (window.dbClient && window.dbClient.getVersion) {
+        cloudVersion = await window.dbClient.getVersion();
+        isCloudAvailable = true;
+      }
     } catch (e) {
       console.warn("Version check notice:", e);
       isCloudAvailable = false;
@@ -1854,43 +1940,69 @@ async function loadStudentScores(force = false) {
 
   // Display placeholder if first-time load
   if (!allScoreRows.length) {
-    scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabase...';
+    const tbody = $("scoresTbody");
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Loading examination records from Supabase...</td></tr>';
   }
 
-  // 4. Fetch full data from Supabase (with auto-pagination for >1000 records)
+  // 4. Fetch full data from Supabase
   try {
-    if (force && scoresRefreshBtn) {
-      scoresRefreshBtn.textContent = "Refreshing...";
-      scoresRefreshBtn.disabled = true;
+    const refBtn = $("scoresRefreshBtn");
+    if (force && refBtn) {
+      refBtn.textContent = "↻ Refreshing...";
+      refBtn.disabled = true;
     }
     const freshRows = await window.dbClient.getScores();
 
-    allScoreRows = freshRows || [];
-    const now = new Date();
-    const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    if (freshRows && freshRows.length > 0) {
+      allScoreRows = freshRows;
+      const now = new Date();
+      const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-    // Auto-create version doc if it didn't exist yet
-    if (!cloudVersion && allScoreRows.length > 0) {
-      cloudVersion = now.toISOString();
-      await window.dbClient.setVersion({ lastUpdated: cloudVersion });
-    }
+      if (!cloudVersion) {
+        cloudVersion = now.toISOString();
+        await window.dbClient.setVersion({ lastUpdated: cloudVersion });
+      }
 
-    setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
-    updateAdminFreshness(timeStr, false);
-    buildAdminTermTabs();
-  } catch (e) {
-    console.warn("Supabase scores fetch error:", e);
-    if (cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
-      allScoreRows = cached.rows;
-      updateAdminFreshness(cached.lastUpdatedText || "Earlier session", true);
+      setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
+      updateAdminFreshness(timeStr, false);
       buildAdminTermTabs();
     } else {
-      scoresTbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load scores: ' + esc(e.message) + '</td></tr>';
+      // Supabase table returned 0 rows
+      const savedCache = getCachedScores();
+      if (savedCache && Array.isArray(savedCache.rows) && savedCache.rows.length > 0) {
+        allScoreRows = savedCache.rows;
+        updateAdminFreshness(savedCache.lastUpdatedText || "Saved device copy", false);
+        buildAdminTermTabs();
+
+        // Auto-seed Supabase with the cached records in background!
+        console.log("Auto-seeding Supabase with " + allScoreRows.length + " cached records...");
+        window.dbClient.saveScoresBatch(allScoreRows).then(() => {
+          console.log("Supabase score seeding completed.");
+        }).catch(err => {
+          console.warn("Supabase auto-seed warning:", err);
+        });
+      } else {
+        allScoreRows = [];
+        updateAdminFreshness("No records", false);
+        buildAdminTermTabs();
+      }
+    }
+  } catch (e) {
+    console.warn("Supabase scores fetch error:", e);
+    const savedCache = getCachedScores();
+    if (savedCache && Array.isArray(savedCache.rows) && savedCache.rows.length > 0) {
+      allScoreRows = savedCache.rows;
+      updateAdminFreshness(savedCache.lastUpdatedText || "Earlier session", true);
+      buildAdminTermTabs();
+    } else {
+      const tbody = $("scoresTbody");
+      if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load scores: ' + esc(e.message) + '</td></tr>';
     }
   } finally {
-    if (scoresRefreshBtn) {
-      scoresRefreshBtn.textContent = "â†» Refresh Data";
-      scoresRefreshBtn.disabled = false;
+    const refBtn = $("scoresRefreshBtn");
+    if (refBtn) {
+      refBtn.textContent = "↻ Refresh Cloud";
+      refBtn.disabled = false;
     }
   }
 }
@@ -1935,7 +2047,9 @@ function buildAdminTermTabs() {
     $tabs.appendChild(btn);
   });
 
-  if (!adminCurrentTerm && terms.length) adminCurrentTerm = terms[terms.length - 1];
+  if ((!adminCurrentTerm || !terms.includes(adminCurrentTerm)) && terms.length) {
+    adminCurrentTerm = terms[terms.length - 1];
+  }
   updateAdminTermTabs();
   buildAdminFilters();
   applyScoreFilters();

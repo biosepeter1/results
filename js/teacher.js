@@ -1,4 +1,4 @@
-﻿// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -127,7 +127,7 @@ setInterval(() => {
 if ($("teacherRefreshScoresBtn")) {
   $("teacherRefreshScoresBtn").addEventListener("click", async () => {
     const btn = $("teacherRefreshScoresBtn");
-    btn.textContent = "â†» Refreshingâ€¦";
+    btn.textContent = "↻ Refreshing...";
     btn.disabled = true;
     try {
       if (typeof teacher !== "undefined" && teacher && teacher.username) {
@@ -138,7 +138,7 @@ if ($("teacherRefreshScoresBtn")) {
     } catch (e) {
       alert("Refresh error: " + e.message);
     } finally {
-      btn.textContent = "â†» Refresh";
+      btn.textContent = "↻ Refresh";
       btn.disabled = false;
     }
   });
@@ -247,12 +247,12 @@ function clearTeacherCache(username) {
 }
 
 function showTeacherFreshness(timeStr, isOffline = false) {
-  const badge = teacherFreshnessBadge;
+  const badge = $("teacherFreshnessBadge");
   if (!badge) return;
   if (isOffline) {
-    badge.innerHTML =  Â· <span style="color:var(--text-muted)">Saved device copy ()</span>;
+    badge.innerHTML = ` · <span style="color:var(--text-muted)">Saved device copy (${esc(timeStr)})</span>`;
   } else {
-    badge.innerHTML =  Â· <span>Last updated: </span>;
+    badge.innerHTML = ` · <span>Last updated: ${esc(timeStr)}</span>`;
   }
 }
 
@@ -294,8 +294,16 @@ async function loadData() {
   // 4. Fetch latest scores from Supabase
   try {
     const rawScores = await window.dbClient.getScores();
+
+    // If Supabase returned empty results but device has saved scores, keep device copy!
+    if ((!rawScores || rawScores.length === 0) && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
+      allRows = cached.rows;
+      showTeacherFreshness(cached.lastUpdatedText || "Earlier session", true);
+      return;
+    }
+
     const authorizedRows = [];
-    rawScores.forEach(r => {
+    (rawScores || []).forEach(r => {
       // Subject restriction filter
       if (hasSubjectRestriction && !teacher.subjects.includes(r.subject)) return;
       // Class restriction filter
@@ -329,12 +337,14 @@ async function loadData() {
     const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
     // Store ONLY this teacher's authorized rows in their private cache
-    setTeacherCache(clean, {
-      version: cloudVersion || now.toISOString(),
-      timestamp: Date.now(),
-      lastUpdatedText: timeStr,
-      rows: authorizedRows
-    });
+    if (authorizedRows.length > 0) {
+      setTeacherCache(clean, {
+        version: cloudVersion || now.toISOString(),
+        timestamp: Date.now(),
+        lastUpdatedText: timeStr,
+        rows: authorizedRows
+      });
+    }
 
     showTeacherFreshness(timeStr, false);
   } catch (e) {
@@ -348,7 +358,8 @@ async function loadData() {
   }
 }
 
-// â”€â”€ Tab Navigation â”€â”€function switchTeacherPortalTab(target) {
+// ── Tab Navigation ──
+function switchTeacherPortalTab(target) {
   const isCbt = (target === "cbt");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
