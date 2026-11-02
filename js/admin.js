@@ -358,59 +358,54 @@ async function importTeachersFromFirebase() {
   const btn = $("importFirebaseTeachersBtn");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "Connecting to Firebase...";
+    btn.textContent = "Connecting to Firebase SDK...";
   }
 
   try {
-    const projectId = "school-exam-portal-2de06";
-    const apiKey = "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M";
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/exam_teachers?key=${apiKey}&pageSize=100`;
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+    const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Firebase request failed (${res.status} ${res.statusText})`);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M",
+      authDomain: "school-exam-portal-2de06.firebaseapp.com",
+      projectId: "school-exam-portal-2de06",
+      storageBucket: "school-exam-portal-2de06.firebasestorage.app",
+      messagingSenderId: "797572003782",
+      appId: "1:797572003782:web:14126bc63b4fa956d1a4c7"
+    };
+
+    const fbApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig, "migrationApp");
+    const fbDb = getFirestore(fbApp);
+
+    if (btn) btn.textContent = "Fetching teachers from Firebase...";
+
+    // Try "exam_teachers" first, then "teachers" if empty
+    let snap = await getDocs(collection(fbDb, "exam_teachers"));
+    if (snap.empty) {
+      snap = await getDocs(collection(fbDb, "teachers"));
     }
 
-    const data = await res.json();
-    const docs = data.documents || [];
-    if (!docs.length) {
-      alert("No teacher documents found in Firebase.");
+    if (snap.empty) {
+      alert("No teacher documents found in Firebase (checked 'exam_teachers' and 'teachers').");
       return;
     }
 
-    function parseField(f) {
-      if (!f) return undefined;
-      if ("stringValue" in f) return f.stringValue;
-      if ("integerValue" in f) return Number(f.integerValue);
-      if ("booleanValue" in f) return f.booleanValue;
-      if ("arrayValue" in f) {
-        return (f.arrayValue.values || []).map(parseField).filter(v => v !== undefined);
-      }
-      if ("mapValue" in f) {
-        const out = {};
-        for (const [k, v] of Object.entries(f.mapValue.fields || {})) {
-          out[k] = parseField(v);
-        }
-        return out;
-      }
-      return undefined;
-    }
-
-    const teachersToSave = docs.map(d => {
-      const id = d.name.split("/").pop();
-      const fields = d.fields || {};
-      const cleanId = id.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const username = (parseField(fields.username) || parseField(fields.id) || cleanId).toLowerCase().replace(/[^a-z0-9]/g, "");
+    const teachersToSave = snap.docs.map(doc => {
+      const d = doc.data() || {};
+      const id = doc.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const username = (d.username || d.id || id).toLowerCase().replace(/[^a-z0-9]/g, "");
       return {
-        id: cleanId,
+        id,
         username,
-        name: (parseField(fields.name) || cleanId).trim(),
-        password: parseField(fields.password) || "",
-        subjects: parseField(fields.subjects) || [],
-        classes: parseField(fields.classes) || [],
-        arms: parseField(fields.arms) || []
+        name: (d.name || id).trim(),
+        password: d.password || "",
+        subjects: Array.isArray(d.subjects) ? d.subjects : [],
+        classes: Array.isArray(d.classes) ? d.classes : [],
+        arms: Array.isArray(d.arms) ? d.arms : []
       };
     });
+
+    if (btn) btn.textContent = `Saving ${teachersToSave.length} teachers to Supabase...`;
 
     for (let i = 0; i < teachersToSave.length; i++) {
       if (btn) btn.textContent = `Saving to Supabase (${i + 1}/${teachersToSave.length})...`;
@@ -419,7 +414,7 @@ async function importTeachersFromFirebase() {
 
     await loadTeachers(true);
     if (btn) btn.style.display = "none";
-    alert(`Success! Successfully migrated all ${teachersToSave.length} teachers with their real assigned subjects and classes into Supabase!`);
+    alert(`Success! Successfully migrated all ${teachersToSave.length} teachers with their real assigned subjects into Supabase!`);
   } catch (err) {
     console.error("Firebase import error:", err);
     alert("Could not import teachers from Firebase: " + err.message);
