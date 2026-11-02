@@ -209,6 +209,9 @@
                 title="Fetch latest scores from cloud">&#8635; Refresh Cloud</button>
               <button type="button" class="btn btn-secondary btn-sm" id="scoresPushCloudBtn"
                 title="Push saved device scores to Supabase cloud" style="display:none;background:var(--accent);color:#fff;border-color:var(--accent)">&#8679; Push to Cloud</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="scoresDeduplicateBtn"
+                title="Scan and remove duplicate student scores across database and all teacher views"
+                style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-weight:600;">🧹 Remove Duplicates</button>
               <button type="button" class="btn btn-secondary btn-sm" id="scoresExportCsvBtn">Download CSV</button>
               <button type="button" class="btn btn-secondary btn-sm" id="scoresPrintBtn">Print report</button>
             </div>
@@ -442,7 +445,12 @@
                   <h2 class="card-title">Live Test Scores</h2>
                   <p class="card-sub">Currently published to teachers</p>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" id="refreshTermsBtn">Refresh</button>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button type="button" class="btn btn-secondary btn-sm" id="uploadDeduplicateBtn"
+                    title="Scan and remove duplicate scores across cloud"
+                    style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:12px;">🧹 Clean Duplicates</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="refreshTermsBtn">Refresh</button>
+                </div>
               </div>
               <div id="liveTermsList">
                 <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading…</div>

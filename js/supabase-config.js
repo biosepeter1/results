@@ -479,6 +479,91 @@ const dbClient = {
     }
   },
 
+  async cleanAllDuplicates() {
+    const sb = getSupabase();
+    if (!sb) return { scanned: 0, removed: 0 };
+    try {
+      const pageSize = 1000;
+      let all = [];
+      let from = 0;
+      let more = true;
+      while (more) {
+        const { data, error } = await sb.from("exam_results")
+          .select("id,term,reg,student,subject,class,arm")
+          .range(from, from + pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) more = false;
+        else from += pageSize;
+      }
+
+      const seen = new Set();
+      const duplicateIds = [];
+      const termCounts = {};
+      const termSubjects = {};
+
+      all.forEach(r => {
+        const reg = (r.reg || "").trim().toUpperCase();
+        const st = (r.student || "").trim().toUpperCase();
+        const sub = (r.subject || "").trim().toUpperCase();
+        const cls = (r.class || "").trim().toUpperCase();
+        const arm = (r.arm || "").trim().toUpperCase();
+        const term = (r.term || "").trim().toUpperCase();
+        const key = `${term}|${reg || st}|${sub}|${cls}|${arm}`;
+
+        if (seen.has(key)) {
+          duplicateIds.push(r.id);
+        } else {
+          seen.add(key);
+          const tName = r.term || "Unknown";
+          termCounts[tName] = (termCounts[tName] || 0) + 1;
+          if (!termSubjects[tName]) termSubjects[tName] = new Set();
+          if (r.subject) termSubjects[tName].add(r.subject);
+        }
+      });
+
+      // Delete duplicates in batches of 100
+      const batchSize = 100;
+      for (let i = 0; i < duplicateIds.length; i += batchSize) {
+        const slice = duplicateIds.slice(i, i + batchSize);
+        await sb.from("exam_results").delete().in("id", slice);
+      }
+
+      // Bump version document so all teacher portals auto-sync
+      const nowIso = new Date().toISOString();
+      await sb.from("exam_meta").upsert({
+        key: "version",
+        last_updated: nowIso,
+        meta: { lastUpdated: nowIso, timestamp: Date.now(), reason: "deduplicate", removed: duplicateIds.length }
+      }, { onConflict: "key" });
+
+      // Update live_terms in exam_meta
+      const liveMap = {};
+      for (const [tName, count] of Object.entries(termCounts)) {
+        liveMap[tName] = {
+          term: tName,
+          count,
+          subjectsCount: termSubjects[tName] ? termSubjects[tName].size : 21,
+          date: nowIso
+        };
+      }
+      await sb.from("exam_meta").upsert({
+        key: "live_terms",
+        last_updated: nowIso,
+        meta: liveMap
+      }, { onConflict: "key" });
+
+      return {
+        scanned: all.length,
+        removed: duplicateIds.length,
+        remaining: seen.size
+      };
+    } catch (err) {
+      console.error("Supabase cleanAllDuplicates error:", err);
+      throw err;
+    }
+  },
+
   // ══════════════════════════════════════════════════════════
   // 4. METADATA & SYSTEM CONFIG (Supabase exam_meta)
   // ══════════════════════════════════════════════════════════

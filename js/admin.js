@@ -2128,6 +2128,26 @@ function cleanupObsoleteStorage() {
   } catch(e) {}
 })();
 
+function deduplicateScoreRows(rows) {
+  if (!Array.isArray(rows) || !rows.length) return [];
+  const seen = new Set();
+  const unique = [];
+  rows.forEach(r => {
+    const reg = (r.reg || "").trim().toUpperCase();
+    const st = (r.student || r.name || "").trim().toUpperCase();
+    const sub = (r.subject || "").trim().toUpperCase();
+    const cls = (r.class || r.className || "").trim().toUpperCase();
+    const arm = (r.arm || "").trim().toUpperCase();
+    const term = (r.term || "").trim().toUpperCase();
+    const key = `${term}|${reg || st}|${sub}|${cls}|${arm}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  });
+  return unique;
+}
+
 function getCachedScores() {
   // 0. High-speed in-memory cache
   if (_memoryCachedScores && Array.isArray(_memoryCachedScores.rows) && _memoryCachedScores.rows.length > 0) {
@@ -2139,6 +2159,7 @@ function getCachedScores() {
     if (primaryRaw) {
       const parsed = JSON.parse(primaryRaw);
       if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+        parsed.rows = deduplicateScoreRows(parsed.rows);
         _memoryCachedScores = parsed;
         return parsed;
       }
@@ -2263,7 +2284,7 @@ async function loadStudentScores(force = false) {
 
   // ── INSTANT DISPLAY: show cached scores immediately, zero wait ──
   if (cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
-    allScoreRows = cached.rows;
+    allScoreRows = deduplicateScoreRows(cached.rows);
     updateAdminFreshness(cached.lastUpdatedText || "Saved device copy", false);
     buildAdminTermTabs();
 
@@ -2278,7 +2299,7 @@ async function loadStudentScores(force = false) {
           // Version mismatch or new data — fetch silently in background
           const freshRows = await window.dbClient.getScores();
           if (freshRows && freshRows.length > 0) {
-            allScoreRows = freshRows;
+            allScoreRows = deduplicateScoreRows(freshRows);
             const now = new Date();
             const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
             setCachedScores(allScoreRows, cloudVersion || now.toISOString(), timeStr);
@@ -2315,7 +2336,7 @@ async function loadStudentScores(force = false) {
     const freshRows = await window.dbClient.getScores();
 
     if (freshRows && freshRows.length > 0) {
-      allScoreRows = freshRows;
+      allScoreRows = deduplicateScoreRows(freshRows);
       const now = new Date();
       const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
       const cloudVersion = now.toISOString();
@@ -2329,7 +2350,7 @@ async function loadStudentScores(force = false) {
       // Supabase returned 0 rows
       const savedCache = getCachedScores();
       if (savedCache && Array.isArray(savedCache.rows) && savedCache.rows.length > 0) {
-        allScoreRows = savedCache.rows;
+        allScoreRows = deduplicateScoreRows(savedCache.rows);
         updateAdminFreshness(savedCache.lastUpdatedText || "Saved device copy", false);
         buildAdminTermTabs();
         const pushBtn = $("scoresPushCloudBtn");
@@ -2766,6 +2787,58 @@ $("scoresRefreshBtn").onclick = () => loadStudentScores(true);
 // Push cached scores to Supabase cloud
 if ($("scoresPushCloudBtn")) {
   $("scoresPushCloudBtn").onclick = () => pushCachedScoresToCloud();
+}
+
+// Smart Deduplicate Button: cleans duplicates across admin, Supabase, and all teachers
+async function runSmartDeduplication() {
+  if (!confirm("Are you sure you want to scan and remove duplicate scores?\n\nThis will scan Supabase cloud, keep only 1 clean copy per student per subject, and instantly clean all teacher portals.")) return;
+  const btns = [document.getElementById("scoresDeduplicateBtn"), document.getElementById("uploadDeduplicateBtn")].filter(Boolean);
+  btns.forEach(b => { b.disabled = true; b.innerHTML = "🧹 Scanning & cleaning duplicates..."; });
+  try {
+    // 1. Immediately deduplicate in-memory & local cache
+    allScoreRows = deduplicateScoreRows(allScoreRows);
+    const now = new Date();
+    const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    setCachedScores(allScoreRows, now.toISOString(), timeStr);
+    renderScoresTableOnly();
+    buildAdminTermTabs();
+
+    // 2. Clear any teacher private caches stored on this device
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith("school_teacher_scores_") || k.includes("teacher_scores"))) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch (_) {}
+
+    // 3. Run cloud deduplication on Supabase
+    let stats = { removed: 0 };
+    if (window.dbClient && window.dbClient.cleanAllDuplicates) {
+      stats = await window.dbClient.cleanAllDuplicates();
+    }
+
+    // 4. Force reload fresh scores to confirm
+    await loadStudentScores(true);
+    await loadLiveTerms();
+
+    alert(`✓ Deduplication Complete!\n\nRemoved ${stats.removed || 0} duplicate records from Supabase.\nAll teacher views have been updated to clean single records.`);
+  } catch (err) {
+    alert("Deduplication error: " + err.message);
+  } finally {
+    const sBtn = document.getElementById("scoresDeduplicateBtn");
+    if (sBtn) { sBtn.disabled = false; sBtn.innerHTML = "🧹 Remove Duplicates"; }
+    const uBtn = document.getElementById("uploadDeduplicateBtn");
+    if (uBtn) { uBtn.disabled = false; uBtn.innerHTML = "🧹 Clean Duplicates"; }
+  }
+}
+
+if ($("scoresDeduplicateBtn")) {
+  $("scoresDeduplicateBtn").onclick = runSmartDeduplication;
+}
+if ($("uploadDeduplicateBtn")) {
+  $("uploadDeduplicateBtn").onclick = runSmartDeduplication;
 }
 
 // Print Report

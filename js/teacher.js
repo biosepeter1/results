@@ -242,6 +242,26 @@ $go.addEventListener("click", doLogin);
 // ── Data Loader & Local Storage Cache ──
 const TEACHER_CACHE_PREFIX = "teacher_cache_v3_";
 
+function deduplicateScoreRows(rows) {
+  if (!Array.isArray(rows) || !rows.length) return [];
+  const seen = new Set();
+  const unique = [];
+  rows.forEach(r => {
+    const reg = (r.reg || "").trim().toUpperCase();
+    const st = (r.student || r.name || "").trim().toUpperCase();
+    const sub = (r.subject || "").trim().toUpperCase();
+    const cls = (r.class || r.className || "").trim().toUpperCase();
+    const arm = (r.arm || "").trim().toUpperCase();
+    const term = (r.term || "").trim().toUpperCase();
+    const key = `${term}|${reg || st}|${sub}|${cls}|${arm}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  });
+  return unique;
+}
+
 function getTeacherCache(username) {
   try {
     const clean = (username || "").toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -306,14 +326,14 @@ async function loadData() {
 
   // 2. If cached data matches cloud version, USE IT DIRECTLY!
   if (isCloudAvailable && cloudVersion && cached && cached.version && cached.version === cloudVersion && Array.isArray(cached.rows) && cached.rows.length > 0) {
-    allRows = cached.rows;
+    allRows = deduplicateScoreRows(cached.rows);
     showTeacherFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }), false);
     return;
   }
 
   // 3. Fallback: If offline, but this teacher loaded before:
   if (!isCloudAvailable && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
-    allRows = cached.rows;
+    allRows = deduplicateScoreRows(cached.rows);
     showTeacherFreshness(cached.lastUpdatedText || "Earlier session", true);
     return;
   }
@@ -324,7 +344,7 @@ async function loadData() {
 
     // If Supabase returned empty results but device has saved scores, keep device copy!
     if ((!rawScores || rawScores.length === 0) && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
-      allRows = cached.rows;
+      allRows = deduplicateScoreRows(cached.rows);
       showTeacherFreshness(cached.lastUpdatedText || "Earlier session", true);
       return;
     }
@@ -359,17 +379,17 @@ async function loadData() {
       });
     });
 
-    allRows = authorizedRows;
+    allRows = deduplicateScoreRows(authorizedRows);
     const now = new Date();
     const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
     // Store ONLY this teacher's authorized rows in their private cache
-    if (authorizedRows.length > 0) {
+    if (allRows.length > 0) {
       setTeacherCache(clean, {
         version: cloudVersion || now.toISOString(),
         timestamp: Date.now(),
         lastUpdatedText: timeStr,
-        rows: authorizedRows
+        rows: allRows
       });
     }
 
