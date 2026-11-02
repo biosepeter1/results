@@ -128,25 +128,6 @@ setInterval(() => {
   }
 }, 10000);
 
-if ($("teacherRefreshScoresBtn")) {
-  $("teacherRefreshScoresBtn").addEventListener("click", async () => {
-    const btn = $("teacherRefreshScoresBtn");
-    btn.textContent = "↻ Refreshing...";
-    btn.disabled = true;
-    try {
-      if (typeof teacher !== "undefined" && teacher && teacher.username) {
-        clearTeacherCache(teacher.username);
-      }
-      await loadData();
-      render();
-    } catch (e) {
-      alert("Refresh error: " + e.message);
-    } finally {
-      btn.textContent = "↻ Refresh";
-      btn.disabled = false;
-    }
-  });
-}
 let teacherParsedQuestions = [];
 let teacherSubmissions = [];
 
