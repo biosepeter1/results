@@ -1476,3 +1476,54 @@ table.inst-table tr:hover td {
     object-fit: contain !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   EXECUTIVE DASHBOARD & PRINT FORMATTING
+   ══════════════════════════════════════════════════════════ */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 12px !important;
+  }
+  .app-header,
+  .nav-tabs,
+  .notice-box,
+  #scoreConversionPanel,
+  .table-actions,
+  .filters-container,
+  #dashRefreshBtn,
+  #dashPrintBtn,
+  #dashStudentSearchInput,
+  #scoresRefreshBtn,
+  #scoresPushCloudBtn,
+  #scoresDeduplicateBtn,
+  #scoresExportCsvBtn,
+  #scoresPrintBtn,
+  .pagination-bar {
+    display: none !important;
+  }
+  .card, .metric-card {
+    border: 1px solid #d1d5db !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    margin-bottom: 12px !important;
+    padding: 12px !important;
+  }
+  .metric-val {
+    font-size: 20px !important;
+  }
+  .table-scroll {
+    overflow: visible !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #e5e7eb !important;
+    padding: 6px 8px !important;
+    color: #111827 !important;
+  }
+}

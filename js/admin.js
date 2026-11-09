@@ -51,7 +51,7 @@ function performAdminSignIn() {
   document.documentElement.classList.add("restoring-admin-session");
   $("viewLogin").style.display = "none";
   $("viewApp").style.display = "block";
-  const activeTab = localStorage.getItem("admin_active_tab_v1") || "scores";
+  const activeTab = localStorage.getItem("admin_active_tab_v1") || "dashboard";
   switchTab(activeTab);
   // Run teachers and live-terms in parallel — don't block the scores tab
   Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => {});
@@ -89,13 +89,14 @@ function switchTab(target) {
   try {
     localStorage.setItem("admin_active_tab_v1", target);
   } catch(err) {}
-  const TABS = ["scores", "teachers", "upload", "cbt"];
-  const BTNS = { scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT" };
-  const PANES = { scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT" };
+  const TABS = ["dashboard", "scores", "teachers", "upload", "cbt"];
+  const BTNS = { dashboard: "tabDashboard", scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT" };
+  const PANES = { dashboard: "paneDashboard", scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT" };
   TABS.forEach(t => {
-    $(BTNS[t]).classList.toggle("active", t === target);
-    $(PANES[t]).style.display = (t === target) ? "block" : "none";
+    if ($(BTNS[t])) $(BTNS[t]).classList.toggle("active", t === target);
+    if ($(PANES[t])) $(PANES[t]).style.display = (t === target) ? "block" : "none";
   });
+  if (target === "dashboard") renderExecutiveDashboard();
   if (target === "teachers") loadTeachers(true);
   if (target === "upload") loadLiveTerms();
   if (target === "cbt") {
@@ -106,6 +107,7 @@ function switchTab(target) {
   }
   if (target === "scores") { initConversionPanel(); loadStudentScores(); }
 }
+if ($("tabDashboard")) $("tabDashboard").onclick = () => switchTab("dashboard");
 $("tabScores").onclick = () => switchTab("scores");
 $("tabTeachers").onclick = () => switchTab("teachers");
 $("tabUpload").onclick = () => switchTab("upload");
@@ -125,6 +127,536 @@ $("tabCBT").onclick = () => switchTab("cbt");
     document.documentElement.classList.remove("restoring-admin-session");
   }
 })();
+
+// ══════════════════════════════════════════════════════════
+// EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL & LEADERSHIP VIEW)
+// ══════════════════════════════════════════════════════════
+let dashActiveTabStudentView = "fail"; // "fail" or "honor"
+let dashSubjectView = "best"; // "best" or "needs_support"
+let _dashEventsBound = false;
+let dashAtRiskStudents = [];
+let dashHonorRollStudents = [];
+let dashSubjectStats = [];
+
+function initDashboardEvents() {
+  if (_dashEventsBound) return;
+  _dashEventsBound = true;
+
+  const tSel = $("dashFilterTerm");
+  const cSel = $("dashFilterClass");
+  const aSel = $("dashFilterArm");
+  const sSel = $("dashFilterSubject");
+  const qInput = $("dashStudentSearchInput");
+
+  if (tSel) {
+    tSel.addEventListener("change", () => {
+      populateDashboardClassAndArmFilters();
+      renderExecutiveDashboard();
+    });
+  }
+  if (cSel) {
+    cSel.addEventListener("change", () => {
+      populateDashboardArmFilter();
+      renderExecutiveDashboard();
+    });
+  }
+  if (aSel) aSel.addEventListener("change", () => renderExecutiveDashboard());
+  if (sSel) sSel.addEventListener("change", () => renderExecutiveDashboard());
+  if (qInput) qInput.addEventListener("input", () => renderDashboardStudentActionCenter());
+
+  if ($("dashSubjectTabBest")) {
+    $("dashSubjectTabBest").onclick = () => {
+      dashSubjectView = "best";
+      $("dashSubjectTabBest").classList.add("active");
+      $("dashSubjectTabNeedsSupport").classList.remove("active");
+      renderDashboardSubjectRadar();
+    };
+  }
+  if ($("dashSubjectTabNeedsSupport")) {
+    $("dashSubjectTabNeedsSupport").onclick = () => {
+      dashSubjectView = "needs_support";
+      $("dashSubjectTabNeedsSupport").classList.add("active");
+      $("dashSubjectTabBest").classList.remove("active");
+      renderDashboardSubjectRadar();
+    };
+  }
+
+  if ($("dashStudentsTabFail")) {
+    $("dashStudentsTabFail").onclick = () => {
+      dashActiveTabStudentView = "fail";
+      $("dashStudentsTabFail").classList.add("active");
+      $("dashStudentsTabHonor").classList.remove("active");
+      renderDashboardStudentActionCenter();
+    };
+  }
+  if ($("dashStudentsTabHonor")) {
+    $("dashStudentsTabHonor").onclick = () => {
+      dashActiveTabStudentView = "honor";
+      $("dashStudentsTabHonor").classList.add("active");
+      $("dashStudentsTabFail").classList.remove("active");
+      renderDashboardStudentActionCenter();
+    };
+  }
+
+  if ($("dashRefreshBtn")) {
+    $("dashRefreshBtn").onclick = async () => {
+      const btn = $("dashRefreshBtn");
+      btn.innerHTML = "&#8635; Refreshing...";
+      btn.disabled = true;
+      try {
+        await loadStudentScores(true);
+        renderExecutiveDashboard();
+      } finally {
+        btn.innerHTML = "&#8635; Refresh Data";
+        btn.disabled = false;
+      }
+    };
+  }
+  if ($("dashPrintBtn")) {
+    $("dashPrintBtn").onclick = () => window.print();
+  }
+}
+
+function syncDashboardFilterOptions() {
+  if (!allScoreRows || !allScoreRows.length) return;
+  const tSel = $("dashFilterTerm");
+  if (!tSel) return;
+
+  const currentTermVal = tSel.value;
+  const terms = [...new Set(allScoreRows.map(r => r.term).filter(Boolean))].sort();
+
+  tSel.innerHTML = `<option value="">All Terms (${terms.length} terms)</option>` +
+    terms.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+
+  if (currentTermVal && terms.includes(currentTermVal)) {
+    tSel.value = currentTermVal;
+  } else if (adminCurrentTerm && terms.includes(adminCurrentTerm)) {
+    tSel.value = adminCurrentTerm;
+  }
+
+  populateDashboardClassAndArmFilters();
+}
+
+function populateDashboardClassAndArmFilters() {
+  const tSel = $("dashFilterTerm");
+  const cSel = $("dashFilterClass");
+  const sSel = $("dashFilterSubject");
+  if (!cSel) return;
+
+  const selectedTerm = tSel ? tSel.value : "";
+  const rows = selectedTerm ? allScoreRows.filter(r => r.term === selectedTerm) : allScoreRows;
+
+  const currentClassVal = cSel.value;
+  const classes = [...new Set(rows.map(r => r.class || r.className).filter(Boolean))].sort();
+  cSel.innerHTML = `<option value="">All Classes (${classes.length})</option>` +
+    classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+  if (classes.includes(currentClassVal)) cSel.value = currentClassVal;
+
+  if (sSel) {
+    const currentSub = sSel.value;
+    const subjects = [...new Set(rows.map(r => r.subject).filter(Boolean))].sort();
+    sSel.innerHTML = `<option value="">All Subjects (${subjects.length})</option>` +
+      subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+    if (subjects.includes(currentSub)) sSel.value = currentSub;
+  }
+
+  populateDashboardArmFilter();
+}
+
+function populateDashboardArmFilter() {
+  const tSel = $("dashFilterTerm");
+  const cSel = $("dashFilterClass");
+  const aSel = $("dashFilterArm");
+  if (!aSel) return;
+
+  const selectedTerm = tSel ? tSel.value : "";
+  const selectedClass = cSel ? cSel.value : "";
+
+  let rows = allScoreRows || [];
+  if (selectedTerm) rows = rows.filter(r => r.term === selectedTerm);
+  if (selectedClass) rows = rows.filter(r => (r.class || r.className) === selectedClass);
+
+  const currentArmVal = aSel.value;
+  const arms = [...new Set(rows.map(r => r.arm).filter(Boolean))].sort();
+  aSel.innerHTML = `<option value="">All Arms (${arms.length || 0})</option>` +
+    arms.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join("");
+
+  if (arms.includes(currentArmVal)) aSel.value = currentArmVal;
+}
+
+function getDashboardFilteredRows() {
+  const term = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+  const cls = $("dashFilterClass") ? $("dashFilterClass").value : "";
+  const arm = $("dashFilterArm") ? $("dashFilterArm").value : "";
+  const sub = $("dashFilterSubject") ? $("dashFilterSubject").value : "";
+
+  return (allScoreRows || []).filter(r => {
+    if (term && r.term !== term) return false;
+    if (cls && (r.class || r.className) !== cls) return false;
+    if (arm && (r.arm || "") !== arm) return false;
+    if (sub && r.subject !== sub) return false;
+    return true;
+  });
+}
+
+async function renderExecutiveDashboard() {
+  initDashboardEvents();
+
+  // If score rows aren't in memory yet, load them
+  if (!allScoreRows || !allScoreRows.length) {
+    await loadStudentScores();
+  }
+
+  syncDashboardFilterOptions();
+
+  const rows = getDashboardFilteredRows();
+  const totalAssessments = rows.length;
+
+  const termVal = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+  const classVal = $("dashFilterClass") ? $("dashFilterClass").value : "";
+  const scopeSummary = `${termVal ? termVal : "All Terms"} · ${classVal ? classVal : "All Classes"} · ${totalAssessments.toLocaleString()} assessment records`;
+  if ($("dashScopeSummary")) $("dashScopeSummary").textContent = scopeSummary;
+
+  // 1. Group by student to track individuals
+  const studentMap = new Map();
+  let passedCount = 0;
+  let failedCount = 0;
+  let scoreSum = 0;
+  let highest = -Infinity;
+  let lowest = Infinity;
+
+  // Tiers
+  let tierDist = 0; // >= 75
+  let tierCredit = 0; // 60 - 74.99
+  let tierPass = 0; // 50 - 59.99
+  let tierFail = 0; // < 50
+
+  // Group by Class
+  const classMap = new Map();
+
+  // Group by Subject
+  const subjectMap = new Map();
+
+  rows.forEach(r => {
+    const rawScore = r.score !== undefined ? parseFloat(r.score) : NaN;
+    const rawPct = r.pct !== undefined ? parseFloat(r.pct) : NaN;
+    const pctVal = !isNaN(rawPct) ? rawPct : (!isNaN(rawScore) ? rawScore : 0);
+
+    const isPass = pctVal >= 50;
+    if (isPass) passedCount++; else failedCount++;
+    scoreSum += pctVal;
+    if (pctVal > highest) highest = pctVal;
+    if (pctVal < lowest) lowest = pctVal;
+
+    // Tiers
+    if (pctVal >= 75) tierDist++;
+    else if (pctVal >= 60) tierCredit++;
+    else if (pctVal >= 50) tierPass++;
+    else tierFail++;
+
+    // Student Key
+    const studentName = (r.student || r.name || "Unknown Student").toUpperCase().trim();
+    const regNo = (r.reg || r.regNo || "").trim();
+    const studentKey = `${studentName}|${regNo}`;
+
+    if (!studentMap.has(studentKey)) {
+      studentMap.set(studentKey, {
+        name: studentName,
+        reg: regNo,
+        class: r.class || r.className || "-",
+        arm: r.arm || "-",
+        scores: [],
+        totalPct: 0,
+        failedSubjects: []
+      });
+    }
+    const sObj = studentMap.get(studentKey);
+    sObj.scores.push({ subject: r.subject, pct: pctVal, score: r.score });
+    sObj.totalPct += pctVal;
+    if (!isPass) {
+      sObj.failedSubjects.push({ subject: r.subject || "Unknown", pct: pctVal });
+    }
+
+    // Class aggregation
+    const clsKey = (r.class || r.className || "Unassigned").trim();
+    if (!classMap.has(clsKey)) {
+      classMap.set(clsKey, { className: clsKey, students: new Set(), totalScores: 0, passes: 0, fails: 0, scoreSum: 0 });
+    }
+    const cObj = classMap.get(clsKey);
+    cObj.students.add(studentKey);
+    cObj.totalScores++;
+    cObj.scoreSum += pctVal;
+    if (isPass) cObj.passes++; else cObj.fails++;
+
+    // Subject aggregation
+    const subKey = (r.subject || "General").trim();
+    if (!subjectMap.has(subKey)) {
+      subjectMap.set(subKey, { subject: subKey, total: 0, passes: 0, fails: 0, scoreSum: 0 });
+    }
+    const subObj = subjectMap.get(subKey);
+    subObj.total++;
+    subObj.scoreSum += pctVal;
+    if (isPass) subObj.passes++; else subObj.fails++;
+  });
+
+  const uniqueStudents = studentMap.size;
+  const passRate = totalAssessments ? ((passedCount / totalAssessments) * 100).toFixed(1) : "0.0";
+  const avgScore = totalAssessments ? (scoreSum / totalAssessments).toFixed(1) : "0.0";
+
+  // Calculate student averages & separate At-Risk vs Honor Roll
+  dashAtRiskStudents = [];
+  dashHonorRollStudents = [];
+
+  studentMap.forEach(s => {
+    s.avgScore = s.scores.length ? (s.totalPct / s.scores.length).toFixed(1) : 0;
+    if (s.failedSubjects.length > 0) {
+      dashAtRiskStudents.push(s);
+    } else if (s.avgScore >= 70 && s.scores.length >= 2) {
+      dashHonorRollStudents.push(s);
+    }
+  });
+
+  // Sort At-Risk: most failures first, then lowest average
+  dashAtRiskStudents.sort((a, b) => b.failedSubjects.length - a.failedSubjects.length || a.avgScore - b.avgScore);
+
+  // Sort Honor Roll: highest average first
+  dashHonorRollStudents.sort((a, b) => b.avgScore - a.avgScore);
+
+  // ── 2. Update KPI Cards ──
+  if ($("dashMetricTotalStudents")) $("dashMetricTotalStudents").textContent = uniqueStudents.toLocaleString();
+  if ($("dashMetricTotalAssessments")) $("dashMetricTotalAssessments").textContent = `${totalAssessments.toLocaleString()} evaluated exam scores`;
+
+  if ($("dashMetricPassRate")) {
+    $("dashMetricPassRate").textContent = `${passRate}%`;
+    $("dashMetricPassRate").style.color = Number(passRate) >= 70 ? "#10b981" : (Number(passRate) >= 50 ? "#f59e0b" : "#ef4444");
+  }
+
+  if ($("dashMetricPassedCount")) $("dashMetricPassedCount").textContent = passedCount.toLocaleString();
+  if ($("dashMetricPassedPct")) $("dashMetricPassedPct").textContent = `${passRate}% pass achievement`;
+
+  if ($("dashMetricFailedCount")) $("dashMetricFailedCount").textContent = failedCount.toLocaleString();
+  if ($("dashMetricAtRiskStudents")) $("dashMetricAtRiskStudents").textContent = `${dashAtRiskStudents.length.toLocaleString()} student${dashAtRiskStudents.length !== 1 ? "s" : ""} failed 1+ subject`;
+
+  if ($("dashMetricAvgScore")) $("dashMetricAvgScore").textContent = `${avgScore}%`;
+  if ($("dashMetricHighestLowest")) {
+    const highStr = highest !== -Infinity ? `${highest}%` : "-";
+    const lowStr = lowest !== Infinity ? `${lowest}%` : "-";
+    $("dashMetricHighestLowest").textContent = `Highest: ${highStr} · Lowest: ${lowStr}`;
+  }
+
+  // ── 3. Update Performance Tiers ──
+  if ($("dashTierTotalLabel")) $("dashTierTotalLabel").textContent = `${totalAssessments.toLocaleString()} Scores Analyzed`;
+
+  const pDist = totalAssessments ? Math.round((tierDist / totalAssessments) * 100) : 0;
+  const pCredit = totalAssessments ? Math.round((tierCredit / totalAssessments) * 100) : 0;
+  const pPass = totalAssessments ? Math.round((tierPass / totalAssessments) * 100) : 0;
+  const pFail = totalAssessments ? Math.round((tierFail / totalAssessments) * 100) : 0;
+
+  if ($("dashTierBarDist")) $("dashTierBarDist").style.width = `${pDist}%`;
+  if ($("dashTierBarCredit")) $("dashTierBarCredit").style.width = `${pCredit}%`;
+  if ($("dashTierBarPass")) $("dashTierBarPass").style.width = `${pPass}%`;
+  if ($("dashTierBarFail")) $("dashTierBarFail").style.width = `${pFail}%`;
+
+  if ($("dashTierCountDist")) $("dashTierCountDist").textContent = tierDist.toLocaleString();
+  if ($("dashTierPctDist")) $("dashTierPctDist").textContent = `${pDist}% of scores`;
+
+  if ($("dashTierCountCredit")) $("dashTierCountCredit").textContent = tierCredit.toLocaleString();
+  if ($("dashTierPctCredit")) $("dashTierPctCredit").textContent = `${pCredit}% of scores`;
+
+  if ($("dashTierCountPass")) $("dashTierCountPass").textContent = tierPass.toLocaleString();
+  if ($("dashTierPctPass")) $("dashTierPctPass").textContent = `${pPass}% of scores`;
+
+  if ($("dashTierCountFail")) $("dashTierCountFail").textContent = tierFail.toLocaleString();
+  if ($("dashTierPctFail")) $("dashTierPctFail").textContent = `${pFail}% of scores`;
+
+  // ── 4. Render Class Comparative Analysis ──
+  const classList = Array.from(classMap.values()).sort((a, b) => a.className.localeCompare(b.className));
+  const classTbody = $("dashClassBreakdownTbody");
+  if (classTbody) {
+    if (!classList.length) {
+      classTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted);">No class data available.</td></tr>`;
+    } else {
+      classTbody.innerHTML = classList.map(c => {
+        const cPassRate = c.totalScores ? ((c.passes / c.totalScores) * 100).toFixed(1) : "0.0";
+        const cAvg = c.totalScores ? (c.scoreSum / c.totalScores).toFixed(1) : "0.0";
+        const rateNum = Number(cPassRate);
+        const statusBadge = rateNum >= 80 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-weight:600;">Excellent</span>` :
+          (rateNum >= 60 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-weight:600;">Good</span>` :
+          `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Needs Support</span>`);
+
+        return `
+          <tr style="border-bottom:1px solid var(--border-subtle);">
+            <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(c.className)}</td>
+            <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${c.students.size}</td>
+            <td style="padding:10px 8px;text-align:center;font-weight:600;color:${rateNum >= 70 ? '#10b981' : (rateNum >= 50 ? '#f59e0b' : '#ef4444')}">${cPassRate}%</td>
+            <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${cAvg}%</td>
+            <td style="padding:10px 8px;text-align:right;">
+              <span style="color:#10b981;font-weight:600;">${c.passes}P</span> / <span style="color:#ef4444;font-weight:600;">${c.fails}F</span> ${statusBadge}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // ── 5. Render Subject Radar ──
+  dashSubjectStats = Array.from(subjectMap.values()).map(s => {
+    s.passRate = s.total ? Number(((s.passes / s.total) * 100).toFixed(1)) : 0;
+    s.avgScore = s.total ? Number((s.scoreSum / s.total).toFixed(1)) : 0;
+    return s;
+  });
+
+  renderDashboardSubjectRadar();
+
+  // ── 6. Render Student Action Center ──
+  if ($("dashBadgeFailCount")) $("dashBadgeFailCount").textContent = dashAtRiskStudents.length.toLocaleString();
+  if ($("dashBadgeHonorCount")) $("dashBadgeHonorCount").textContent = dashHonorRollStudents.length.toLocaleString();
+
+  renderDashboardStudentActionCenter();
+}
+
+function renderDashboardSubjectRadar() {
+  const container = $("dashSubjectRankingList");
+  if (!container) return;
+
+  if (!dashSubjectStats || !dashSubjectStats.length) {
+    container.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted);">No subject data available.</div>`;
+    return;
+  }
+
+  const list = [...dashSubjectStats];
+  if (dashSubjectView === "best") {
+    // Highest pass rate & avg score first
+    list.sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
+  } else {
+    // Most fails / lowest pass rate first
+    list.sort((a, b) => b.fails - a.fails || a.passRate - b.passRate);
+  }
+
+  container.innerHTML = list.slice(0, 10).map(s => {
+    const badgeColor = s.passRate >= 75 ? "#10b981" : (s.passRate >= 50 ? "#f59e0b" : "#ef4444");
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);">
+        <div style="min-width:0;flex:1;padding-right:12px;">
+          <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.subject)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+            ${s.total} evaluated · Avg: <strong style="color:var(--text);">${s.avgScore}%</strong>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
+          <div style="font-size:11px;color:${s.fails > 0 ? '#ef4444' : '#10b981'};font-weight:600;">
+            ${s.fails > 0 ? `${s.fails} failed` : 'Zero fails'}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDashboardStudentActionCenter() {
+  const tbody = $("dashStudentsTableBody");
+  const thead = $("dashStudentsTableHead");
+  const query = ($("dashStudentSearchInput") ? $("dashStudentSearchInput").value : "").trim().toLowerCase();
+  if (!tbody) return;
+
+  const isFailTab = (dashActiveTabStudentView === "fail");
+  if ($("dashStudentListSubtitle")) {
+    $("dashStudentListSubtitle").textContent = isFailTab ?
+      "Showing students who failed one or more subjects (Actionable for counseling / resits)" :
+      "Showing high-performing students with average 70%+ across all subjects";
+  }
+
+  // Update Table Header accordingly
+  if (thead) {
+    if (isFailTab) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>STUDENT NAME</th>
+          <th>REG NUMBER</th>
+          <th>CLASS &amp; ARM</th>
+          <th>FAILED SUBJECTS</th>
+          <th style="text-align:center;">AVG SCORE</th>
+          <th style="text-align:center;">ACADEMIC ACTION</th>
+        </tr>
+      `;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:40px;">RANK</th>
+          <th>STUDENT NAME</th>
+          <th>REG NUMBER</th>
+          <th>CLASS &amp; ARM</th>
+          <th style="text-align:center;">ASSESSMENTS</th>
+          <th style="text-align:center;">OVERALL AVERAGE</th>
+          <th style="text-align:center;">HONORS RECOGNITION</th>
+        </tr>
+      `;
+    }
+  }
+
+  const rawList = isFailTab ? dashAtRiskStudents : dashHonorRollStudents;
+  const filteredList = rawList.filter(s => {
+    if (!query) return true;
+    return s.name.toLowerCase().includes(query) ||
+      s.reg.toLowerCase().includes(query) ||
+      s.class.toLowerCase().includes(query) ||
+      s.arm.toLowerCase().includes(query);
+  });
+
+  if (!filteredList.length) {
+    const emptyMsg = isFailTab ?
+      "🎉 Excellent! No students have failing grades in the selected scope." :
+      "No honor roll students found matching the selected scope.";
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filteredList.slice(0, 50).map((s, idx) => {
+    if (isFailTab) {
+      const failBadges = s.failedSubjects.map(f =>
+        `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:600;">${esc(f.subject)} (${f.pct}%)</span>`
+      ).join("");
+
+      const actionText = s.failedSubjects.length >= 3 ?
+        `<span style="padding:2px 8px;border-radius:4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;">Critical Intervention</span>` :
+        (s.failedSubjects.length === 2 ?
+          `<span style="padding:2px 8px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:11px;font-weight:600;">Remedial &amp; Resit</span>` :
+          `<span style="padding:2px 8px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;">Subject Counseling</span>`);
+
+      return `
+        <tr style="border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
+          <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
+          <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
+          <td style="padding:10px 8px;">${failBadges}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
+          <td style="padding:10px 8px;text-align:center;">${actionText}</td>
+        </tr>
+      `;
+    } else {
+      // Honor Roll
+      const rankBadge = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
+      return `
+        <tr style="border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:10px 8px;font-weight:700;color:var(--accent);">${rankBadge}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
+          <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
+          <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
+          <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:#10b981;font-size:14px;">${s.avgScore}%</td>
+          <td style="padding:10px 8px;text-align:center;">
+            <span style="padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:11px;font-weight:700;">🌟 Distinction Scholar</span>
+          </td>
+        </tr>
+      `;
+    }
+  }).join("");
+}
 
 // ══════════════════════════════════════════════════════════
 // TEACHER MANAGEMENT
@@ -2823,6 +3355,9 @@ function buildAdminTermTabs() {
   updateAdminTermTabs();
   buildAdminFilters();
   applyScoreFilters();
+  if ($("paneDashboard") && $("paneDashboard").style.display !== "none") {
+    renderExecutiveDashboard();
+  }
 }
 
 function updateAdminTermTabs() {
