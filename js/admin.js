@@ -942,7 +942,7 @@ function renderCBTSubmissions() {
   }
 
   $("cbtSubmissionsTbody").innerHTML = allCbtSubmissions.map(sub => {
-    const qCount = Array.isArray(sub.questions) ? sub.questions.length : (sub.numberOfQuestions || 0);
+    const qCount = (Array.isArray(sub.questions) && sub.questions.length > 0) ? sub.questions.length : (Number(sub.numberOfQuestions) || Number(sub.totalQuestions) || 0);
     const resolvedSubName = (sub.subjectName && sub.subjectName !== "—" && sub.subjectName !== "-")
       ? sub.subjectName
       : ((typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "Biology");

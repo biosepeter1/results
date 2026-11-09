@@ -2102,7 +2102,7 @@ function renderTeacherSubmissions() {
   }
 
   $("tCbtMyExamsTbody").innerHTML = teacherSubmissions.map(sub => {
-    const qCount = Array.isArray(sub.questions) ? sub.questions.length : (sub.numberOfQuestions || 0);
+    const qCount = (Array.isArray(sub.questions) && sub.questions.length > 0) ? sub.questions.length : (Number(sub.numberOfQuestions) || Number(sub.totalQuestions) || 0);
     const rawDate = sub.launchDate || sub.examDate || sub.startDate;
     let launchDisplay = "27 Oct 2026";
     if (rawDate) {
