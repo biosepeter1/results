@@ -572,6 +572,11 @@ async function renderExecutiveDashboard() {
     return s;
   });
 
+  const subjectTopCount = dashSubjectStats.filter(s => s.passRate >= 75).length;
+  const subjectFailCount = dashSubjectStats.filter(s => s.fails > 0).length;
+  if ($("dashBadgeSubjectTopCount")) $("dashBadgeSubjectTopCount").textContent = subjectTopCount;
+  if ($("dashBadgeSubjectFailCount")) $("dashBadgeSubjectFailCount").textContent = subjectFailCount;
+
   renderDashboardSubjectRadar();
 
   // ── 6. Render Student Action Center ──
@@ -592,7 +597,8 @@ function renderDashboardSubjectRadar() {
   }
 
   const list = [...dashSubjectStats];
-  if (dashSubjectView === "best") {
+  const isNeedsSupport = dashSubjectView === "needs_support";
+  if (!isNeedsSupport) {
     // Highest pass rate & avg score first
     list.sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
   } else {
@@ -602,16 +608,19 @@ function renderDashboardSubjectRadar() {
 
   container.innerHTML = list.slice(0, 10).map(s => {
     const badgeColor = s.passRate >= 75 ? "#10b981" : (s.passRate >= 50 ? "#f59e0b" : "#ef4444");
+    const accentBorder = isNeedsSupport
+      ? (s.fails > 0 ? "border-left:4px solid #ef4444;" : "border-left:4px solid #f59e0b;")
+      : "border-left:4px solid #10b981;";
 
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);${accentBorder}">
         <div style="min-width:0;flex:1;padding-right:12px;">
           <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.subject)}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
             ${s.total} evaluated · Avg: <strong style="color:var(--text);">${s.avgScore}%</strong>
           </div>
         </div>
-        <div style="text-align:right;">
+        <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:13px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
           <div style="font-size:11px;color:${s.fails > 0 ? '#ef4444' : '#10b981'};font-weight:600;">
             ${s.fails > 0 ? `${s.fails} failed` : 'Zero fails'}

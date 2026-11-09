@@ -1487,6 +1487,43 @@ table.inst-table tr:hover td {
   margin-bottom: 24px;
 }
 
+/* Universal 50/50 Segmented Control for Subject Performance Radar */
+.dash-radar-segmented-tabs {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 12px !important;
+}
+
+#dashSubjectTabBest,
+#dashSubjectTabNeedsSupport {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 38px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 6px 4px !important;
+  border-radius: var(--radius) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+#dashSubjectTabBest.active {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #10b981 !important;
+  border: 1px solid #10b981 !important;
+}
+
+#dashSubjectTabNeedsSupport.active {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #ef4444 !important;
+  border: 1px solid #ef4444 !important;
+}
+
 /* Tablet & Intermediate Screens (<= 992px) */
 @media (max-width: 992px) {
   .dash-kpi-grid {
