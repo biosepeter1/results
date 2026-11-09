@@ -639,7 +639,7 @@ function renderDashboardSubjectRadar() {
 
 let dashStudentByIdMap = new Map();
 
-window.toggleDashStudentDrawer = function(studentId, highlightSubject) {
+window.toggleDashStudentDrawer = function (studentId, highlightSubject) {
   const drawer = $(`dash-drawer-${studentId}`);
   const chevron = $(`dash-chevron-${studentId}`);
   if (!drawer) return;
@@ -671,7 +671,7 @@ window.toggleDashStudentDrawer = function(studentId, highlightSubject) {
   }
 };
 
-window.openStudentScoreModal = function(studentId, isResit = false) {
+window.openStudentScoreModal = function (studentId, isResit = false) {
   const s = dashStudentByIdMap.get(studentId);
   if (!s) return;
 
@@ -747,7 +747,7 @@ window.openStudentScoreModal = function(studentId, isResit = false) {
   if ($("dashStudentScoreModal")) $("dashStudentScoreModal").classList.add("open");
 };
 
-window.openStudentResitSlip = function(studentId) {
+window.openStudentResitSlip = function (studentId) {
   window.openStudentScoreModal(studentId, true);
 };
 
@@ -891,16 +891,11 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;">${rewriteBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
           <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-              <span style="padding:2px 6px;border-radius:4px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;">Mandatory Resit (${s.rewriteSubjects.length})</span>
-              <div style="display:flex;gap:4px;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
-                  📋 Breakdown
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;color:#d97706;font-weight:700;">
-                  🖨️ Resit Slip
-                </button>
-              </div>
+            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+              <span style="padding:4px 9px;border-radius:4px;background:#f59e0b;color:#fff;font-size:11px;font-weight:700;">Mandatory Resit (${s.rewriteSubjects.length})</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;color:#d97706;font-weight:700;">
+                🖨️ Resit Slip
+              </button>
             </div>
           </td>
         </tr>
@@ -917,22 +912,22 @@ function renderDashboardStudentActionCenter() {
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (≤${dashRewriteCutoffPct}%)</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706;">🖨️ Issue Resit Authorization Slip</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706;">🖨️ Print Resit Slip</button>
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
-                const isPass = sc.pct >= 50;
-                const isRewrite = sc.pct <= dashRewriteCutoffPct;
-                const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-                const borderColor = isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
-                const borderLeftColor = isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
-                const badgeText = isRewrite ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
-                const badgeBg = isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
-                const badgeColor = isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
+        const isPass = sc.pct >= 50;
+        const isRewrite = sc.pct <= dashRewriteCutoffPct;
+        const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const borderColor = isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
+        const borderLeftColor = isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
+        const badgeText = isRewrite ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
+        const badgeBg = isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
+        const badgeColor = isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
 
-                return `
+        return `
                   <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
                       <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
@@ -949,7 +944,7 @@ function renderDashboardStudentActionCenter() {
                     </div>
                   </div>
                 `;
-              }).join('')}
+      }).join('')}
             </div>
           </td>
         </tr>
@@ -971,14 +966,11 @@ function renderDashboardStudentActionCenter() {
         `;
       }).join("");
 
-      const hasRewrite = (s.rewriteSubjects && s.rewriteSubjects.length > 0);
-      const actionText = hasRewrite ?
-        `<span style="padding:2px 6px;border-radius:4px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;">Rewrite Required (${s.rewriteSubjects.length})</span>` :
-        (s.failedSubjects.length >= 3 ?
-          `<span style="padding:2px 6px;border-radius:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
-          (s.failedSubjects.length === 2 ?
-            `<span style="padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:10px;font-weight:600;">Remedial &amp; Resit</span>` :
-            `<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:10px;font-weight:600;">Counseling</span>`));
+      const actionBadge = s.failedSubjects.length >= 3 ?
+        `<span style="padding:4px 9px;border-radius:4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
+        (s.failedSubjects.length === 2 ?
+          `<span style="padding:4px 9px;border-radius:4px;background:rgba(245,158,11,0.15);color:#d97706;font-size:11px;font-weight:700;border:1px solid rgba(245,158,11,0.3);">Remedial (2 Fails)</span>` :
+          `<span style="padding:4px 9px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;border:1px solid rgba(59,130,246,0.3);">Counseling Needed</span>`);
 
       // Main Student Row
       rowsHtml.push(`
@@ -995,18 +987,11 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;">${failBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
           <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-              ${actionText}
-              <div style="display:flex;gap:4px;">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
-                  📋 Breakdown
-                </button>
-                ${hasRewrite ? `
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;color:#d97706;font-weight:700;">
-                    🖨️ Resit
-                  </button>
-                ` : ''}
-              </div>
+            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+              ${actionBadge}
+              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;">
+                📄 Result Slip
+              </button>
             </div>
           </td>
         </tr>
@@ -1024,18 +1009,15 @@ function renderDashboardStudentActionCenter() {
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:${s.avgScore >= 50 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; color:${s.avgScore >= 50 ? '#10b981' : '#ef4444'}; font-weight:700;">Overall Average: ${s.avgScore}%</span>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
-                ${hasRewrite ? `
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; color:#d97706; font-weight:600;">🖨️ Resit Slip</button>
-                ` : ''}
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
-                const isPass = sc.pct >= 50;
-                const isRewrite = sc.pct <= dashRewriteCutoffPct;
-                const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-                return `
+        const isPass = sc.pct >= 50;
+        const isRewrite = sc.pct <= dashRewriteCutoffPct;
+        const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+        return `
                   <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)')}; border-left:4px solid ${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')}; border-radius:var(--radius); transition:all 0.25s ease;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
                       <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
@@ -1052,7 +1034,7 @@ function renderDashboardStudentActionCenter() {
                     </div>
                   </div>
                 `;
-              }).join('')}
+      }).join('')}
             </div>
           </td>
         </tr>
@@ -1074,10 +1056,10 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#10b981;font-size:14px;">${s.avgScore}%</td>
           <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-              <span style="padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:10px;font-weight:700;">Distinction Scholar</span>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
-                📋 View Breakdown
+            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+              <span style="padding:4px 9px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.3);">Distinction Scholar</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;color:#10b981;font-weight:600;">
+                📄 Transcript
               </button>
             </div>
           </td>
@@ -1101,7 +1083,7 @@ function renderDashboardStudentActionCenter() {
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
-                return `
+        return `
                   <div style="padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-left:4px solid #10b981; border-radius:var(--radius);">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
                       <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
@@ -1118,7 +1100,7 @@ function renderDashboardStudentActionCenter() {
                     </div>
                   </div>
                 `;
-              }).join('')}
+      }).join('')}
             </div>
           </td>
         </tr>
