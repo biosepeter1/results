@@ -5,7 +5,7 @@
 function $(id) { return document.getElementById(id); }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Independent Supabase Engine Active (Zero Firebase Dependency)
+// Universal Supabase Database Engine Active
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const ADMIN_PASSWORD = "admin";
@@ -912,7 +912,7 @@ function renderDashboardStudentActionCenter() {
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
         const isPass = sc.pct >= 50;
         const isRewrite = sc.pct <= dashRewriteCutoffPct;
@@ -1001,7 +1001,7 @@ function renderDashboardStudentActionCenter() {
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
         const isPass = sc.pct >= 50;
         const isRewrite = sc.pct <= dashRewriteCutoffPct;
@@ -1030,11 +1030,11 @@ function renderDashboardStudentActionCenter() {
       `);
     } else {
       // Honor Roll
-      const rankBadge = idx === 0 
+      const rankBadge = idx === 0
         ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#fef3c7;color:#b45309;font-size:11px;font-weight:800;border:1px solid rgba(245,158,11,0.3);">1ST</span>`
-        : (idx === 1 
+        : (idx === 1
           ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:800;border:1px solid #cbd5e1;">2ND</span>`
-          : (idx === 2 
+          : (idx === 2
             ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#ffedd5;color:#9a3412;font-size:11px;font-weight:800;border:1px solid rgba(249,115,22,0.3);">3RD</span>`
             : `<span style="color:var(--text-muted);font-weight:600;">#${idx + 1}</span>`));
       rowsHtml.push(`
@@ -1075,7 +1075,7 @@ function renderDashboardStudentActionCenter() {
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
         return `
                   <div style="padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-left:4px solid #10b981; border-radius:var(--radius);">
@@ -1210,9 +1210,6 @@ async function loadTeachers(force = false) {
     fresh.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     allTeachers = fresh;
     if ($("teacherCountBadge")) $("teacherCountBadge").textContent = allTeachers.length;
-    if ($("importFirebaseTeachersBtn")) {
-      $("importFirebaseTeachersBtn").style.display = (allTeachers.length >= 45) ? "none" : "inline-block";
-    }
     if (allTeachers.length > 0) {
       setCachedTeachers(allTeachers);
     }
@@ -1365,99 +1362,6 @@ if ($("refreshTeachersBtn")) {
     btn.textContent = orig;
     btn.disabled = false;
   };
-}
-
-// ── Migrate All 46 Teachers from Firebase Firestore into Supabase ─────────────
-async function importTeachersFromFirebase() {
-  const btn = $("importFirebaseTeachersBtn");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "Connecting to Firebase SDK...";
-  }
-
-  try {
-    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrh_hTy0adRjHxa3fQ4WQK1hmkK3Z9P5M",
-      authDomain: "school-exam-portal-2de06.firebaseapp.com",
-      projectId: "school-exam-portal-2de06",
-      storageBucket: "school-exam-portal-2de06.firebasestorage.app",
-      messagingSenderId: "797572003782",
-      appId: "1:797572003782:web:14126bc63b4fa956d1a4c7"
-    };
-
-    const fbApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig, "migrationApp_" + Date.now());
-    let fbDb;
-    try {
-      fbDb = getFirestore(fbApp, "default");
-    } catch (e) {
-      fbDb = getFirestore(fbApp);
-    }
-
-    if (btn) btn.textContent = "Fetching teachers from Firebase...";
-
-    // Try "exam_teachers" first, then "teachers" if empty
-    let snap;
-    try {
-      snap = await getDocs(collection(fbDb, "exam_teachers"));
-    } catch (err1) {
-      console.warn("Query exam_teachers with 'default' db failed, retrying (default):", err1);
-      const fallbackDb = getFirestore(fbApp);
-      snap = await getDocs(collection(fallbackDb, "exam_teachers"));
-    }
-    if (!snap || snap.empty) {
-      try {
-        snap = await getDocs(collection(fbDb, "teachers"));
-      } catch (err2) {
-        console.warn("Query teachers failed:", err2);
-      }
-    }
-
-    if (snap.empty) {
-      alert("No teacher documents found in Firebase (checked 'exam_teachers' and 'teachers').");
-      return;
-    }
-
-    const teachersToSave = snap.docs.map(doc => {
-      const d = doc.data() || {};
-      const id = doc.id.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const username = (d.username || d.id || id).toLowerCase().replace(/[^a-z0-9]/g, "");
-      return {
-        id,
-        username,
-        name: (d.name || id).trim(),
-        password: d.password || "",
-        subjects: Array.isArray(d.subjects) ? d.subjects : [],
-        classes: Array.isArray(d.classes) ? d.classes : [],
-        arms: Array.isArray(d.arms) ? d.arms : []
-      };
-    });
-
-    if (btn) btn.textContent = `Saving ${teachersToSave.length} teachers to Supabase...`;
-
-    for (let i = 0; i < teachersToSave.length; i++) {
-      if (btn) btn.textContent = `Saving to Supabase (${i + 1}/${teachersToSave.length})...`;
-      await window.dbClient.saveTeacher(teachersToSave[i]);
-    }
-
-    await loadTeachers(true);
-    if (btn) btn.style.display = "none";
-    alert(`Success! Successfully migrated all ${teachersToSave.length} teachers with their real assigned subjects into Supabase!`);
-  } catch (err) {
-    console.error("Firebase import error:", err);
-    alert("Could not import teachers from Firebase: " + err.message);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "☁ Import All 46 Teachers from Firebase";
-    }
-  }
-}
-
-if ($("importFirebaseTeachersBtn")) {
-  $("importFirebaseTeachersBtn").onclick = importTeachersFromFirebase;
 }
 
 // Modal Controls: Open Edit

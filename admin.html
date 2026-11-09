@@ -99,8 +99,8 @@
          ══════════════════════════════════════════════════════ -->
       <section id="paneDashboard">
         <!-- Executive Welcome & Summary Header -->
-        <div class="card" style="margin-bottom:18px;background:linear-gradient(135deg, rgba(185,74,74,0.08) 0%, rgba(36,107,62,0.05) 100%);border:1px solid var(--border);">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div class="card dash-welcome-card" style="margin-bottom:18px;background:linear-gradient(135deg, rgba(185,74,74,0.08) 0%, rgba(36,107,62,0.05) 100%);border:1px solid var(--border);">
+          <div class="dash-welcome-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
             <div>
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="width:38px;height:38px;border-radius:8px;background:rgba(59,130,246,0.12);color:#3b82f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -112,7 +112,7 @@
                 </div>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="dash-header-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <button type="button" class="btn btn-secondary btn-sm" id="dashRefreshBtn" title="Refresh analytics" style="display:inline-flex;align-items:center;gap:6px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Refresh Data
@@ -126,12 +126,12 @@
         </div>
 
         <!-- Interactive Filter Controls Bar -->
-        <div class="card" style="margin-bottom:20px;padding:16px;">
+        <div class="card dash-scope-card" style="margin-bottom:20px;padding:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
             <span style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);">Interactive Analytical Scope</span>
             <span id="dashScopeSummary" style="font-size:12px;color:var(--accent);font-weight:600;">Analyzing all examination records</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+          <div class="dash-filters-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
             <div class="filter-control">
               <label for="dashFilterTerm">ACADEMIC TERM</label>
               <select id="dashFilterTerm">
@@ -160,7 +160,7 @@
         </div>
 
         <!-- 6 Principal Key Performance Indicators (KPI Cards) -->
-        <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:24px;">
+        <div class="metrics-grid dash-kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:24px;">
           <!-- 1. Total Evaluated Students -->
           <div class="metric-card" style="border-top:3px solid #3b82f6;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -235,7 +235,7 @@
         </div>
 
         <!-- Performance Distribution & Benchmark Tier Bar -->
-        <div class="card" style="margin-bottom:24px;">
+        <div class="card dash-tier-card" style="margin-bottom:24px;">
           <div class="card-header">
             <div>
               <h3 class="card-title">Performance Tier Distribution</h3>
@@ -252,7 +252,7 @@
             <div id="dashTierBarFail" style="width:0%;background:#ef4444;transition:width 0.3s ease;" title="Fail"></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;">
+          <div class="dash-tier-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;">
             <div style="padding:12px;background:var(--surface-alt);border-radius:var(--radius);border-left:4px solid #10b981;">
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Distinction (&ge;75%)</div>
               <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashTierCountDist">0</div>
@@ -277,7 +277,7 @@
         </div>
 
         <!-- Two Column Layout: Class Comparison vs Subject Performance -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:20px;margin-bottom:24px;">
+        <div class="dash-two-col-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;margin-bottom:24px;">
           <!-- Class Performance Breakdown -->
           <div class="card" style="margin:0;">
             <div class="card-header">
@@ -329,13 +329,13 @@
         </div>
 
         <!-- Actionable Student Lists (Failed/At-Risk vs Honor Roll) -->
-        <div class="card" style="margin-bottom:20px;">
+        <div class="card dash-action-center-card" id="dashStudentActionCenterCard" style="margin-bottom:20px;">
           <div class="card-header">
             <div>
               <h3 class="card-title">Student Academic Action Center</h3>
               <div class="card-sub">Actionable drill-down for student counseling, intervention, and academic honors.</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <button type="button" class="btn btn-secondary btn-sm active" id="dashStudentsTabFail" style="color:#ef4444;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)
@@ -352,7 +352,7 @@
           </div>
 
           <!-- Rewrite Controls Bar (Visible on Rewrite Tab) -->
-          <div id="dashRewriteToolbar" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div id="dashRewriteToolbar" class="dash-rewrite-toolbar" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">
               <span style="color:#f59e0b;font-weight:700;display:inline-flex;align-items:center;gap:5px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -380,7 +380,7 @@
           </div>
 
           <!-- Search in student drill-down -->
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+          <div class="dash-student-search-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
             <input type="search" id="dashStudentSearchInput" placeholder="Quick search student name, reg no, or class..." style="max-width:320px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;">
             <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
               <span style="display:inline-flex;align-items:center;gap:5px;">
@@ -390,8 +390,8 @@
             </div>
           </div>
 
-          <div class="table-scroll">
-            <table style="width:100%;font-size:13px;">
+          <div class="table-scroll dash-students-table-scroll">
+            <table id="dashStudentsTable" class="dash-students-table" style="width:100%;font-size:13px;">
               <thead id="dashStudentsTableHead">
                 <tr>
                   <th style="width:40px;">#</th>
@@ -625,11 +625,6 @@
                 placeholder="Filter by teacher name, username, or subject...">
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm" id="importFirebaseTeachersBtn" type="button"
-                style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid #3b82f6;font-weight:600"
-                title="Migrate all 46 real teachers and their assigned subjects from Firebase into Supabase">
-                ☁ Import All 46 Teachers from Firebase
-              </button>
               <button class="btn btn-secondary btn-sm" id="refreshTeachersBtn" type="button"
                 title="Fetch latest teachers from database">&#8635; Refresh</button>
               <button class="btn btn-sm" id="openAddTeacherBtn" type="button">+ Add new teacher</button>
@@ -1228,7 +1223,7 @@
 
   <!-- Student Full Academic Transcript Modal -->
   <div class="modal-overlay" id="dashStudentScoreModal">
-    <div class="modal-box" style="max-width:760px;width:95vw;max-height:90vh;overflow-y:auto;">
+    <div class="modal-box dash-modal-box" style="max-width:760px;width:95vw;max-height:90vh;overflow-y:auto;">
       <!-- School Header on Print / Slip -->
       <div id="dashModalSchoolHeader" style="display:none;text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
         <h2 style="margin:0;font-size:20px;letter-spacing:1px;text-transform:uppercase;">HONEYLAND SCHOOLS</h2>
@@ -1254,7 +1249,7 @@
       </div>
 
       <!-- Quick Metrics Summary -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:18px;">
+      <div class="dash-modal-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:18px;">
         <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
           <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Overall Average</div>
           <div style="font-size:20px;font-weight:700;" id="dashStudentModalAvg">0%</div>
@@ -1310,7 +1305,10 @@
 
       <div class="modal-actions" style="justify-content:space-between;">
         <button class="btn btn-secondary" id="dashStudentModalCloseBottomBtn" type="button">Close</button>
-        <button class="btn btn-primary" id="dashStudentModalPrintBtn" type="button">🖨️ Print Result Slip</button>
+        <button class="btn btn-primary" id="dashStudentModalPrintBtn" type="button" style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print Result Slip
+        </button>
       </div>
     </div>
   </div>
