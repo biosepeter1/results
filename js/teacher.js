@@ -423,7 +423,8 @@ function switchTeacherPortalTab(target) {
   if ($paneCbt) $paneCbt.style.display = isCbt ? "block" : "none";
 
   if (isCbt) {
-    loadActiveCbtTerm();
+        loadActiveCbtTerm();
+    loadTeacherCbtDefaults();
     initTeacherCbtForm();
     loadTeacherSubmissions();
   }
@@ -876,6 +877,41 @@ function populateCbtClassArms(className) {
     const isSelected = (teacherArms.length === 0) || teacherArms.includes(a.name.trim().toLowerCase());
     return `<option value="${a.id}" ${isSelected ? 'selected' : ''}>${esc(a.name)}</option>`;
   }).join("");
+}
+
+// ── School-Wide CBT Exam Defaults (Duration & Marks synchronized from Admin) ──
+let teacherCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
+
+async function loadTeacherCbtDefaults() {
+  try {
+    const cached = localStorage.getItem("cbt_exam_defaults");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed) {
+        if (parsed.duration) teacherCbtDefaults.duration = Number(parsed.duration);
+        if (parsed.marksPerQuestion) teacherCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        updateTeacherCbtDefaultsUI();
+      }
+    }
+    if (window.dbClient && window.dbClient.getCbtExamDefaults) {
+      const cloud = await window.dbClient.getCbtExamDefaults();
+      if (cloud) {
+        if (cloud.duration) teacherCbtDefaults.duration = Number(cloud.duration);
+        if (cloud.marksPerQuestion) teacherCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        localStorage.setItem("cbt_exam_defaults", JSON.stringify(teacherCbtDefaults));
+        updateTeacherCbtDefaultsUI();
+      }
+    }
+  } catch (e) {
+    // Offline / fallback
+  }
+}
+
+function updateTeacherCbtDefaultsUI() {
+  if (tCbtDurationDisplay) tCbtDurationDisplay.textContent = teacherCbtDefaults.duration;
+  if (tCbtMarksDisplay) tCbtMarksDisplay.textContent = teacherCbtDefaults.marksPerQuestion;
+  if (tCbtDuration) tCbtDuration.value = teacherCbtDefaults.duration;
+  if (tCbtPoints) tCbtPoints.value = teacherCbtDefaults.marksPerQuestion;
 }
 
 // ── School-Wide Active Examination Term (Synchronized from Administration) ──
@@ -1995,8 +2031,8 @@ $("tCbtSubmitBtn").onclick = async () => {
   }
   const sClass = $("tCbtClass") ? $("tCbtClass").value.trim() : "Year 7";
   const title = ($("tCbtTitle")?.value.trim() || `${subject} ${activeCbtExamTerm}`).toUpperCase();
-  const duration = parseInt($("tCbtDuration").value, 10) || 30;
-  const pts = parseFloat($("tCbtPoints").value) || 1.5;
+  const duration = parseInt($("tCbtDuration")?.value || teacherCbtDefaults.duration, 10) || 30;
+  const pts = parseFloat($("tCbtPoints")?.value || teacherCbtDefaults.marksPerQuestion) || 1.5;
 
   $("tCbtSubmitBtn").disabled = true;
   $("tCbtSubmitBtn").textContent = "Submitting to admin...";

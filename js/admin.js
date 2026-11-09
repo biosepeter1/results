@@ -81,6 +81,7 @@ function switchTab(target) {
   if (target === "upload") loadLiveTerms();
   if (target === "cbt") {
     loadAdminCbtActiveTerm();
+    loadAdminCbtDefaults();
     loadCBTSubmissions();
     refreshCbtSubjectsCatalog();
   }
@@ -860,6 +861,59 @@ async function setAdminCbtActiveTerm(newTerm) {
     }
   } catch (err) {
     alert("Could not update active term in Supabase: " + err.message);
+  }
+}
+
+// ── School-Wide CBT Exam Defaults (Duration & Marks) ──
+let adminCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
+
+async function loadAdminCbtDefaults() {
+  try {
+    const cached = localStorage.getItem("cbt_exam_defaults");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed) {
+        if (parsed.duration) adminCbtDefaults.duration = Number(parsed.duration);
+        if (parsed.marksPerQuestion) adminCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        updateAdminCbtDefaultsUI();
+      }
+    }
+    if (window.dbClient && window.dbClient.getCbtExamDefaults) {
+      const cloud = await window.dbClient.getCbtExamDefaults();
+      if (cloud) {
+        if (cloud.duration) adminCbtDefaults.duration = Number(cloud.duration);
+        if (cloud.marksPerQuestion) adminCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        localStorage.setItem("cbt_exam_defaults", JSON.stringify(adminCbtDefaults));
+        updateAdminCbtDefaultsUI();
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load cbt_exam_defaults from Supabase:", e);
+  }
+}
+
+function updateAdminCbtDefaultsUI() {
+  if ($("cbtAdminGlobalDuration")) $("cbtAdminGlobalDuration").value = adminCbtDefaults.duration;
+  if ($("cbtAdminGlobalMarks")) $("cbtAdminGlobalMarks").value = adminCbtDefaults.marksPerQuestion;
+}
+
+async function saveAdminCbtDefaults() {
+  const dur = parseInt($("cbtAdminGlobalDuration")?.value, 10) || 30;
+  const marks = parseFloat($("cbtAdminGlobalMarks")?.value) || 1.5;
+  adminCbtDefaults = { duration: dur, marksPerQuestion: marks };
+  localStorage.setItem("cbt_exam_defaults", JSON.stringify(adminCbtDefaults));
+
+  try {
+    if (window.dbClient && window.dbClient.setCbtExamDefaults) {
+      await window.dbClient.setCbtExamDefaults(adminCbtDefaults);
+    }
+    const badge = $("cbtAdminDefaultsSavedBadge");
+    if (badge) {
+      badge.style.display = "inline";
+      setTimeout(() => { badge.style.display = "none"; }, 3000);
+    }
+  } catch (err) {
+    alert("Could not save exam defaults to Supabase: " + err.message);
   }
 }
 
@@ -2054,6 +2108,7 @@ $("cbtModalDownloadBothBtn").onclick = () => {
   }
 };
 $("refreshCBTSubmissionsBtn").onclick = loadCBTSubmissions;
+if ($("cbtAdminSaveDefaultsBtn")) $("cbtAdminSaveDefaultsBtn").onclick = saveAdminCbtDefaults;
 
 // ── CBT Submissions Filters & Pagination Event Wiring ──
 if ($("cbtFilterClass")) $("cbtFilterClass").onchange = filterCbtSubmissions;

@@ -505,6 +505,30 @@
             <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
               for all teachers!</span>
           </div>
+
+          <!-- School-Wide Exam Duration & Marks per Question -->
+          <div
+            style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px">
+            <div>
+              <span style="color:var(--text);font-weight:700">School-Wide Exam Duration &amp; Marks:</span>
+              <span style="color:var(--text-muted);margin-left:6px">Enforced for all teachers when uploading exams</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                Duration:
+                <input type="number" id="cbtAdminGlobalDuration" value="30" min="5" max="180" class="form-input"
+                  style="width:75px;padding:4px 8px;font-size:12px"> mins
+              </label>
+              <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                Marks / Question:
+                <input type="number" id="cbtAdminGlobalMarks" value="1.5" step="0.5" min="0.5" max="50" class="form-input"
+                  style="width:75px;padding:4px 8px;font-size:12px"> marks
+              </label>
+              <button type="button" class="btn btn-sm" id="cbtAdminSaveDefaultsBtn"
+                style="font-size:12px;padding:5px 12px">Save Parameters</button>
+              <span id="cbtAdminDefaultsSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Saved for all teachers!</span>
+            </div>
+          </div>
         </div>
 
         <!-- Live Submissions from Teachers -->

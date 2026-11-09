@@ -648,6 +648,41 @@ const dbClient = {
     }
   },
 
+  async getCbtExamDefaults() {
+    const sb = getSupabase();
+    if (!sb) return null;
+    try {
+      const { data, error } = await sb.from("exam_meta").select("meta").eq("key", "cbt_exam_defaults").maybeSingle();
+      if (error || !data || !data.meta) return null;
+      return data.meta;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  async setCbtExamDefaults(defaults) {
+    const sb = getSupabase();
+    if (!sb) return false;
+    try {
+      const duration = parseInt(defaults.duration, 10) || 30;
+      const marksPerQuestion = parseFloat(defaults.marksPerQuestion) || 1.5;
+      const { error } = await sb.from("exam_meta").upsert({
+        key: "cbt_exam_defaults",
+        last_updated: new Date().toISOString(),
+        meta: {
+          duration,
+          marksPerQuestion,
+          updatedAt: new Date().toISOString()
+        }
+      }, { onConflict: "key" });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Supabase setCbtExamDefaults error:", err);
+      throw err;
+    }
+  },
+
   // ══════════════════════════════════════════════════════════
   // 5. SCORE CONVERSION CONFIGURATION
   // ══════════════════════════════════════════════════════════
