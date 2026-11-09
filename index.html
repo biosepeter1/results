@@ -9,6 +9,19 @@
   <meta name="description"
     content="Institutional examination results reporting system for academic staff and administration.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    (function() {
+      try {
+        if (localStorage.getItem("teacher_session_v1")) {
+          document.documentElement.classList.add("restoring-teacher-session");
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <style>
+    .restoring-teacher-session #login { display: none !important; }
+    .restoring-teacher-session #app { display: block !important; }
+  </style>
   <link rel="stylesheet" href="css/teacher.css">
 </head>
 

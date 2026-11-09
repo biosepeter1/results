@@ -225,6 +225,17 @@ async function doLogin() {
 
   teacher = { ...found, username: user };
 
+  // Persist session for seamless page reloads
+  try {
+    localStorage.setItem("teacher_session_v1", JSON.stringify({
+      username: user,
+      pass: pass,
+      teacher: teacher
+    }));
+  } catch(err) {
+    console.warn("Unable to save session to localStorage:", err);
+  }
+
   try {
     await loadData();
     showApp();
@@ -411,6 +422,9 @@ async function loadData() {
 
 // ── Tab Navigation ──
 function switchTeacherPortalTab(target) {
+  try {
+    localStorage.setItem("teacher_active_tab_v1", target);
+  } catch(e) {}
   const isCbt = (target === "cbt");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
@@ -435,6 +449,7 @@ if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () =>
 
 // ── Show App ──
 function showApp() {
+  document.documentElement.classList.add("restoring-teacher-session");
   $login.style.display = "none";
   $app.style.display = "block";
   $("who").textContent = teacher.name;
@@ -442,7 +457,8 @@ function showApp() {
   const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
   const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
   $("subinfo").textContent = `${sl} · ${cl}${al}`;
-  switchTeacherPortalTab("scores");
+  const activeTab = localStorage.getItem("teacher_active_tab_v1") || "scores";
+  switchTeacherPortalTab(activeTab);
   buildTermTabs();
 }
 
@@ -454,6 +470,14 @@ function doSignOut() {
   activeFilteredRows = [];
   currentTerm = null;
   currentPage = 1;
+
+  // Clear teacher session and active tab from localStorage
+  try {
+    localStorage.removeItem("teacher_session_v1");
+    localStorage.removeItem("teacher_active_tab_v1");
+  } catch(e) {}
+
+  document.documentElement.classList.remove("restoring-teacher-session");
 
   // Clear teacher caches from localStorage
   Object.keys(localStorage).forEach(function(k) {
@@ -2594,3 +2618,75 @@ function esc(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ── Session Persistence: Auto-restore on page reload ──
+async function autoRestoreTeacherSession() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem("teacher_session_v1");
+  } catch(e) {}
+  if (!saved) {
+    document.documentElement.classList.remove("restoring-teacher-session");
+    return;
+  }
+
+  let sess = null;
+  try {
+    sess = JSON.parse(saved);
+  } catch(e) {}
+  if (!sess || !sess.username) {
+    document.documentElement.classList.remove("restoring-teacher-session");
+    return;
+  }
+
+  const user = sess.username;
+  const clean = user.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if ($u) $u.value = user;
+  if ($p && sess.pass) $p.value = sess.pass;
+
+  // 1. Initial immediate restore from cached session
+  if (sess.teacher) {
+    teacher = { ...sess.teacher, username: user };
+  } else {
+    teacher = TEACHERS[clean] || TEACHERS[user] || { name: user, username: user, subjects: [], classes: [] };
+  }
+
+  try {
+    await loadData();
+    showApp();
+  } catch(e) {
+    console.warn("Auto-restore loadData failed:", e);
+    showApp();
+  }
+
+  // 2. Asynchronously verify credentials & permissions against Supabase
+  try {
+    if (window.dbClient && window.dbClient.getTeacher) {
+      const fresh = await window.dbClient.getTeacher(clean);
+      if (fresh) {
+        const storedPw = fresh.password || "";
+        if (sess.pass && storedPw && (storedPw !== sess.pass && storedPw.toLowerCase() !== sess.pass.toLowerCase())) {
+          console.warn("Teacher credentials changed remotely. Revoking session.");
+          doSignOut();
+          return;
+        }
+        teacher = { ...fresh, username: user };
+        sess.teacher = teacher;
+        try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch(err) {}
+        if ($("who")) $("who").textContent = teacher.name;
+        const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
+        const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
+        const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
+        if ($("subinfo")) $("subinfo").textContent = `${sl} · ${cl}${al}`;
+      }
+    } else {
+      document.documentElement.classList.remove("restoring-teacher-session");
+    }
+  } catch(err) {
+    console.warn("Background teacher account validation error:", err);
+  }
+}
+
+// Kick off auto-restore
+autoRestoreTeacherSession();

@@ -11,6 +11,19 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <script>
+    (function() {
+      try {
+        if (localStorage.getItem("admin_auth_session_v1") === "true") {
+          document.documentElement.classList.add("restoring-admin-session");
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <style>
+    .restoring-admin-session #viewLogin { display: none !important; }
+    .restoring-admin-session #viewApp { display: block !important; }
+  </style>
   <link rel="stylesheet" href="css/admin.css">
 </head>
 

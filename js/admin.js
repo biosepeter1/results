@@ -47,21 +47,37 @@ function renderTeacherModalSubjects(selectedSubjects = []) {
 }
 
 // ── Admin Sign In ──
+function performAdminSignIn() {
+  document.documentElement.classList.add("restoring-admin-session");
+  $("viewLogin").style.display = "none";
+  $("viewApp").style.display = "block";
+  const activeTab = localStorage.getItem("admin_active_tab_v1") || "scores";
+  switchTab(activeTab);
+  // Run teachers and live-terms in parallel — don't block the scores tab
+  Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => {});
+}
+
 $("loginForm").onsubmit = (e) => {
   e.preventDefault();
   const pw = $("adminPwInput").value.trim();
   if (pw === ADMIN_PASSWORD) {
-    $("viewLogin").style.display = "none";
-    $("viewApp").style.display = "block";
-    switchTab("scores");
-    // Run teachers and live-terms in parallel — don't block the scores tab
-    Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => {});
+    try {
+      localStorage.setItem("admin_auth_session_v1", "true");
+    } catch(err) {
+      console.warn("Storage write error:", err);
+    }
+    performAdminSignIn();
   } else {
     $("loginErrorMsg").textContent = "Invalid administrator password.";
   }
 };
 
 $("adminSignOutBtn").onclick = () => {
+  try {
+    localStorage.removeItem("admin_auth_session_v1");
+    localStorage.removeItem("admin_active_tab_v1");
+  } catch(err) {}
+  document.documentElement.classList.remove("restoring-admin-session");
   $("viewApp").style.display = "none";
   $("viewLogin").style.display = "flex";
   $("adminPwInput").value = "";
@@ -70,6 +86,9 @@ $("adminSignOutBtn").onclick = () => {
 
 // ── Navigation Tabs ──
 function switchTab(target) {
+  try {
+    localStorage.setItem("admin_active_tab_v1", target);
+  } catch(err) {}
   const TABS = ["scores", "teachers", "upload", "cbt"];
   const BTNS = { scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT" };
   const PANES = { scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT" };
@@ -91,6 +110,21 @@ $("tabScores").onclick = () => switchTab("scores");
 $("tabTeachers").onclick = () => switchTab("teachers");
 $("tabUpload").onclick = () => switchTab("upload");
 $("tabCBT").onclick = () => switchTab("cbt");
+
+// Auto-restore admin session if previously signed in
+(function autoRestoreAdminSession() {
+  try {
+    const isAuthed = localStorage.getItem("admin_auth_session_v1");
+    if (isAuthed === "true") {
+      performAdminSignIn();
+    } else {
+      document.documentElement.classList.remove("restoring-admin-session");
+    }
+  } catch(err) {
+    console.warn("Auto-restore admin session failed:", err);
+    document.documentElement.classList.remove("restoring-admin-session");
+  }
+})();
 
 // ══════════════════════════════════════════════════════════
 // TEACHER MANAGEMENT
