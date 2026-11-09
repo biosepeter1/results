@@ -509,13 +509,46 @@
 
         <!-- Live Submissions from Teachers -->
         <div class="card" style="margin-bottom:24px">
-          <div class="card-header">
+          <div class="card-header" style="flex-wrap:wrap;gap:12px">
             <div>
               <h2 class="card-title">Teacher Uploaded CBT Exams</h2>
               <p class="card-sub">Exams uploaded by academic staff ready for offline CBT deployment</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="refreshCBTSubmissionsBtn">Refresh
-              submissions</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button type="button" class="btn btn-secondary btn-sm" id="refreshCBTSubmissionsBtn">Refresh
+                submissions</button>
+            </div>
+          </div>
+
+          <!-- CBT Filters: Class | Subject | Search -->
+          <div class="filters-container" style="padding:12px 16px;background:var(--surface-alt,rgba(255,255,255,0.02));border-bottom:1px solid var(--border)">
+            <div class="filters-row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+              <div class="filter-control" style="flex:1;min-width:140px">
+                <label for="cbtFilterClass">CLASS</label>
+                <select id="cbtFilterClass">
+                  <option value="">All classes</option>
+                  <option value="Year 7">Year 7</option>
+                  <option value="Year 8">Year 8</option>
+                  <option value="Year 9">Year 9</option>
+                  <option value="Year 10">Year 10</option>
+                  <option value="Year 11">Year 11</option>
+                  <option value="Year 12">Year 12</option>
+                </select>
+              </div>
+              <div class="filter-control" style="flex:1;min-width:180px">
+                <label for="cbtFilterSubject">SUBJECT</label>
+                <select id="cbtFilterSubject">
+                  <option value="">All subjects</option>
+                </select>
+              </div>
+              <div class="filter-control" style="flex:2;min-width:220px">
+                <label for="cbtFilterSearch">SEARCH EXAM OR TEACHER</label>
+                <input id="cbtFilterSearch" type="search" placeholder="Filter by title, teacher name, subject...">
+              </div>
+              <div style="display:flex;align-items:center;padding-bottom:2px">
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtClearFiltersBtn" style="white-space:nowrap">Reset filters</button>
+              </div>
+            </div>
           </div>
 
           <div class="table-wrap">
@@ -539,6 +572,29 @@
               </tbody>
             </table>
           </div>
+
+          <!-- CBT Pagination Bar -->
+          <footer class="pagination-bar" id="cbtPaginationBar">
+            <div class="pagination-info" id="cbtPaginationInfo">
+              Showing 0 to 0 of 0 exams
+            </div>
+            <div class="pagination-controls">
+              <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                Rows:
+                <select class="page-size-select" id="cbtPageSizeSelect">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="All">All</option>
+                </select>
+              </label>
+              <button type="button" class="page-btn" id="cbtFirstPageBtn" title="First page" disabled>&laquo;</button>
+              <button type="button" class="page-btn" id="cbtPrevPageBtn" title="Previous page" disabled>&lsaquo;</button>
+              <div id="cbtPageButtonsGroup" style="display:flex;gap:4px"></div>
+              <button type="button" class="page-btn" id="cbtNextPageBtn" title="Next page" disabled>&rsaquo;</button>
+              <button type="button" class="page-btn" id="cbtLastPageBtn" title="Last page" disabled>&raquo;</button>
+            </div>
+          </footer>
         </div>
 
         <!-- CBT Subjects & MongoDB Catalog Manager -->

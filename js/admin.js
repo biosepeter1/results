@@ -819,6 +819,9 @@ $("refreshTermsBtn").onclick = loadLiveTerms;
 // CBT EXAMS & OFFLINE JSON DOWNLOADS MODULE
 // ============================================================
 let allCbtSubmissions = [];
+let cbtFilteredSubmissions = [];
+let cbtCurrentPage = 1;
+let cbtPageSize = 10;
 let activePreviewSubmission = null;
 
 // ── School-Wide Active CBT Examination Term ──
@@ -915,9 +918,152 @@ function triggerJsonDownload(filename, data) {
   }, 300);
 }
 
+// ── CBT Submissions Filtering & Pagination State Helpers ──
+function getSubClass(sub) {
+  if (sub.className && sub.className !== "All" && sub.className !== "—") return sub.className;
+  const match = (sub.title || "").match(/Year\s*([0-9]+)/i);
+  if (match) return `Year ${match[1]}`;
+  return sub.className || "All";
+}
+
+function getSubSubject(sub) {
+  if (sub.subjectName && sub.subjectName !== "—" && sub.subjectName !== "-") return sub.subjectName;
+  if (typeof resolveCbtSubject === "function") {
+    const res = resolveCbtSubject(sub.title || "");
+    if (res && res.name) return res.name;
+  }
+  return "General";
+}
+
+function populateCbtFilterOptions() {
+  const classSelect = $("cbtFilterClass");
+  const subjectSelect = $("cbtFilterSubject");
+  if (!classSelect || !subjectSelect) return;
+
+  const currentClass = classSelect.value;
+  const currentSubject = subjectSelect.value;
+
+  // Unique classes from submissions + Year 7, 8, 9
+  const classSet = new Set(["Year 7", "Year 8", "Year 9"]);
+  allCbtSubmissions.forEach(sub => {
+    const c = getSubClass(sub);
+    if (c && c !== "All" && c !== "—") classSet.add(c);
+  });
+  const sortedClasses = Array.from(classSet).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, ""), 10) || 0;
+    const numB = parseInt(b.replace(/\D/g, ""), 10) || 0;
+    return numA - numB || a.localeCompare(b);
+  });
+
+  classSelect.innerHTML = `<option value="">All classes</option>` + sortedClasses.map(c => `
+    <option value="${esc(c)}" ${c === currentClass ? 'selected' : ''}>${esc(c)}</option>
+  `).join("");
+
+  // Unique subjects from submissions + catalog
+  const subjectSet = new Set();
+  allCbtSubmissions.forEach(sub => {
+    const s = getSubSubject(sub);
+    if (s && s !== "General") subjectSet.add(s);
+  });
+  if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
+    Object.keys(CBT_CONFIG.subjects).forEach(s => subjectSet.add(s));
+  }
+  const sortedSubjects = Array.from(subjectSet).sort((a, b) => a.localeCompare(b));
+
+  subjectSelect.innerHTML = `<option value="">All subjects</option>` + sortedSubjects.map(s => `
+    <option value="${esc(s)}" ${s === currentSubject ? 'selected' : ''}>${esc(s)}</option>
+  `).join("");
+}
+
+function filterCbtSubmissions() {
+  const classFilter = ($("cbtFilterClass")?.value || "").trim().toLowerCase();
+  const subjectFilter = ($("cbtFilterSubject")?.value || "").trim().toLowerCase();
+  const query = ($("cbtFilterSearch")?.value || "").trim().toLowerCase();
+
+  cbtFilteredSubmissions = allCbtSubmissions.filter(sub => {
+    if (classFilter) {
+      const subCls = getSubClass(sub).toLowerCase();
+      const titleLower = (sub.title || "").toLowerCase();
+      const matchesClass = subCls === classFilter || titleLower.includes(classFilter);
+      if (!matchesClass) return false;
+    }
+
+    if (subjectFilter) {
+      const subSubject = getSubSubject(sub).toLowerCase();
+      const titleLower = (sub.title || "").toLowerCase();
+      const matchesSubject = subSubject === subjectFilter || titleLower.includes(subjectFilter);
+      if (!matchesSubject) return false;
+    }
+
+    if (query) {
+      const title = (sub.title || "").toLowerCase();
+      const teacher = (sub.teacherName || sub.teacherUser || "").toLowerCase();
+      const subject = getSubSubject(sub).toLowerCase();
+      const cls = getSubClass(sub).toLowerCase();
+      const matchesSearch = title.includes(query) || teacher.includes(query) || subject.includes(query) || cls.includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    return true;
+  });
+
+  cbtCurrentPage = 1;
+  renderCBTSubmissions();
+}
+
+function resetCbtFilters() {
+  if ($("cbtFilterClass")) $("cbtFilterClass").value = "";
+  if ($("cbtFilterSubject")) $("cbtFilterSubject").value = "";
+  if ($("cbtFilterSearch")) $("cbtFilterSearch").value = "";
+  filterCbtSubmissions();
+}
+
+function updateCbtPaginationUI(startIdx, endIdx, totalRecords, totalPages) {
+  const info = $("cbtPaginationInfo");
+  if (info) {
+    if (totalRecords === 0) {
+      info.textContent = "Showing 0 to 0 of 0 exams";
+    } else {
+      info.textContent = `Showing ${startIdx + 1} to ${endIdx} of ${totalRecords} exam${totalRecords !== 1 ? 's' : ''}`;
+    }
+  }
+
+  const btnFirst = $("cbtFirstPageBtn");
+  const btnPrev = $("cbtPrevPageBtn");
+  const btnNext = $("cbtNextPageBtn");
+  const btnLast = $("cbtLastPageBtn");
+  const btnGroup = $("cbtPageButtonsGroup");
+
+  if (btnFirst) btnFirst.disabled = (cbtCurrentPage <= 1);
+  if (btnPrev) btnPrev.disabled = (cbtCurrentPage <= 1);
+  if (btnNext) btnNext.disabled = (cbtCurrentPage >= totalPages);
+  if (btnLast) btnLast.disabled = (cbtCurrentPage >= totalPages);
+
+  if (btnGroup) {
+    btnGroup.innerHTML = "";
+    if (totalPages > 1) {
+      const maxButtons = 5;
+      let startP = Math.max(1, cbtCurrentPage - Math.floor(maxButtons / 2));
+      let endP = Math.min(totalPages, startP + maxButtons - 1);
+      if (endP - startP + 1 < maxButtons) {
+        startP = Math.max(1, endP - maxButtons + 1);
+      }
+      for (let p = startP; p <= endP; p++) {
+        const pBtn = document.createElement("button");
+        pBtn.type = "button";
+        pBtn.className = "page-btn" + (p === cbtCurrentPage ? " active" : "");
+        pBtn.textContent = p;
+        pBtn.onclick = () => { cbtCurrentPage = p; renderCBTSubmissions(); };
+        btnGroup.appendChild(pBtn);
+      }
+    }
+  }
+}
+
 // Load submissions created by teachers from Supabase
 async function loadCBTSubmissions() {
-  cbtSubmissionsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions from Supabaseâ€¦</td></tr>';
+  const tbody = $("cbtSubmissionsTbody");
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions from Supabase…</td></tr>';
   try {
     const sbSubs = await window.dbClient.getSubmissions();
     allCbtSubmissions = Array.isArray(sbSubs) ? sbSubs : [];
@@ -929,29 +1075,52 @@ async function loadCBTSubmissions() {
       badge.style.display = allCbtSubmissions.length ? "inline-block" : "none";
     }
 
-    renderCBTSubmissions();
+    populateCbtFilterOptions();
+    filterCbtSubmissions();
   } catch (err) {
-    cbtSubmissionsTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
   }
 }
 
 function renderCBTSubmissions() {
+  const tbody = $("cbtSubmissionsTbody");
+  if (!tbody) return;
+
   if (!allCbtSubmissions.length) {
-    $("cbtSubmissionsTbody").innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No teacher exam submissions yet. When teachers upload from home in Notepad or Word, their exams will appear here ready to download as JSON.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No teacher exam submissions yet. When teachers upload from home in Notepad or Word, their exams will appear here ready to download as JSON.</td></tr>`;
+    updateCbtPaginationUI(0, 0, 0, 1);
     return;
   }
 
-  $("cbtSubmissionsTbody").innerHTML = allCbtSubmissions.map(sub => {
+  if (!cbtFilteredSubmissions.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No exam submissions match your filter criteria. <button type="button" class="btn btn-secondary btn-sm" id="cbtInlineResetBtn" style="margin-left:8px">Reset filters</button></td></tr>`;
+    if ($("cbtInlineResetBtn")) $("cbtInlineResetBtn").onclick = resetCbtFilters;
+    updateCbtPaginationUI(0, 0, 0, 1);
+    return;
+  }
+
+  const totalRecords = cbtFilteredSubmissions.length;
+  const isAll = cbtPageSize === "All";
+  const numPageSize = isAll ? totalRecords : (Number(cbtPageSize) || 10);
+  const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalRecords / numPageSize));
+
+  if (cbtCurrentPage > totalPages) cbtCurrentPage = totalPages;
+  if (cbtCurrentPage < 1) cbtCurrentPage = 1;
+
+  const startIdx = isAll ? 0 : (cbtCurrentPage - 1) * numPageSize;
+  const endIdx = isAll ? totalRecords : Math.min(startIdx + numPageSize, totalRecords);
+  const pageSubmissions = cbtFilteredSubmissions.slice(startIdx, endIdx);
+
+  tbody.innerHTML = pageSubmissions.map(sub => {
     const qCount = (Array.isArray(sub.questions) && sub.questions.length > 0) ? sub.questions.length : (Number(sub.numberOfQuestions) || Number(sub.totalQuestions) || 0);
-    const resolvedSubName = (sub.subjectName && sub.subjectName !== "—" && sub.subjectName !== "-")
-      ? sub.subjectName
-      : ((typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "Biology");
+    const resolvedSubName = getSubSubject(sub);
+    const resolvedClass = getSubClass(sub);
 
     return `
       <tr>
         <td style="font-weight:600;color:var(--text)">${esc(sub.title || "Untitled Exam")}</td>
         <td>${esc(sub.teacherName || sub.teacherUser || "Teacher")}</td>
-        <td>${esc(resolvedSubName)} <span style="color:var(--text-muted)">(${esc(sub.className || "All")})</span></td>
+        <td>${esc(resolvedSubName)} <span style="color:var(--text-muted)">(${esc(resolvedClass)})</span></td>
         <td>${sub.duration || 30} mins</td>
         <td><span class="badge-pill badge-good">${qCount} questions</span></td>
         <td style="font-size:12px">
@@ -982,21 +1151,23 @@ function renderCBTSubmissions() {
   }).join("");
 
   // Attach button events
-  document.querySelectorAll("[data-preview-sub]").forEach(b => {
+  tbody.querySelectorAll("[data-preview-sub]").forEach(b => {
     b.onclick = () => openCBTPreview(b.dataset.previewSub);
   });
-  document.querySelectorAll("[data-dl-exams]").forEach(b => {
+  tbody.querySelectorAll("[data-dl-exams]").forEach(b => {
     b.onclick = () => downloadSubmissionExamsJson(b.dataset.dlExams);
   });
-  document.querySelectorAll("[data-dl-questions]").forEach(b => {
+  tbody.querySelectorAll("[data-dl-questions]").forEach(b => {
     b.onclick = () => downloadSubmissionQuestionsJson(b.dataset.dlQuestions);
   });
-  document.querySelectorAll("[data-dl-both]").forEach(b => {
+  tbody.querySelectorAll("[data-dl-both]").forEach(b => {
     b.onclick = () => downloadSubmissionBothJson(b.dataset.dlBoth);
   });
-  document.querySelectorAll("[data-del-sub]").forEach(b => {
+  tbody.querySelectorAll("[data-del-sub]").forEach(b => {
     b.onclick = () => deleteCBTSubmission(b.dataset.delSub);
   });
+
+  updateCbtPaginationUI(startIdx, endIdx, totalRecords, totalPages);
 }
 
 // ── CBT Custom Subjects Storage & State ──
@@ -1883,6 +2054,30 @@ $("cbtModalDownloadBothBtn").onclick = () => {
   }
 };
 $("refreshCBTSubmissionsBtn").onclick = loadCBTSubmissions;
+
+// ── CBT Submissions Filters & Pagination Event Wiring ──
+if ($("cbtFilterClass")) $("cbtFilterClass").onchange = filterCbtSubmissions;
+if ($("cbtFilterSubject")) $("cbtFilterSubject").onchange = filterCbtSubmissions;
+if ($("cbtFilterSearch")) $("cbtFilterSearch").oninput = filterCbtSubmissions;
+if ($("cbtClearFiltersBtn")) $("cbtClearFiltersBtn").onclick = resetCbtFilters;
+
+if ($("cbtPageSizeSelect")) {
+  $("cbtPageSizeSelect").onchange = () => {
+    const val = $("cbtPageSizeSelect").value;
+    cbtPageSize = (val === "All") ? "All" : (Number(val) || 10);
+    cbtCurrentPage = 1;
+    renderCBTSubmissions();
+  };
+}
+if ($("cbtFirstPageBtn")) $("cbtFirstPageBtn").onclick = () => { cbtCurrentPage = 1; renderCBTSubmissions(); };
+if ($("cbtPrevPageBtn")) $("cbtPrevPageBtn").onclick = () => { if (cbtCurrentPage > 1) { cbtCurrentPage--; renderCBTSubmissions(); } };
+if ($("cbtNextPageBtn")) $("cbtNextPageBtn").onclick = () => { cbtCurrentPage++; renderCBTSubmissions(); };
+if ($("cbtLastPageBtn")) $("cbtLastPageBtn").onclick = () => {
+  const totalRecords = cbtFilteredSubmissions.length;
+  const numPageSize = cbtPageSize === "All" ? totalRecords : (Number(cbtPageSize) || 10);
+  cbtCurrentPage = Math.max(1, Math.ceil(totalRecords / numPageSize));
+  renderCBTSubmissions();
+};
 
 // ============================================================
 // STUDENT SCORES VIEWER MODULE
