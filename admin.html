@@ -201,6 +201,16 @@
             <div class="metric-val" id="dashMetricAvgScore" style="color:#8b5cf6;">0%</div>
             <div class="metric-sub" id="dashMetricHighestLowest">Highest: - · Lowest: -</div>
           </div>
+
+          <!-- 6. Mandatory Rewrites (Low Scores <= 25%) -->
+          <div class="metric-card" id="dashCardRewriteKpi" style="border-top:3px solid #f59e0b;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;" title="Click to view all students needing rewrite">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span class="metric-lbl">Mandatory Rewrites</span>
+              <span style="font-size:16px;">🔁</span>
+            </div>
+            <div class="metric-val" id="dashMetricRewriteCount" style="color:#f59e0b;">0</div>
+            <div class="metric-sub" id="dashMetricRewriteSub">0 papers needing rewrite (≤25%)</div>
+          </div>
         </div>
 
         <!-- Performance Distribution & Benchmark Tier Bar -->
@@ -300,7 +310,31 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <button type="button" class="btn btn-secondary btn-sm active" id="dashStudentsTabFail" style="color:#ef4444;font-weight:600;">🚨 Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabRewrite" style="color:#f59e0b;font-weight:600;">🔁 Students That Need to Rewrite (<span id="dashBadgeRewriteCount">0</span>)</button>
               <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabHonor" style="color:#10b981;font-weight:600;">🏆 Academic Honour Roll (<span id="dashBadgeHonorCount">0</span>)</button>
+            </div>
+          </div>
+
+          <!-- Rewrite Controls Bar (Visible on Rewrite Tab) -->
+          <div id="dashRewriteToolbar" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">
+              <span style="color:#f59e0b;font-weight:700;">⚙️ Rewrite Threshold:</span>
+              <select id="dashRewriteCutoffSelect" style="padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;">
+                <option value="20">Scores ≤ 20% (Critically low e.g. 0/5, 5/30, 10/50)</option>
+                <option value="25" selected>Scores ≤ 25% (Standard Resit Threshold)</option>
+                <option value="30">Scores ≤ 30% (Remedial &amp; Resit)</option>
+                <option value="40">Scores ≤ 40% (Below Average)</option>
+                <option value="50">All Scores &lt; 50% (All Fails)</option>
+              </select>
+              <span id="dashRewriteSummaryInfo" style="color:var(--text-muted);font-size:12px;">Mandatory resit required for students with scores at or below this cutoff</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button type="button" class="btn btn-secondary btn-sm" id="dashExportRewriteBtn" style="font-size:12px;display:flex;align-items:center;gap:5px;background:var(--surface);">
+                📥 Export Rewrite Roster (CSV)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashPrintRewriteListBtn" style="font-size:12px;display:flex;align-items:center;gap:5px;background:var(--surface);">
+                🖨️ Print Resit Roster
+              </button>
             </div>
           </div>
 
@@ -1149,12 +1183,25 @@
   <!-- Student Full Academic Transcript Modal -->
   <div class="modal-overlay" id="dashStudentScoreModal">
     <div class="modal-box" style="max-width:760px;width:95vw;max-height:90vh;overflow-y:auto;">
+      <!-- School Header on Print / Slip -->
+      <div id="dashModalSchoolHeader" style="display:none;text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
+        <h2 style="margin:0;font-size:20px;letter-spacing:1px;text-transform:uppercase;">HONEYLAND SCHOOLS</h2>
+        <div style="font-size:12px;color:#555;margin-top:2px;">Academic Administration &amp; Examination Directorate</div>
+        <div style="font-weight:700;font-size:14px;margin-top:8px;letter-spacing:0.5px;text-transform:uppercase;" id="dashModalDocTitle">OFFICIAL STUDENT EXAMINATION RECORD</div>
+      </div>
+
       <div class="modal-head" style="align-items:flex-start;">
         <div>
           <h3 class="modal-title" id="dashStudentModalName">Student Academic Scorecard</h3>
           <p style="font-size:13px;color:var(--text-muted);margin-top:4px;" id="dashStudentModalMeta"></p>
         </div>
         <button class="btn-close" id="dashStudentModalCloseBtn" type="button">&times;</button>
+      </div>
+
+      <!-- Official Resit Directive Box (Shown when viewing Resit Slip) -->
+      <div id="dashModalResitNotice" style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text);line-height:1.5;">
+        <strong style="color:#f59e0b;font-size:13px;display:block;margin-bottom:4px;">⚠️ MANDATORY EXAMINATION REWRITE DIRECTIVE</strong>
+        <span>This student scored at or below the resit benchmark in the subject(s) highlighted below and is hereby scheduled for an official remedial rewrite in accordance with academic standards.</span>
       </div>
 
       <!-- Quick Metrics Summary -->
@@ -1194,9 +1241,27 @@
         </table>
       </div>
 
+      <!-- Print Signature Block -->
+      <div id="dashModalPrintSignatures" style="display:none;margin-top:24px;padding-top:16px;border-top:1px dashed #999;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+          <div style="text-align:center;width:200px;">
+            <div style="border-bottom:1px solid #333;margin-bottom:6px;height:24px;"></div>
+            <strong>Examination Officer</strong>
+          </div>
+          <div style="text-align:center;width:200px;">
+            <div style="border-bottom:1px solid #333;margin-bottom:6px;height:24px;"></div>
+            <strong>School Principal</strong>
+          </div>
+          <div style="text-align:right;">
+            <div><strong>Date Issued:</strong> <span id="dashModalIssueDate"></span></div>
+            <div style="font-size:11px;color:#666;margin-top:4px;">Official Seal / Stamp</div>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-actions" style="justify-content:space-between;">
         <button class="btn btn-secondary" id="dashStudentModalCloseBottomBtn" type="button">Close</button>
-        <button class="btn btn-primary" id="dashStudentModalPrintBtn" type="button">🖨️ Print Student Result Slip</button>
+        <button class="btn btn-primary" id="dashStudentModalPrintBtn" type="button">🖨️ Print Result Slip</button>
       </div>
     </div>
   </div>

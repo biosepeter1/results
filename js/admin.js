@@ -131,11 +131,13 @@ $("tabCBT").onclick = () => switchTab("cbt");
 // ══════════════════════════════════════════════════════════
 // EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL & LEADERSHIP VIEW)
 // ══════════════════════════════════════════════════════════
-let dashActiveTabStudentView = "fail"; // "fail" or "honor"
+let dashActiveTabStudentView = "fail"; // "fail", "rewrite", or "honor"
 let dashSubjectView = "best"; // "best" or "needs_support"
 let _dashEventsBound = false;
 let dashAtRiskStudents = [];
 let dashHonorRollStudents = [];
+let dashRewriteStudents = [];
+let dashRewriteCutoffPct = 25; // Default: <= 25% (captures 0/5 = 0%, 5/30 = 16.7%, 10/50 = 20%)
 let dashSubjectStats = [];
 
 function initDashboardEvents() {
@@ -181,21 +183,46 @@ function initDashboardEvents() {
     };
   }
 
+  const setStudentViewTab = (tab) => {
+    dashActiveTabStudentView = tab;
+    if ($("dashStudentsTabFail")) $("dashStudentsTabFail").classList.toggle("active", tab === "fail");
+    if ($("dashStudentsTabRewrite")) $("dashStudentsTabRewrite").classList.toggle("active", tab === "rewrite");
+    if ($("dashStudentsTabHonor")) $("dashStudentsTabHonor").classList.toggle("active", tab === "honor");
+    if ($("dashRewriteToolbar")) $("dashRewriteToolbar").style.display = (tab === "rewrite") ? "flex" : "none";
+    renderDashboardStudentActionCenter();
+  };
+
   if ($("dashStudentsTabFail")) {
-    $("dashStudentsTabFail").onclick = () => {
-      dashActiveTabStudentView = "fail";
-      $("dashStudentsTabFail").classList.add("active");
-      $("dashStudentsTabHonor").classList.remove("active");
-      renderDashboardStudentActionCenter();
-    };
+    $("dashStudentsTabFail").onclick = () => setStudentViewTab("fail");
+  }
+  if ($("dashStudentsTabRewrite")) {
+    $("dashStudentsTabRewrite").onclick = () => setStudentViewTab("rewrite");
   }
   if ($("dashStudentsTabHonor")) {
-    $("dashStudentsTabHonor").onclick = () => {
-      dashActiveTabStudentView = "honor";
-      $("dashStudentsTabHonor").classList.add("active");
-      $("dashStudentsTabFail").classList.remove("active");
-      renderDashboardStudentActionCenter();
+    $("dashStudentsTabHonor").onclick = () => setStudentViewTab("honor");
+  }
+
+  if ($("dashCardRewriteKpi")) {
+    $("dashCardRewriteKpi").onclick = () => {
+      setStudentViewTab("rewrite");
+      const card = $("dashStudentActionCenterCard");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
     };
+  }
+
+  if ($("dashRewriteCutoffSelect")) {
+    $("dashRewriteCutoffSelect").onchange = (e) => {
+      dashRewriteCutoffPct = Number(e.target.value) || 25;
+      renderExecutiveDashboard();
+    };
+  }
+
+  if ($("dashExportRewriteBtn")) {
+    $("dashExportRewriteBtn").onclick = () => exportRewriteRosterCsv();
+  }
+
+  if ($("dashPrintRewriteListBtn")) {
+    $("dashPrintRewriteListBtn").onclick = () => window.print();
   }
 
   if ($("dashRefreshBtn")) {
@@ -229,7 +256,13 @@ function initDashboardEvents() {
     };
   }
   if ($("dashStudentModalPrintBtn")) {
-    $("dashStudentModalPrintBtn").onclick = () => window.print();
+    $("dashStudentModalPrintBtn").onclick = () => {
+      document.body.classList.add("printing-modal");
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("printing-modal");
+      }, 1000);
+    };
   }
 }
 
@@ -431,18 +464,30 @@ async function renderExecutiveDashboard() {
   const passRate = totalAssessments ? ((passedCount / totalAssessments) * 100).toFixed(1) : "0.0";
   const avgScore = totalAssessments ? (scoreSum / totalAssessments).toFixed(1) : "0.0";
 
-  // Calculate student averages & separate At-Risk vs Honor Roll
+  // Calculate student averages & separate At-Risk vs Honor Roll vs Rewrite
   dashAtRiskStudents = [];
   dashHonorRollStudents = [];
+  dashRewriteStudents = [];
+  let totalRewritePapers = 0;
 
   studentMap.forEach(s => {
     s.avgScore = s.scores.length ? (s.totalPct / s.scores.length).toFixed(1) : 0;
+    // Rewrite criteria: any subject score <= dashRewriteCutoffPct (e.g. 0/5 = 0%, 5/30 = 16.7%, 10/50 = 20%)
+    s.rewriteSubjects = s.scores.filter(sc => sc.pct <= dashRewriteCutoffPct);
+    if (s.rewriteSubjects.length > 0) {
+      dashRewriteStudents.push(s);
+      totalRewritePapers += s.rewriteSubjects.length;
+    }
+
     if (s.failedSubjects.length > 0) {
       dashAtRiskStudents.push(s);
     } else if (s.avgScore >= 70 && s.scores.length >= 2) {
       dashHonorRollStudents.push(s);
     }
   });
+
+  // Sort Rewrite: most rewrite subjects first, then lowest average
+  dashRewriteStudents.sort((a, b) => b.rewriteSubjects.length - a.rewriteSubjects.length || a.avgScore - b.avgScore);
 
   // Sort At-Risk: most failures first, then lowest average
   dashAtRiskStudents.sort((a, b) => b.failedSubjects.length - a.failedSubjects.length || a.avgScore - b.avgScore);
@@ -469,6 +514,9 @@ async function renderExecutiveDashboard() {
 
   if ($("dashMetricFailedCount")) $("dashMetricFailedCount").textContent = failedCount.toLocaleString();
   if ($("dashMetricAtRiskStudents")) $("dashMetricAtRiskStudents").textContent = `${dashAtRiskStudents.length.toLocaleString()} student${dashAtRiskStudents.length !== 1 ? "s" : ""} failed 1+ subject`;
+
+  if ($("dashMetricRewriteCount")) $("dashMetricRewriteCount").textContent = dashRewriteStudents.length.toLocaleString();
+  if ($("dashMetricRewriteSub")) $("dashMetricRewriteSub").textContent = `${totalRewritePapers.toLocaleString()} paper${totalRewritePapers !== 1 ? 's' : ''} (≤${dashRewriteCutoffPct}%)`;
 
   if ($("dashMetricAvgScore")) $("dashMetricAvgScore").textContent = `${avgScore}%`;
   if ($("dashMetricHighestLowest")) {
@@ -543,6 +591,7 @@ async function renderExecutiveDashboard() {
 
   // ── 6. Render Student Action Center ──
   if ($("dashBadgeFailCount")) $("dashBadgeFailCount").textContent = dashAtRiskStudents.length.toLocaleString();
+  if ($("dashBadgeRewriteCount")) $("dashBadgeRewriteCount").textContent = dashRewriteStudents.length.toLocaleString();
   if ($("dashBadgeHonorCount")) $("dashBadgeHonorCount").textContent = dashHonorRollStudents.length.toLocaleString();
 
   renderDashboardStudentActionCenter();
@@ -622,11 +671,35 @@ window.toggleDashStudentDrawer = function(studentId, highlightSubject) {
   }
 };
 
-window.openStudentScoreModal = function(studentId) {
+window.openStudentScoreModal = function(studentId, isResit = false) {
   const s = dashStudentByIdMap.get(studentId);
   if (!s) return;
 
-  if ($("dashStudentModalName")) $("dashStudentModalName").textContent = s.name;
+  const schoolHdr = $("dashModalSchoolHeader");
+  const docTitle = $("dashModalDocTitle");
+  const resitNotice = $("dashModalResitNotice");
+  const sigBlock = $("dashModalPrintSignatures");
+  const issueDate = $("dashModalIssueDate");
+  const modalPrintBtn = $("dashStudentModalPrintBtn");
+
+  if (issueDate) issueDate.textContent = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+  if (isResit) {
+    if ($("dashStudentModalName")) $("dashStudentModalName").textContent = `Examination Resit Authorization: ${s.name}`;
+    if (docTitle) docTitle.textContent = "OFFICIAL EXAMINATION RESIT & REWRITE AUTHORIZATION SLIP";
+    if (resitNotice) resitNotice.style.display = "block";
+    if (sigBlock) sigBlock.style.display = "block";
+    if (schoolHdr) schoolHdr.style.display = "block";
+    if (modalPrintBtn) modalPrintBtn.textContent = "🖨️ Print Resit Authorization Slip";
+  } else {
+    if ($("dashStudentModalName")) $("dashStudentModalName").textContent = `Student Academic Scorecard: ${s.name}`;
+    if (docTitle) docTitle.textContent = "OFFICIAL STUDENT ACADEMIC RECORD";
+    if (resitNotice) resitNotice.style.display = "none";
+    if (sigBlock) sigBlock.style.display = "none";
+    if (schoolHdr) schoolHdr.style.display = "block";
+    if (modalPrintBtn) modalPrintBtn.textContent = "🖨️ Print Student Result Slip";
+  }
+
   if ($("dashStudentModalMeta")) $("dashStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || adminCurrentTerm || "All Terms"}`;
   if ($("dashStudentModalAvg")) {
     $("dashStudentModalAvg").textContent = `${s.avgScore}%`;
@@ -641,21 +714,28 @@ window.openStudentScoreModal = function(studentId) {
   if (tbody) {
     tbody.innerHTML = s.scores.map((sc, i) => {
       const isP = sc.pct >= 50;
+      const isRewrite = sc.pct <= dashRewriteCutoffPct;
       let grade = "F";
       let remark = "Fail";
       if (sc.pct >= 75) { grade = "A"; remark = "Distinction"; }
       else if (sc.pct >= 60) { grade = "B"; remark = "Credit"; }
       else if (sc.pct >= 50) { grade = "C"; remark = "Pass"; }
+      else if (isRewrite) { grade = "F"; remark = "Mandatory Rewrite"; }
+
+      const rowBg = (isResit && isRewrite) ? "background:rgba(245,158,11,0.08);" : "";
 
       return `
-        <tr style="border-bottom:1px solid var(--border-subtle);">
+        <tr style="border-bottom:1px solid var(--border-subtle); ${rowBg}">
           <td style="padding:10px 8px;font-weight:600;color:var(--text-subtle);">${i + 1}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(sc.subject)}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
+            ${esc(sc.subject)}
+            ${isRewrite ? `<span style="font-size:10px;padding:1px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;">🔁 REWRITE</span>` : ""}
+          </td>
           <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
-          <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : '#ef4444'};">${sc.pct}%</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">${sc.pct}%</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;">${grade}</td>
           <td style="padding:10px 8px;text-align:center;">
-            <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${isP ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'};color:${isP ? '#10b981' : '#ef4444'};">
+            <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${isP ? 'rgba(16,185,129,0.12)' : (isRewrite ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)')};color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">
               ${remark}
             </span>
           </td>
@@ -667,6 +747,49 @@ window.openStudentScoreModal = function(studentId) {
   if ($("dashStudentScoreModal")) $("dashStudentScoreModal").classList.add("open");
 };
 
+window.openStudentResitSlip = function(studentId) {
+  window.openStudentScoreModal(studentId, true);
+};
+
+function exportRewriteRosterCsv() {
+  if (!dashRewriteStudents || !dashRewriteStudents.length) {
+    alert("No students currently require rewrite under the selected cutoff (≤" + dashRewriteCutoffPct + "%).");
+    return;
+  }
+
+  const rows = [];
+  rows.push(["S/N", "Student Name", "Registration Number", "Class", "Arm", "Subject to Rewrite", "Raw Score", "Percentage (%)", "Resit Benchmark", "Status", "Academic Term"]);
+
+  let sn = 1;
+  dashRewriteStudents.forEach(s => {
+    (s.rewriteSubjects || []).forEach(rSub => {
+      rows.push([
+        sn++,
+        `"${(s.name || '').replace(/"/g, '""')}"`,
+        `"${(s.reg || '').replace(/"/g, '""')}"`,
+        `"${(s.class || '').replace(/"/g, '""')}"`,
+        `"${(s.arm || '').replace(/"/g, '""')}"`,
+        `"${(rSub.subject || '').replace(/"/g, '""')}"`,
+        rSub.score !== undefined ? rSub.score : "-",
+        `${rSub.pct}%`,
+        `≤ ${dashRewriteCutoffPct}%`,
+        "MANDATORY REWRITE REQUIRED",
+        `"${(s.term || adminCurrentTerm || '').replace(/"/g, '""')}"`
+      ]);
+    });
+  });
+
+  const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  const termSlug = (adminCurrentTerm || "Term").replace(/[^a-zA-Z0-9]/g, "_");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Exam_Rewrite_Roster_${termSlug}_cutoff${dashRewriteCutoffPct}pct.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 function renderDashboardStudentActionCenter() {
   const tbody = $("dashStudentsTableBody");
   const thead = $("dashStudentsTableHead");
@@ -674,10 +797,23 @@ function renderDashboardStudentActionCenter() {
   if (!tbody) return;
 
   const isFailTab = (dashActiveTabStudentView === "fail");
+  const isRewriteTab = (dashActiveTabStudentView === "rewrite");
 
   // Update Table Header accordingly
   if (thead) {
-    if (isFailTab) {
+    if (isRewriteTab) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:36px;">#</th>
+          <th>STUDENT NAME</th>
+          <th>REG NUMBER</th>
+          <th>CLASS &amp; ARM</th>
+          <th>MANDATORY REWRITE SUBJECTS (WITH EXACT MARKS)</th>
+          <th style="text-align:center;">AVG SCORE</th>
+          <th style="text-align:center;">REWRITE ACTIONS</th>
+        </tr>
+      `;
+    } else if (isFailTab) {
       thead.innerHTML = `
         <tr>
           <th style="width:36px;">#</th>
@@ -704,7 +840,7 @@ function renderDashboardStudentActionCenter() {
     }
   }
 
-  const rawList = isFailTab ? dashAtRiskStudents : dashHonorRollStudents;
+  const rawList = isRewriteTab ? dashRewriteStudents : (isFailTab ? dashAtRiskStudents : dashHonorRollStudents);
   const filteredList = rawList.filter(s => {
     if (!query) return true;
     return s.name.toLowerCase().includes(query) ||
@@ -714,32 +850,135 @@ function renderDashboardStudentActionCenter() {
   });
 
   if (!filteredList.length) {
-    const emptyMsg = isFailTab ?
-      "🎉 Excellent! No students have failing grades in the selected scope." :
-      "No honor roll students found matching the selected scope.";
+    const emptyMsg = isRewriteTab ?
+      `🎉 Excellent! No students scored at or below the rewrite threshold (≤${dashRewriteCutoffPct}%) in the selected scope.` :
+      (isFailTab ?
+        "🎉 Excellent! No students have failing grades in the selected scope." :
+        "No honor roll students found matching the selected scope.");
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
     return;
   }
 
   const rowsHtml = [];
   filteredList.slice(0, 60).forEach((s, idx) => {
-    if (isFailTab) {
-      const failBadges = s.failedSubjects.map(f => {
+    if (isRewriteTab) {
+      const rewriteBadges = s.rewriteSubjects.map(rSub => {
+        const scoreDisplay = (rSub.score !== undefined && rSub.score !== null && String(rSub.score) !== String(rSub.pct))
+          ? `${rSub.score} (${rSub.pct}%)`
+          : `${rSub.pct}%`;
         return `
-          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
-            title="Click to reveal exact marks for ${esc(f.subject)}" 
-            style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:3px 8px; border-radius:4px; background:rgba(239,68,68,0.12); color:#ef4444; font-size:11px; font-weight:600; border:1px solid rgba(239,68,68,0.25); transition:transform 0.15s, background 0.15s;">
-            <span>${esc(f.subject)}</span>
-            <strong style="background:rgba(239,68,68,0.22); padding:1px 5px; border-radius:3px;">${f.pct}%</strong>
+          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(rSub.subject)}');" 
+            title="Click to reveal exact marks for ${esc(rSub.subject)}" 
+            style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:4px; background:rgba(245,158,11,0.18); color:#d97706; font-size:11px; font-weight:700; border:1px solid rgba(245,158,11,0.45); transition:transform 0.15s, background 0.15s;">
+            <span>${esc(rSub.subject)}</span>
+            <strong style="background:rgba(245,158,11,0.3); padding:1px 6px; border-radius:3px; color:#b45309;">${scoreDisplay}</strong>
           </span>
         `;
       }).join("");
 
-      const actionText = s.failedSubjects.length >= 3 ?
-        `<span style="padding:2px 6px;border-radius:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
-        (s.failedSubjects.length === 2 ?
-          `<span style="padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:10px;font-weight:600;">Remedial &amp; Resit</span>` :
-          `<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:10px;font-weight:600;">Counseling</span>`);
+      // Main Student Row for Rewrite
+      rowsHtml.push(`
+        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
+          <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
+            <div>${esc(s.name)}</div>
+            <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:4px;">
+              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            </div>
+          </td>
+          <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
+          <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
+          <td style="padding:10px 8px;">${rewriteBadges}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
+          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+              <span style="padding:2px 6px;border-radius:4px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;">Mandatory Resit (${s.rewriteSubjects.length})</span>
+              <div style="display:flex;gap:4px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
+                  📋 Breakdown
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;color:#d97706;font-weight:700;">
+                  🖨️ Resit Slip
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `);
+
+      // Expandable Drawer Row for Rewrite
+      rowsHtml.push(`
+        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
+          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+              <div>
+                <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Examination Rewrite Breakdown: ${esc(s.name)}</span>
+                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (≤${dashRewriteCutoffPct}%)</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706;">🖨️ Issue Resit Authorization Slip</button>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+              ${s.scores.map(sc => {
+                const isPass = sc.pct >= 50;
+                const isRewrite = sc.pct <= dashRewriteCutoffPct;
+                const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+                const borderColor = isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
+                const borderLeftColor = isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
+                const badgeText = isRewrite ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
+                const badgeBg = isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
+                const badgeColor = isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
+
+                return `
+                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
+                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${badgeBg}; color:${badgeColor}; white-space:nowrap;">
+                        ${badgeText}
+                      </span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
+                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                      <span style="font-size:13px; font-weight:700; color:${badgeColor};">${sc.pct}%</span>
+                    </div>
+                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
+                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${borderLeftColor};"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </td>
+        </tr>
+      `);
+    } else if (isFailTab) {
+      const failBadges = s.failedSubjects.map(f => {
+        const scoreDisplay = (f.score !== undefined && f.score !== null && String(f.score) !== String(f.pct))
+          ? `${f.score} (${f.pct}%)`
+          : `${f.pct}%`;
+        const isRewrite = f.pct <= dashRewriteCutoffPct;
+        return `
+          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
+            title="Click to reveal exact marks for ${esc(f.subject)}" 
+            style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:3px 8px; border-radius:4px; background:${isRewrite ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)'}; color:${isRewrite ? '#d97706' : '#ef4444'}; font-size:11px; font-weight:600; border:1px solid ${isRewrite ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.25)'}; transition:transform 0.15s, background 0.15s;">
+            <span>${esc(f.subject)}</span>
+            <strong style="background:${isRewrite ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.22)'}; padding:1px 5px; border-radius:3px;">${scoreDisplay}</strong>
+            ${isRewrite ? `<span style="font-size:9px;background:#f59e0b;color:#fff;padding:1px 4px;border-radius:2px;font-weight:700;">REWRITE</span>` : ''}
+          </span>
+        `;
+      }).join("");
+
+      const hasRewrite = (s.rewriteSubjects && s.rewriteSubjects.length > 0);
+      const actionText = hasRewrite ?
+        `<span style="padding:2px 6px;border-radius:4px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;">Rewrite Required (${s.rewriteSubjects.length})</span>` :
+        (s.failedSubjects.length >= 3 ?
+          `<span style="padding:2px 6px;border-radius:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
+          (s.failedSubjects.length === 2 ?
+            `<span style="padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:10px;font-weight:600;">Remedial &amp; Resit</span>` :
+            `<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:10px;font-weight:600;">Counseling</span>`));
 
       // Main Student Row
       rowsHtml.push(`
@@ -758,9 +997,16 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
             <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
               ${actionText}
-              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
-                📋 View Breakdown
-              </button>
+              <div style="display:flex;gap:4px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
+                  📋 Breakdown
+                </button>
+                ${hasRewrite ? `
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;color:#d97706;font-weight:700;">
+                    🖨️ Resit
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </td>
         </tr>
@@ -778,27 +1024,31 @@ function renderDashboardStudentActionCenter() {
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:${s.avgScore >= 50 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; color:${s.avgScore >= 50 ? '#10b981' : '#ef4444'}; font-weight:700;">Overall Average: ${s.avgScore}%</span>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
+                ${hasRewrite ? `
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; color:#d97706; font-weight:600;">🖨️ Resit Slip</button>
+                ` : ''}
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
               ${s.scores.map(sc => {
                 const isPass = sc.pct >= 50;
+                const isRewrite = sc.pct <= dashRewriteCutoffPct;
                 const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
                 return `
-                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)'}; border-left:4px solid ${isPass ? '#10b981' : '#ef4444'}; border-radius:var(--radius); transition:all 0.25s ease;">
+                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)')}; border-left:4px solid ${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')}; border-radius:var(--radius); transition:all 0.25s ease;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
                       <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
-                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)'}; color:${isPass ? '#10b981' : '#ef4444'}; white-space:nowrap;">
-                        ${isPass ? 'PASS' : 'FAIL'}
+                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)')}; color:${isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444')}; white-space:nowrap;">
+                        ${isRewrite ? 'REWRITE' : (isPass ? 'PASS' : 'FAIL')}
                       </span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
                       <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
-                      <span style="font-size:13px; font-weight:700; color:${isPass ? '#10b981' : '#ef4444'};">${sc.pct}%</span>
+                      <span style="font-size:13px; font-weight:700; color:${isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444')};">${sc.pct}%</span>
                     </div>
                     <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
-                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${isPass ? '#10b981' : '#ef4444'};"></div>
+                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')};"></div>
                     </div>
                   </div>
                 `;

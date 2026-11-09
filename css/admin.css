@@ -1526,4 +1526,32 @@ table.inst-table tr:hover td {
     padding: 6px 8px !important;
     color: #111827 !important;
   }
+
+  /* When printing from the student scorecard / resit modal */
+  body.printing-modal #viewApp {
+    display: none !important;
+  }
+  body.printing-modal #dashStudentScoreModal.open {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  body.printing-modal #dashStudentScoreModal.open .modal-box {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body.printing-modal #dashStudentScoreModal .modal-actions,
+  body.printing-modal #dashStudentScoreModal .btn-close {
+    display: none !important;
+  }
+  body.printing-modal #dashModalSchoolHeader,
+  body.printing-modal #dashModalPrintSignatures {
+    display: block !important;
+  }
 }
