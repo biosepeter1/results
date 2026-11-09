@@ -54,7 +54,7 @@ function performAdminSignIn() {
   const activeTab = localStorage.getItem("admin_active_tab_v1") || "dashboard";
   switchTab(activeTab);
   // Run teachers and live-terms in parallel — don't block the scores tab
-  Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => {});
+  Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => { });
 }
 
 $("loginForm").onsubmit = (e) => {
@@ -63,7 +63,7 @@ $("loginForm").onsubmit = (e) => {
   if (pw === ADMIN_PASSWORD) {
     try {
       localStorage.setItem("admin_auth_session_v1", "true");
-    } catch(err) {
+    } catch (err) {
       console.warn("Storage write error:", err);
     }
     performAdminSignIn();
@@ -76,7 +76,7 @@ $("adminSignOutBtn").onclick = () => {
   try {
     localStorage.removeItem("admin_auth_session_v1");
     localStorage.removeItem("admin_active_tab_v1");
-  } catch(err) {}
+  } catch (err) { }
   document.documentElement.classList.remove("restoring-admin-session");
   $("viewApp").style.display = "none";
   $("viewLogin").style.display = "flex";
@@ -88,7 +88,7 @@ $("adminSignOutBtn").onclick = () => {
 function switchTab(target) {
   try {
     localStorage.setItem("admin_active_tab_v1", target);
-  } catch(err) {}
+  } catch (err) { }
   const TABS = ["dashboard", "scores", "teachers", "upload", "cbt"];
   const BTNS = { dashboard: "tabDashboard", scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT" };
   const PANES = { dashboard: "paneDashboard", scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT" };
@@ -122,7 +122,7 @@ $("tabCBT").onclick = () => switchTab("cbt");
     } else {
       document.documentElement.classList.remove("restoring-admin-session");
     }
-  } catch(err) {
+  } catch (err) {
     console.warn("Auto-restore admin session failed:", err);
     document.documentElement.classList.remove("restoring-admin-session");
   }
@@ -214,6 +214,22 @@ function initDashboardEvents() {
   }
   if ($("dashPrintBtn")) {
     $("dashPrintBtn").onclick = () => window.print();
+  }
+
+  // Student Scorecard Modal Events
+  if ($("dashStudentModalCloseBtn")) {
+    $("dashStudentModalCloseBtn").onclick = () => $("dashStudentScoreModal").classList.remove("open");
+  }
+  if ($("dashStudentModalCloseBottomBtn")) {
+    $("dashStudentModalCloseBottomBtn").onclick = () => $("dashStudentScoreModal").classList.remove("open");
+  }
+  if ($("dashStudentScoreModal")) {
+    $("dashStudentScoreModal").onclick = (e) => {
+      if (e.target === $("dashStudentScoreModal")) $("dashStudentScoreModal").classList.remove("open");
+    };
+  }
+  if ($("dashStudentModalPrintBtn")) {
+    $("dashStudentModalPrintBtn").onclick = () => window.print();
   }
 }
 
@@ -362,20 +378,31 @@ async function renderExecutiveDashboard() {
 
     if (!studentMap.has(studentKey)) {
       studentMap.set(studentKey, {
+        id: "stud_" + Math.random().toString(36).substr(2, 9),
         name: studentName,
         reg: regNo,
         class: r.class || r.className || "-",
         arm: r.arm || "-",
+        term: r.term || adminCurrentTerm || "-",
         scores: [],
         totalPct: 0,
         failedSubjects: []
       });
     }
     const sObj = studentMap.get(studentKey);
-    sObj.scores.push({ subject: r.subject, pct: pctVal, score: r.score });
+    sObj.scores.push({
+      subject: r.subject || "General",
+      pct: pctVal,
+      score: r.score !== undefined ? r.score : pctVal,
+      date: r.date || r.dateTime || r.exam_date || "-"
+    });
     sObj.totalPct += pctVal;
     if (!isPass) {
-      sObj.failedSubjects.push({ subject: r.subject || "Unknown", pct: pctVal });
+      sObj.failedSubjects.push({
+        subject: r.subject || "Unknown",
+        pct: pctVal,
+        score: r.score !== undefined ? r.score : pctVal
+      });
     }
 
     // Class aggregation
@@ -422,6 +449,11 @@ async function renderExecutiveDashboard() {
 
   // Sort Honor Roll: highest average first
   dashHonorRollStudents.sort((a, b) => b.avgScore - a.avgScore);
+
+  dashStudentByIdMap = new Map();
+  studentMap.forEach(s => {
+    dashStudentByIdMap.set(s.id, s);
+  });
 
   // ── 2. Update KPI Cards ──
   if ($("dashMetricTotalStudents")) $("dashMetricTotalStudents").textContent = uniqueStudents.toLocaleString();
@@ -483,7 +515,7 @@ async function renderExecutiveDashboard() {
         const rateNum = Number(cPassRate);
         const statusBadge = rateNum >= 80 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-weight:600;">Excellent</span>` :
           (rateNum >= 60 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-weight:600;">Good</span>` :
-          `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Needs Support</span>`);
+            `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Needs Support</span>`);
 
         return `
           <tr style="border-bottom:1px solid var(--border-subtle);">
@@ -556,6 +588,85 @@ function renderDashboardSubjectRadar() {
   }).join("");
 }
 
+let dashStudentByIdMap = new Map();
+
+window.toggleDashStudentDrawer = function(studentId, highlightSubject) {
+  const drawer = $(`dash-drawer-${studentId}`);
+  const chevron = $(`dash-chevron-${studentId}`);
+  if (!drawer) return;
+
+  const isClosed = (drawer.style.display === "none");
+  if (isClosed) {
+    drawer.style.display = "table-row";
+    if (chevron) chevron.textContent = "▲";
+  } else if (!highlightSubject) {
+    drawer.style.display = "none";
+    if (chevron) chevron.textContent = "▼";
+    return;
+  }
+
+  if (highlightSubject) {
+    const slug = highlightSubject.replace(/[^a-zA-Z0-9]/g, '_');
+    const card = document.getElementById(`dash-card-${studentId}-${slug}`);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      card.style.outline = "2px solid #ef4444";
+      card.style.boxShadow = "0 0 12px rgba(239,68,68,0.6)";
+      card.style.transform = "scale(1.02)";
+      setTimeout(() => {
+        card.style.outline = "";
+        card.style.boxShadow = "";
+        card.style.transform = "";
+      }, 2500);
+    }
+  }
+};
+
+window.openStudentScoreModal = function(studentId) {
+  const s = dashStudentByIdMap.get(studentId);
+  if (!s) return;
+
+  if ($("dashStudentModalName")) $("dashStudentModalName").textContent = s.name;
+  if ($("dashStudentModalMeta")) $("dashStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || adminCurrentTerm || "All Terms"}`;
+  if ($("dashStudentModalAvg")) {
+    $("dashStudentModalAvg").textContent = `${s.avgScore}%`;
+    $("dashStudentModalAvg").style.color = s.avgScore >= 50 ? "#10b981" : "#ef4444";
+  }
+
+  if ($("dashStudentModalTotalSubjects")) $("dashStudentModalTotalSubjects").textContent = s.scores.length;
+  if ($("dashStudentModalPassed")) $("dashStudentModalPassed").textContent = s.scores.length - s.failedSubjects.length;
+  if ($("dashStudentModalFailed")) $("dashStudentModalFailed").textContent = s.failedSubjects.length;
+
+  const tbody = $("dashStudentModalTbody");
+  if (tbody) {
+    tbody.innerHTML = s.scores.map((sc, i) => {
+      const isP = sc.pct >= 50;
+      let grade = "F";
+      let remark = "Fail";
+      if (sc.pct >= 75) { grade = "A"; remark = "Distinction"; }
+      else if (sc.pct >= 60) { grade = "B"; remark = "Credit"; }
+      else if (sc.pct >= 50) { grade = "C"; remark = "Pass"; }
+
+      return `
+        <tr style="border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:10px 8px;font-weight:600;color:var(--text-subtle);">${i + 1}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(sc.subject)}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : '#ef4444'};">${sc.pct}%</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;">${grade}</td>
+          <td style="padding:10px 8px;text-align:center;">
+            <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${isP ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'};color:${isP ? '#10b981' : '#ef4444'};">
+              ${remark}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  if ($("dashStudentScoreModal")) $("dashStudentScoreModal").classList.add("open");
+};
+
 function renderDashboardStudentActionCenter() {
   const tbody = $("dashStudentsTableBody");
   const thead = $("dashStudentsTableHead");
@@ -563,36 +674,31 @@ function renderDashboardStudentActionCenter() {
   if (!tbody) return;
 
   const isFailTab = (dashActiveTabStudentView === "fail");
-  if ($("dashStudentListSubtitle")) {
-    $("dashStudentListSubtitle").textContent = isFailTab ?
-      "Showing students who failed one or more subjects (Actionable for counseling / resits)" :
-      "Showing high-performing students with average 70%+ across all subjects";
-  }
 
   // Update Table Header accordingly
   if (thead) {
     if (isFailTab) {
       thead.innerHTML = `
         <tr>
-          <th style="width:40px;">#</th>
+          <th style="width:36px;">#</th>
           <th>STUDENT NAME</th>
           <th>REG NUMBER</th>
           <th>CLASS &amp; ARM</th>
-          <th>FAILED SUBJECTS</th>
+          <th>FAILED SUBJECTS (CLICK TO REVEAL)</th>
           <th style="text-align:center;">AVG SCORE</th>
-          <th style="text-align:center;">ACADEMIC ACTION</th>
+          <th style="text-align:center;">ACTIONS</th>
         </tr>
       `;
     } else {
       thead.innerHTML = `
         <tr>
-          <th style="width:40px;">RANK</th>
+          <th style="width:36px;">RANK</th>
           <th>STUDENT NAME</th>
           <th>REG NUMBER</th>
           <th>CLASS &amp; ARM</th>
           <th style="text-align:center;">ASSESSMENTS</th>
           <th style="text-align:center;">OVERALL AVERAGE</th>
-          <th style="text-align:center;">HONORS RECOGNITION</th>
+          <th style="text-align:center;">ACTIONS</th>
         </tr>
       `;
     }
@@ -615,47 +721,162 @@ function renderDashboardStudentActionCenter() {
     return;
   }
 
-  tbody.innerHTML = filteredList.slice(0, 50).map((s, idx) => {
+  const rowsHtml = [];
+  filteredList.slice(0, 60).forEach((s, idx) => {
     if (isFailTab) {
-      const failBadges = s.failedSubjects.map(f =>
-        `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:600;">${esc(f.subject)} (${f.pct}%)</span>`
-      ).join("");
+      const failBadges = s.failedSubjects.map(f => {
+        return `
+          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
+            title="Click to reveal exact marks for ${esc(f.subject)}" 
+            style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:3px 8px; border-radius:4px; background:rgba(239,68,68,0.12); color:#ef4444; font-size:11px; font-weight:600; border:1px solid rgba(239,68,68,0.25); transition:transform 0.15s, background 0.15s;">
+            <span>${esc(f.subject)}</span>
+            <strong style="background:rgba(239,68,68,0.22); padding:1px 5px; border-radius:3px;">${f.pct}%</strong>
+          </span>
+        `;
+      }).join("");
 
       const actionText = s.failedSubjects.length >= 3 ?
-        `<span style="padding:2px 8px;border-radius:4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;">Critical Intervention</span>` :
+        `<span style="padding:2px 6px;border-radius:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
         (s.failedSubjects.length === 2 ?
-          `<span style="padding:2px 8px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:11px;font-weight:600;">Remedial &amp; Resit</span>` :
-          `<span style="padding:2px 8px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;">Subject Counseling</span>`);
+          `<span style="padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-size:10px;font-weight:600;">Remedial &amp; Resit</span>` :
+          `<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:10px;font-weight:600;">Counseling</span>`);
 
-      return `
-        <tr style="border-bottom:1px solid var(--border-subtle);">
+      // Main Student Row
+      rowsHtml.push(`
+        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
+            <div>${esc(s.name)}</div>
+            <div style="font-size:11px;color:var(--accent);margin-top:2px;display:flex;align-items:center;gap:4px;">
+              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            </div>
+          </td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${failBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
-          <td style="padding:10px 8px;text-align:center;">${actionText}</td>
+          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+              ${actionText}
+              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
+                📋 View Breakdown
+              </button>
+            </div>
+          </td>
         </tr>
-      `;
+      `);
+
+      // Expandable Drawer Row
+      rowsHtml.push(`
+        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
+          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+              <div>
+                <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Assessment Score Breakdown: ${esc(s.name)}</span>
+                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:${s.avgScore >= 50 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; color:${s.avgScore >= 50 ? '#10b981' : '#ef4444'}; font-weight:700;">Overall Average: ${s.avgScore}%</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+              ${s.scores.map(sc => {
+                const isPass = sc.pct >= 50;
+                const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+                return `
+                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)'}; border-left:4px solid ${isPass ? '#10b981' : '#ef4444'}; border-radius:var(--radius); transition:all 0.25s ease;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
+                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)'}; color:${isPass ? '#10b981' : '#ef4444'}; white-space:nowrap;">
+                        ${isPass ? 'PASS' : 'FAIL'}
+                      </span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
+                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                      <span style="font-size:13px; font-weight:700; color:${isPass ? '#10b981' : '#ef4444'};">${sc.pct}%</span>
+                    </div>
+                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
+                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${isPass ? '#10b981' : '#ef4444'};"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </td>
+        </tr>
+      `);
     } else {
       // Honor Roll
       const rankBadge = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
-      return `
-        <tr style="border-bottom:1px solid var(--border-subtle);">
+      rowsHtml.push(`
+        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--accent);">${rankBadge}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
+            <div>${esc(s.name)}</div>
+            <div style="font-size:11px;color:var(--status-good);margin-top:2px;display:flex;align-items:center;gap:4px;">
+              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            </div>
+          </td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#10b981;font-size:14px;">${s.avgScore}%</td>
-          <td style="padding:10px 8px;text-align:center;">
-            <span style="padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:11px;font-weight:700;">🌟 Distinction Scholar</span>
+          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+              <span style="padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:10px;font-weight:700;">Distinction Scholar</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}')" style="font-size:10px;padding:1px 6px;min-height:24px;">
+                📋 View Breakdown
+              </button>
+            </div>
           </td>
         </tr>
-      `;
+      `);
+
+      // Expandable Drawer Row for Honor student
+      rowsHtml.push(`
+        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
+          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+              <div>
+                <span style="font-weight:700; font-size:13px; color:var(--text);">🏆 Academic Honors Transcript: ${esc(s.name)}</span>
+                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:700;">Distinction Average: ${s.avgScore}%</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+              ${s.scores.map(sc => {
+                return `
+                  <div style="padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-left:4px solid #10b981; border-radius:var(--radius);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
+                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(16,185,129,0.12); color:#10b981; white-space:nowrap;">
+                        PASS
+                      </span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
+                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                      <span style="font-size:13px; font-weight:700; color:#10b981;">${sc.pct}%</span>
+                    </div>
+                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
+                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:#10b981;"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </td>
+        </tr>
+      `);
     }
-  }).join("");
+  });
+
+  tbody.innerHTML = rowsHtml.join("");
 }
 
 // ══════════════════════════════════════════════════════════
@@ -699,7 +920,7 @@ function getCachedTeachers() {
           };
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return null;
 }
@@ -753,7 +974,7 @@ async function loadTeachers(force = false) {
           fresh.push(mt);
           try {
             await window.dbClient.saveTeacher(mt);
-          } catch(err) {
+          } catch (err) {
             console.warn("Failed to auto-sync cached teacher:", mt.name, err);
           }
         }
@@ -945,7 +1166,7 @@ async function importTeachersFromFirebase() {
     let fbDb;
     try {
       fbDb = getFirestore(fbApp, "default");
-    } catch(e) {
+    } catch (e) {
       fbDb = getFirestore(fbApp);
     }
 
@@ -955,7 +1176,7 @@ async function importTeachersFromFirebase() {
     let snap;
     try {
       snap = await getDocs(collection(fbDb, "exam_teachers"));
-    } catch(err1) {
+    } catch (err1) {
       console.warn("Query exam_teachers with 'default' db failed, retrying (default):", err1);
       const fallbackDb = getFirestore(fbApp);
       snap = await getDocs(collection(fallbackDb, "exam_teachers"));
@@ -963,7 +1184,7 @@ async function importTeachersFromFirebase() {
     if (!snap || snap.empty) {
       try {
         snap = await getDocs(collection(fbDb, "teachers"));
-      } catch(err2) {
+      } catch (err2) {
         console.warn("Query teachers failed:", err2);
       }
     }
@@ -2222,7 +2443,7 @@ async function openCBTPreview(docId) {
   let displayLaunch = launchDateVal;
   try {
     displayLaunch = new Date(launchDateVal + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  } catch(e) {}
+  } catch (e) { }
   if ($("cbtScheduleSummaryPill")) {
     $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD}`;
   }
@@ -2271,14 +2492,14 @@ function getCleanImageSrc(img) {
     try {
       const rawSvg = decodeURIComponent(s.split(",").slice(1).join(","));
       return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(rawSvg)));
-    } catch(e) {
+    } catch (e) {
       return s;
     }
   }
   if (s.startsWith("<svg")) {
     try {
       return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(s)));
-    } catch(e) {
+    } catch (e) {
       return s;
     }
   }
@@ -2288,7 +2509,7 @@ function getCleanImageSrc(img) {
 function renderCBTPreviewQuestions() {
   if (!activePreviewSubmission) return;
   const questions = activePreviewSubmission.questions || [];
-  
+
   if ($("cbtPreviewCountDisplay")) {
     $("cbtPreviewCountDisplay").textContent = `Questions (${questions.length})`;
   }
@@ -2337,16 +2558,16 @@ function renderCBTPreviewQuestions() {
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {
-              const letter = String.fromCharCode(65 + oIdx);
-              const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
-              return `
+        const letter = String.fromCharCode(65 + oIdx);
+        const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
+        return `
                 <div class="q-option-item ${isCorrect ? 'correct' : ''}">
                   <strong style="color:${isCorrect ? 'var(--status-good)' : 'var(--text-muted)'}">${letter}.</strong>
                   <span>${esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </div>
               `;
-            }).join("")}
+      }).join("")}
           </div>
         </div>
       `;
@@ -2391,9 +2612,9 @@ function renderCBTPreviewQuestions() {
           <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Options &amp; Correct Answer (Click "Mark as Correct" for the right answer):</label>
           <div style="display:flex;flex-direction:column;gap:8px" id="adminEditOptionsList">
             ${['A', 'B', 'C', 'D'].map((letter, oIdx) => {
-              const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
-              const isCorrect = currentAdminEditingCorrectLetter === letter;
-              return `
+      const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
+      const isCorrect = currentAdminEditingCorrectLetter === letter;
+      return `
                 <div style="display:flex;align-items:center;gap:8px">
                   <strong style="width:20px;font-size:13px;color:var(--text)">${letter}.</strong>
                   <input type="text" class="form-input admin-opt-input" data-letter="${letter}" data-opt-idx="${oIdx}" value="${esc(optVal)}" placeholder="Option ${letter}" style="flex:1;font-size:13px;padding:6px 10px">
@@ -2402,7 +2623,7 @@ function renderCBTPreviewQuestions() {
                   </button>
                 </div>
               `;
-            }).join("")}
+    }).join("")}
           </div>
         </div>
 
@@ -2614,7 +2835,7 @@ if ($("cbtPreviewSaveScheduleBtn")) {
         let displayLaunch = newLaunch;
         try {
           displayLaunch = new Date(newLaunch + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-        } catch(e) {}
+        } catch (e) { }
         $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD}`;
       }
       btn.textContent = "✓ Saved!";
@@ -2900,7 +3121,7 @@ const idbScoreStorage = {
           };
           req.onsuccess = () => resolve(req.result);
           req.onerror = () => resolve(null);
-        } catch(e) { resolve(null); }
+        } catch (e) { resolve(null); }
       });
     }
     return this.dbPromise;
@@ -2915,7 +3136,7 @@ const idbScoreStorage = {
         tx.oncomplete = () => resolve(true);
         tx.onerror = () => resolve(false);
       });
-    } catch(e) { return false; }
+    } catch (e) { return false; }
   },
   async get(key) {
     try {
@@ -2927,7 +3148,7 @@ const idbScoreStorage = {
         req.onsuccess = () => resolve(req.result || null);
         req.onerror = () => resolve(null);
       });
-    } catch(e) { return null; }
+    } catch (e) { return null; }
   }
 };
 
@@ -2942,7 +3163,7 @@ function cleanupObsoleteStorage() {
     "school_exam_scores_cache"
   ];
   obsoleteKeys.forEach(k => {
-    try { localStorage.removeItem(k); } catch(e) {}
+    try { localStorage.removeItem(k); } catch (e) { }
   });
 }
 
@@ -2960,7 +3181,7 @@ function cleanupObsoleteStorage() {
         }
       }
     }
-  } catch(e) {}
+  } catch (e) { }
 })();
 
 function deduplicateScoreRows(rows) {
@@ -3035,7 +3256,7 @@ function getCachedScores() {
             return res;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Recover from teacher score caches on this device if any exist
@@ -3052,7 +3273,7 @@ function getCachedScores() {
             const uid = (r.reg || r.student) + "___" + (r.subject || "") + "___" + (r.term || "");
             if (!recoveredMap.has(uid)) recoveredMap.set(uid, r);
           });
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     if (recoveredMap.size > 0) {
@@ -3091,7 +3312,7 @@ function setCachedScores(rows, version, timeStr) {
   _memoryCachedScores = cacheObj;
 
   // 1. Unlimited capacity storage in IndexedDB (never hits 5MB quota)
-  idbScoreStorage.set("admin_scores", cacheObj).catch(() => {});
+  idbScoreStorage.set("admin_scores", cacheObj).catch(() => { });
 
   // 2. Free up localStorage by deleting duplicate/stale backup keys
   cleanupObsoleteStorage();
@@ -3658,7 +3879,7 @@ async function runSmartDeduplication() {
           localStorage.removeItem(k);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // 3. Run cloud deduplication on Supabase
     let stats = { removed: 0 };
@@ -3695,11 +3916,11 @@ $("scoresPrintBtn").onclick = () => window.print();
 let _convPanelWired = false;
 function initConversionPanel() {
   if (_convPanelWired) { refreshConversionUI(); return; }
-  const origEl   = document.getElementById("convOrigMax");
-  const tgtEl    = document.getElementById("convTargetMax");
+  const origEl = document.getElementById("convOrigMax");
+  const tgtEl = document.getElementById("convTargetMax");
   const applyBtn = document.getElementById("convApplyBtn");
   const resetBtn = document.getElementById("convResetBtn");
-  const termSel  = document.getElementById("convTermSelect");
+  const termSel = document.getElementById("convTermSelect");
   if (!origEl || !applyBtn) return;
   _convPanelWired = true;
 

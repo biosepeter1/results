@@ -305,9 +305,11 @@
           </div>
 
           <!-- Search in student drill-down -->
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
             <input type="search" id="dashStudentSearchInput" placeholder="Quick search student name, reg no, or class..." style="max-width:320px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;">
-            <span style="font-size:12px;color:var(--text-muted);" id="dashStudentListSubtitle">Showing students who failed one or more subjects</span>
+            <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+              <span>💡 <strong style="color:var(--text);">Click any student row or failed subject badge</strong> to reveal their complete score sheet &amp; exact marks.</span>
+            </div>
           </div>
 
           <div class="table-scroll">
@@ -1141,6 +1143,61 @@
         id="cbtLightboxCloseBtn">&times; Close</button>
       <img id="cbtLightboxImg" src=""
         style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);background:#fff">
+    </div>
+  </div>
+
+  <!-- Student Full Academic Transcript Modal -->
+  <div class="modal-overlay" id="dashStudentScoreModal">
+    <div class="modal-box" style="max-width:760px;width:95vw;max-height:90vh;overflow-y:auto;">
+      <div class="modal-head" style="align-items:flex-start;">
+        <div>
+          <h3 class="modal-title" id="dashStudentModalName">Student Academic Scorecard</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:4px;" id="dashStudentModalMeta"></p>
+        </div>
+        <button class="btn-close" id="dashStudentModalCloseBtn" type="button">&times;</button>
+      </div>
+
+      <!-- Quick Metrics Summary -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:18px;">
+        <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Overall Average</div>
+          <div style="font-size:20px;font-weight:700;" id="dashStudentModalAvg">0%</div>
+        </div>
+        <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Evaluated</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashStudentModalTotalSubjects">0</div>
+        </div>
+        <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Passed</div>
+          <div style="font-size:20px;font-weight:700;color:#10b981;" id="dashStudentModalPassed">0</div>
+        </div>
+        <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Failed</div>
+          <div style="font-size:20px;font-weight:700;color:#ef4444;" id="dashStudentModalFailed">0</div>
+        </div>
+      </div>
+
+      <!-- Full Table of Scores -->
+      <div class="table-scroll" style="margin-bottom:18px;">
+        <table style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>SUBJECT</th>
+              <th style="text-align:center;">RAW SCORE</th>
+              <th style="text-align:center;">PERCENTAGE</th>
+              <th style="text-align:center;">GRADE</th>
+              <th style="text-align:center;">STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="dashStudentModalTbody"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions" style="justify-content:space-between;">
+        <button class="btn btn-secondary" id="dashStudentModalCloseBottomBtn" type="button">Close</button>
+        <button class="btn btn-primary" id="dashStudentModalPrintBtn" type="button">🖨️ Print Student Result Slip</button>
+      </div>
     </div>
   </div>
 
