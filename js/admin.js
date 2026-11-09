@@ -647,10 +647,10 @@ window.toggleDashStudentDrawer = function (studentId, highlightSubject) {
   const isClosed = (drawer.style.display === "none");
   if (isClosed) {
     drawer.style.display = "table-row";
-    if (chevron) chevron.textContent = "▲";
+    if (chevron) chevron.style.transform = "rotate(180deg)";
   } else if (!highlightSubject) {
     drawer.style.display = "none";
-    if (chevron) chevron.textContent = "▼";
+    if (chevron) chevron.style.transform = "rotate(0deg)";
     return;
   }
 
@@ -690,14 +690,14 @@ window.openStudentScoreModal = function (studentId, isResit = false) {
     if (resitNotice) resitNotice.style.display = "block";
     if (sigBlock) sigBlock.style.display = "block";
     if (schoolHdr) schoolHdr.style.display = "block";
-    if (modalPrintBtn) modalPrintBtn.textContent = "🖨️ Print Resit Authorization Slip";
+    if (modalPrintBtn) modalPrintBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Resit Authorization Slip`;
   } else {
     if ($("dashStudentModalName")) $("dashStudentModalName").textContent = `Student Academic Scorecard: ${s.name}`;
     if (docTitle) docTitle.textContent = "OFFICIAL STUDENT ACADEMIC RECORD";
     if (resitNotice) resitNotice.style.display = "none";
     if (sigBlock) sigBlock.style.display = "none";
     if (schoolHdr) schoolHdr.style.display = "block";
-    if (modalPrintBtn) modalPrintBtn.textContent = "🖨️ Print Student Result Slip";
+    if (modalPrintBtn) modalPrintBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Student Result Slip`;
   }
 
   if ($("dashStudentModalMeta")) $("dashStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || adminCurrentTerm || "All Terms"}`;
@@ -729,7 +729,7 @@ window.openStudentScoreModal = function (studentId, isResit = false) {
           <td style="padding:10px 8px;font-weight:600;color:var(--text-subtle);">${i + 1}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">
             ${esc(sc.subject)}
-            ${isRewrite ? `<span style="font-size:10px;padding:1px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;">🔁 REWRITE</span>` : ""}
+            ${isRewrite ? `<span style="font-size:10px;padding:2px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;letter-spacing:0.02em;">REWRITE</span>` : ""}
           </td>
           <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">${sc.pct}%</td>
@@ -848,9 +848,9 @@ function renderDashboardStudentActionCenter() {
 
   if (!filteredList.length) {
     const emptyMsg = isRewriteTab ?
-      `🎉 Excellent! No students scored at or below the rewrite threshold (≤${dashRewriteCutoffPct}%) in the selected scope.` :
+      `No students currently require rewrite under the selected cutoff (≤${dashRewriteCutoffPct}%).` :
       (isFailTab ?
-        "🎉 Excellent! No students have failing grades in the selected scope." :
+        "Zero failing grades recorded in the selected analytical scope." :
         "No honor roll students found matching the selected scope.");
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
     return;
@@ -879,8 +879,9 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">
             <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:4px;">
-              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:5px;">
+              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Click to reveal scores</span>
             </div>
           </td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
@@ -896,12 +897,18 @@ function renderDashboardStudentActionCenter() {
           <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Examination Rewrite Breakdown: ${esc(s.name)}</span>
+                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Examination Rewrite Breakdown: ${esc(s.name)}
+                </span>
                 <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (≤${dashRewriteCutoffPct}%)</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706;">🖨️ Print Resit Slip</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706; display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  Print Resit Slip
+                </button>
               </div>
             </div>
 
@@ -961,8 +968,9 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">
             <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:var(--accent);margin-top:2px;display:flex;align-items:center;gap:4px;">
-              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            <div style="font-size:11px;color:var(--accent);margin-top:2px;display:flex;align-items:center;gap:5px;">
+              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Click to reveal scores</span>
             </div>
           </td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
@@ -978,12 +986,18 @@ function renderDashboardStudentActionCenter() {
           <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Assessment Score Breakdown: ${esc(s.name)}</span>
+                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Assessment Score Breakdown: ${esc(s.name)}
+                </span>
                 <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:${s.avgScore >= 50 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; color:${s.avgScore >= 50 ? '#10b981' : '#ef4444'}; font-weight:700;">Overall Average: ${s.avgScore}%</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px; display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  View Official Report Slip
+                </button>
               </div>
             </div>
 
@@ -1016,14 +1030,21 @@ function renderDashboardStudentActionCenter() {
       `);
     } else {
       // Honor Roll
-      const rankBadge = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : `#${idx + 1}`));
+      const rankBadge = idx === 0 
+        ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#fef3c7;color:#b45309;font-size:11px;font-weight:800;border:1px solid rgba(245,158,11,0.3);">1ST</span>`
+        : (idx === 1 
+          ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:800;border:1px solid #cbd5e1;">2ND</span>`
+          : (idx === 2 
+            ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#ffedd5;color:#9a3412;font-size:11px;font-weight:800;border:1px solid rgba(249,115,22,0.3);">3RD</span>`
+            : `<span style="color:var(--text-muted);font-weight:600;">#${idx + 1}</span>`));
       rowsHtml.push(`
         <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--accent);">${rankBadge}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">
             <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:var(--status-good);margin-top:2px;display:flex;align-items:center;gap:4px;">
-              <span id="dash-chevron-${s.id}">▼</span> <span>Click to reveal scores</span>
+            <div style="font-size:11px;color:var(--status-good);margin-top:2px;display:flex;align-items:center;gap:5px;">
+              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Click to reveal scores</span>
             </div>
           </td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
@@ -1039,12 +1060,18 @@ function renderDashboardStudentActionCenter() {
           <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text);">🏆 Academic Honors Transcript: ${esc(s.name)}</span>
+                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                  Academic Honors Transcript: ${esc(s.name)}
+                </span>
                 <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:700;">Distinction Average: ${s.avgScore}%</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px;">🔍 View Official Report Slip</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px; display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  View Official Report Slip
+                </button>
               </div>
             </div>
 
