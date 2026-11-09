@@ -113,27 +113,12 @@ $("tabTeachers").onclick = () => switchTab("teachers");
 $("tabUpload").onclick = () => switchTab("upload");
 $("tabCBT").onclick = () => switchTab("cbt");
 
-// Auto-restore admin session if previously signed in
-(function autoRestoreAdminSession() {
-  try {
-    const isAuthed = localStorage.getItem("admin_auth_session_v1");
-    if (isAuthed === "true") {
-      performAdminSignIn();
-    } else {
-      document.documentElement.classList.remove("restoring-admin-session");
-    }
-  } catch (err) {
-    console.warn("Auto-restore admin session failed:", err);
-    document.documentElement.classList.remove("restoring-admin-session");
-  }
-})();
-
 // ══════════════════════════════════════════════════════════
 // EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL & LEADERSHIP VIEW)
 // ══════════════════════════════════════════════════════════
+var _dashEventsBound = false;
 let dashActiveTabStudentView = "fail"; // "fail", "rewrite", or "honor"
 let dashSubjectView = "best"; // "best" or "needs_support"
-let _dashEventsBound = false;
 let dashAtRiskStudents = [];
 let dashHonorRollStudents = [];
 let dashRewriteStudents = [];
@@ -4224,4 +4209,28 @@ function esc(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ══════════════════════════════════════════════════════════
+// AUTO-RESTORE ADMIN SESSION (RUNS ONCE ALL SCRIPTS LOAD)
+// ══════════════════════════════════════════════════════════
+function autoRestoreAdminSession() {
+  try {
+    const isAuthed = localStorage.getItem("admin_auth_session_v1");
+    if (isAuthed === "true") {
+      performAdminSignIn();
+    } else {
+      document.documentElement.classList.remove("restoring-admin-session");
+    }
+  } catch (err) {
+    console.warn("Auto-restore admin session failed:", err);
+    document.documentElement.classList.remove("restoring-admin-session");
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", autoRestoreAdminSession);
+} else {
+  autoRestoreAdminSession();
+}
+
 
