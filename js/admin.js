@@ -810,7 +810,6 @@ function renderDashboardStudentActionCenter() {
           <th>CLASS &amp; ARM</th>
           <th>MANDATORY REWRITE SUBJECTS (WITH EXACT MARKS)</th>
           <th style="text-align:center;">AVG SCORE</th>
-          <th style="text-align:center;">REWRITE ACTIONS</th>
         </tr>
       `;
     } else if (isFailTab) {
@@ -822,7 +821,6 @@ function renderDashboardStudentActionCenter() {
           <th>CLASS &amp; ARM</th>
           <th>FAILED SUBJECTS (CLICK TO REVEAL)</th>
           <th style="text-align:center;">AVG SCORE</th>
-          <th style="text-align:center;">ACTIONS</th>
         </tr>
       `;
     } else {
@@ -834,7 +832,6 @@ function renderDashboardStudentActionCenter() {
           <th>CLASS &amp; ARM</th>
           <th style="text-align:center;">ASSESSMENTS</th>
           <th style="text-align:center;">OVERALL AVERAGE</th>
-          <th style="text-align:center;">ACTIONS</th>
         </tr>
       `;
     }
@@ -855,7 +852,7 @@ function renderDashboardStudentActionCenter() {
       (isFailTab ?
         "🎉 Excellent! No students have failing grades in the selected scope." :
         "No honor roll students found matching the selected scope.");
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
     return;
   }
 
@@ -890,21 +887,13 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${rewriteBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
-          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
-              <span style="padding:4px 9px;border-radius:4px;background:#f59e0b;color:#fff;font-size:11px;font-weight:700;">Mandatory Resit (${s.rewriteSubjects.length})</span>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;color:#d97706;font-weight:700;">
-                🖨️ Resit Slip
-              </button>
-            </div>
-          </td>
         </tr>
       `);
 
       // Expandable Drawer Row for Rewrite
       rowsHtml.push(`
         <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
                 <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Examination Rewrite Breakdown: ${esc(s.name)}</span>
@@ -966,12 +955,6 @@ function renderDashboardStudentActionCenter() {
         `;
       }).join("");
 
-      const actionBadge = s.failedSubjects.length >= 3 ?
-        `<span style="padding:4px 9px;border-radius:4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;">Critical (${s.failedSubjects.length} Fails)</span>` :
-        (s.failedSubjects.length === 2 ?
-          `<span style="padding:4px 9px;border-radius:4px;background:rgba(245,158,11,0.15);color:#d97706;font-size:11px;font-weight:700;border:1px solid rgba(245,158,11,0.3);">Remedial (2 Fails)</span>` :
-          `<span style="padding:4px 9px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:11px;font-weight:600;border:1px solid rgba(59,130,246,0.3);">Counseling Needed</span>`);
-
       // Main Student Row
       rowsHtml.push(`
         <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
@@ -986,21 +969,13 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${failBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
-          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
-              ${actionBadge}
-              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;">
-                📄 Result Slip
-              </button>
-            </div>
-          </td>
         </tr>
       `);
 
       // Expandable Drawer Row
       rowsHtml.push(`
         <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
                 <span style="font-weight:700; font-size:13px; color:var(--text);">📋 Assessment Score Breakdown: ${esc(s.name)}</span>
@@ -1055,21 +1030,13 @@ function renderDashboardStudentActionCenter() {
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#10b981;font-size:14px;">${s.avgScore}%</td>
-          <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
-            <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
-              <span style="padding:4px 9px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,0.3);">Distinction Scholar</span>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px;padding:2px 8px;margin-top:2px;color:#10b981;font-weight:600;">
-                📄 Transcript
-              </button>
-            </div>
-          </td>
         </tr>
       `);
 
       // Expandable Drawer Row for Honor student
       rowsHtml.push(`
         <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="7" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
               <div>
                 <span style="font-weight:700; font-size:13px; color:var(--text);">🏆 Academic Honors Transcript: ${esc(s.name)}</span>
