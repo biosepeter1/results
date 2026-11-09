@@ -512,7 +512,7 @@ const dbClient = {
       let more = true;
       while (more) {
         const { data, error } = await sb.from("exam_results")
-          .select("id,term,reg,student,subject,class,arm")
+          .select("id,term,reg,student,subject,class,arm,score,pct,exam_date")
           .range(from, from + pageSize - 1);
         if (error || !data || data.length === 0) break;
         all.push(...data);
@@ -520,7 +520,8 @@ const dbClient = {
         else from += pageSize;
       }
 
-      const seen = new Set();
+      // Track the best / highest score per student per subject
+      const bestMap = new Map();
       const duplicateIds = [];
       const termCounts = {};
       const termSubjects = {};
@@ -534,15 +535,31 @@ const dbClient = {
         const term = (r.term || "").trim().toUpperCase();
         const key = `${term}|${reg || st}|${sub}|${cls}|${arm}`;
 
-        if (seen.has(key)) {
-          duplicateIds.push(r.id);
+        const rawScore = r.score !== undefined ? parseFloat(r.score) : NaN;
+        const rawPct = r.pct !== undefined ? parseFloat(r.pct) : NaN;
+        const scoreVal = !isNaN(rawScore) ? rawScore : (!isNaN(rawPct) ? rawPct : -1);
+
+        if (!bestMap.has(key)) {
+          bestMap.set(key, { id: r.id, score: scoreVal, term: r.term, subject: r.subject });
         } else {
-          seen.add(key);
-          const tName = r.term || "Unknown";
-          termCounts[tName] = (termCounts[tName] || 0) + 1;
-          if (!termSubjects[tName]) termSubjects[tName] = new Set();
-          if (r.subject) termSubjects[tName].add(r.subject);
+          const existing = bestMap.get(key);
+          // If this record has a HIGHER mark (e.g. resit or grade correction), keep it and delete the lower one!
+          if (scoreVal > existing.score) {
+            duplicateIds.push(existing.id);
+            bestMap.set(key, { id: r.id, score: scoreVal, term: r.term, subject: r.subject });
+          } else {
+            // Existing record already has a higher or equal mark, mark this one for deletion
+            duplicateIds.push(r.id);
+          }
         }
+      });
+
+      // Recalculate unique term summaries
+      bestMap.forEach(item => {
+        const tName = item.term || "Unknown";
+        termCounts[tName] = (termCounts[tName] || 0) + 1;
+        if (!termSubjects[tName]) termSubjects[tName] = new Set();
+        if (item.subject) termSubjects[tName].add(item.subject);
       });
 
       // Delete duplicates in batches of 100

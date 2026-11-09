@@ -2433,8 +2433,7 @@ function cleanupObsoleteStorage() {
 
 function deduplicateScoreRows(rows) {
   if (!Array.isArray(rows) || !rows.length) return [];
-  const seen = new Set();
-  const unique = [];
+  const map = new Map();
   rows.forEach(r => {
     const reg = (r.reg || "").trim().toUpperCase();
     const st = (r.student || r.name || "").trim().toUpperCase();
@@ -2443,12 +2442,22 @@ function deduplicateScoreRows(rows) {
     const arm = (r.arm || "").trim().toUpperCase();
     const term = (r.term || "").trim().toUpperCase();
     const key = `${term}|${reg || st}|${sub}|${cls}|${arm}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(r);
+
+    const rawScore = r.score !== undefined ? parseFloat(r.score) : NaN;
+    const rawPct = r.pct !== undefined ? parseFloat(r.pct) : NaN;
+    const scoreVal = !isNaN(rawScore) ? rawScore : (!isNaN(rawPct) ? rawPct : -1);
+
+    if (!map.has(key)) {
+      map.set(key, { row: r, score: scoreVal });
+    } else {
+      const existing = map.get(key);
+      // If new row has a higher score (e.g. resit or updated mark), keep the higher one!
+      if (scoreVal > existing.score) {
+        map.set(key, { row: r, score: scoreVal });
+      }
     }
   });
-  return unique;
+  return Array.from(map.values()).map(v => v.row);
 }
 
 function getCachedScores() {
