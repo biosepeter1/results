@@ -1347,17 +1347,35 @@ function downloadSubmissionExamsJson(docId) {
   triggerJsonDownload(`${slug}.exams.json`, exams);
 }
 
-function downloadSubmissionQuestionsJson(docId) {
+async function ensureSubmissionQuestions(sub) {
+  if (!sub) return sub;
+  if (Array.isArray(sub.questions) && sub.questions.length > 0) return sub;
+  if (window.dbClient && window.dbClient.getSubmission && sub.docId) {
+    try {
+      const full = await window.dbClient.getSubmission(sub.docId);
+      if (full && Array.isArray(full.questions)) {
+        sub.questions = full.questions;
+      }
+    } catch (e) {
+      console.warn("Could not fetch full submission questions:", e);
+    }
+  }
+  return sub;
+}
+
+async function downloadSubmissionQuestionsJson(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!sub) return;
+  await ensureSubmissionQuestions(sub);
   const { questions } = buildExportData(sub);
   const slug = getSanitizedSlug(sub.title);
   triggerJsonDownload(`${slug}.questions.json`, questions);
 }
 
-function downloadSubmissionBothJson(docId) {
+async function downloadSubmissionBothJson(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!sub) return;
+  await ensureSubmissionQuestions(sub);
   const { exams, questions } = buildExportData(sub);
   const slug = getSanitizedSlug(sub.title);
   triggerJsonDownload(`${slug}.exams.json`, exams);
@@ -1377,9 +1395,10 @@ async function deleteCBTSubmission(docId) {
   }
 }
 
-function openCBTPreview(docId) {
+async function openCBTPreview(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!sub) return;
+  await ensureSubmissionQuestions(sub);
   activePreviewSubmission = sub;
   const questions = sub.questions || [];
 

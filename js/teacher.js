@@ -340,7 +340,11 @@ async function loadData() {
 
   // 4. Fetch latest scores from Supabase
   try {
-    const rawScores = await window.dbClient.getScores();
+    const rawScores = await window.dbClient.getScores(
+      null,
+      hasSubjectRestriction ? teacher.subjects : null,
+      hasClassRestriction ? teacher.classes : null
+    );
 
     // If Supabase returned empty results but device has saved scores, keep device copy!
     if ((!rawScores || rawScores.length === 0) && cached && Array.isArray(cached.rows) && cached.rows.length > 0) {
@@ -2209,9 +2213,19 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
   }
 }
 
-function openTeacherExamPreview(docId) {
+async function openTeacherExamPreview(docId) {
   const sub = teacherSubmissions.find(s => s.docId === docId);
   if (!sub) return;
+  if ((!Array.isArray(sub.questions) || !sub.questions.length) && sub.numberOfQuestions > 0) {
+    if (window.dbClient && window.dbClient.getSubmission && sub.docId) {
+      try {
+        const full = await window.dbClient.getSubmission(sub.docId);
+        if (full && Array.isArray(full.questions)) sub.questions = full.questions;
+      } catch (e) {
+        console.warn('Could not load questions for teacher preview:', e);
+      }
+    }
+  }
   activeTeacherPreviewSub = sub;
   teacherSubmittedEditingQIdx = null;
   teacherSubmittedTempImage = undefined;

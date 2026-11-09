@@ -127,16 +127,32 @@ const dbClient = {
   // ══════════════════════════════════════════════════════════
   // 1. CBT EXAM SUBMISSIONS (Supports Unlimited Diagram Sizes)
   // ══════════════════════════════════════════════════════════
-  async getSubmissions() {
+  async getSubmissions(includeQuestions = false) {
     const sb = getSupabase();
     if (!sb) return [];
     try {
-      const { data, error } = await sb.from("cbt_submissions").select("*").order("created_at", { ascending: false });
+      const cols = includeQuestions
+        ? "*"
+        : "id,doc_id,exam_id,title,teacher_name,teacher_user,subject_name,subject_id,class_name,class_id,term_name,term_id,session_name,session_id,duration,number_of_questions,launch_date,start_time,end_time,shuffle,status,created_at,updated_at";
+      const { data, error } = await sb.from("cbt_submissions").select(cols).order("created_at", { ascending: false });
       if (error) throw error;
       return Array.isArray(data) ? data.map(mapSubFromSupabase) : [];
     } catch (err) {
       console.warn("Supabase getSubmissions error:", err);
       return [];
+    }
+  },
+
+  async getSubmission(docId) {
+    const sb = getSupabase();
+    if (!sb || !docId) return null;
+    try {
+      const { data, error } = await sb.from("cbt_submissions").select("*").eq("doc_id", docId).maybeSingle();
+      if (error) throw error;
+      return data ? mapSubFromSupabase(data) : null;
+    } catch (err) {
+      console.warn("Supabase getSubmission error:", err);
+      return null;
     }
   },
 
@@ -286,18 +302,23 @@ const dbClient = {
   },
 
   // ══════════════════════════════════════════════════════════
-  // 3. STUDENT EXAMINATION SCORES (Parallel Paginated Fetch)
+  // 3. STUDENT EXAMINATION SCORES (Fast Parallel & Filtered)
   // ══════════════════════════════════════════════════════════
-  async getScores(term) {
+  async getScores(term, subjects, classes) {
     const sb = getSupabase();
     if (!sb) return [];
     try {
       const pageSize = 1000;
-      const SELECT_COLS = "id,term,student,reg,subject,class,arm,score,pct,exam_date";
+      const SELECT_COLS = "term,student,reg,subject,class,arm,score,pct,exam_date";
+
+      const hasSubjects = Array.isArray(subjects) && subjects.length > 0;
+      const hasClasses = Array.isArray(classes) && classes.length > 0;
 
       // 1. Fetch first page to learn total count
       let q0 = sb.from("exam_results").select(SELECT_COLS, { count: "exact" }).range(0, pageSize - 1);
       if (term) q0 = q0.eq("term", term);
+      if (hasSubjects) q0 = q0.in("subject", subjects);
+      if (hasClasses) q0 = q0.in("class", classes);
       const { data: firstPage, error: firstErr, count } = await q0;
       if (firstErr) { console.warn("Supabase getScores error:", firstErr); return []; }
 
@@ -311,6 +332,8 @@ const dbClient = {
           const from = page * pageSize;
           let qp = sb.from("exam_results").select(SELECT_COLS).range(from, from + pageSize - 1);
           if (term) qp = qp.eq("term", term);
+          if (hasSubjects) qp = qp.in("subject", subjects);
+          if (hasClasses) qp = qp.in("class", classes);
           pagePromises.push(qp);
         }
         const results = await Promise.all(pagePromises);
