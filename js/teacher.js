@@ -1,4 +1,4 @@
-// ══════════════════════════════════════════════════════════════════════════════
+﻿// ══════════════════════════════════════════════════════════════════════════════
 // TEACHER PORTAL JAVASCRIPT
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -440,6 +440,38 @@ function showApp() {
   switchTeacherPortalTab("scores");
   buildTermTabs();
 }
+
+// ── Sign Out ──
+function doSignOut() {
+  // Clear teacher data from memory
+  teacher = null;
+  allRows = [];
+  activeFilteredRows = [];
+  currentTerm = null;
+  currentPage = 1;
+
+  // Clear teacher caches from localStorage
+  Object.keys(localStorage).forEach(function(k) {
+    if (k.startsWith(TEACHER_CACHE_PREFIX)) localStorage.removeItem(k);
+  });
+
+  // Reset login form fields
+  if ($u) $u.value = '';
+  if ($p) $p.value = '';
+  if ($msg) $msg.textContent = '';
+
+
+  // Switch back to login screen
+  $app.style.display = 'none';
+  $login.style.display = 'flex';
+  if ($u) setTimeout(function() { $u.focus(); }, 50);
+}
+
+// Wire Sign Out button at startup
+(function wireSignOut() {
+  var btn = document.getElementById('out');
+  if (btn) btn.addEventListener('click', doSignOut);
+})();
 
 // ── Term Tabs ──
 function buildTermTabs() {
