@@ -60,28 +60,83 @@
      TEACHER RESULTS DASHBOARD
      ══════════════════════════════════════════════════════════ -->
   <div id="app">
-    <div class="container">
-
-      <!-- Top Institutional Bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <span class="institution-title">Academic Examination Results Portal</span>
-          <span class="institution-subtitle">Official Score Registry</span>
-        </div>
-        <div class="topbar-right">
-          <div class="teacher-credentials">
-            <div class="teacher-name-label" id="who"></div>
-            <div class="teacher-role-label" id="subinfo"></div>
+    <!-- Premium Main Menu Bar for Teacher Portal -->
+    <header class="main-menu-bar">
+      <div class="header-inner">
+        <!-- Left: Brand / School Crest -->
+        <a href="#" class="menu-brand" onclick="switchTeacherPortalTab('scores'); return false;">
+          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
+          <div class="menu-brand-text">
+            <span class="menu-brand-title">Honeyland Schools</span>
+            <span class="menu-brand-sub">Academic Assessment &amp; CBT Portal</span>
           </div>
-          <button type="button" class="btn-text" id="out">Sign out</button>
-        </div>
-      </header>
+          <span class="menu-role-badge teacher">TEACHER</span>
+        </a>
 
-      <!-- Teacher Portal Section Navigation -->
-      <div class="portal-nav-bar">
-        <button type="button" class="portal-nav-btn active" id="btnTeacherNavScores">📊 Student Examination Scores</button>
-        <button type="button" class="portal-nav-btn" id="btnTeacherNavCbt">📝 Upload CBT Exam (Notepad / Word)</button>
+        <!-- Center: Desktop Main Menu Navigation -->
+        <nav class="menu-nav-links" id="teacherDesktopNav" aria-label="Teacher Sections">
+          <button class="portal-nav-btn active" id="btnTeacherNavScores" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Student Scores</span>
+          </button>
+          <button class="portal-nav-btn" id="btnTeacherNavCbt" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Set CBT Exam</span>
+          </button>
+        </nav>
+
+        <!-- Right: Utility Tray (Live Status, Admin Portal Link, Teacher Profile, Sign Out, Mobile Toggle) -->
+        <div class="menu-utility-tray">
+          <div class="menu-status-pill" title="Live System Active">
+            <span class="pulse-dot"></span>
+            <span class="status-text">Online</span>
+          </div>
+
+          <a href="admin.html" class="menu-portal-link" target="_blank" title="Go to Administrator Portal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Admin</span>
+          </a>
+
+          <div class="menu-user-profile">
+            <div class="menu-avatar" id="teacherAvatar">TC</div>
+            <div class="menu-user-details">
+              <span class="menu-user-name" id="who">Teacher</span>
+              <span class="menu-user-sub" id="subinfo">Academic Staff</span>
+            </div>
+          </div>
+
+          <button class="menu-signout-btn" id="out" type="button" title="Sign out of portal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign out</span>
+          </button>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button class="menu-mobile-toggle" id="teacherMobileToggleBtn" type="button" aria-label="Toggle navigation menu">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+          </button>
+        </div>
       </div>
+
+      <!-- Mobile Dropdown Navigation Drawer -->
+      <div class="menu-mobile-drawer" id="teacherMobileDrawer">
+        <button class="mobile-nav-item active" data-teacher-tab="scores" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Student Examination Scores
+        </button>
+        <button class="mobile-nav-item" data-teacher-tab="cbt" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Set CBT Exam (Word / Notepad)
+        </button>
+        <a href="admin.html" class="mobile-nav-item" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Switch to Administrator Portal
+        </a>
+      </div>
+    </header>
+
+    <div class="container">
 
       <!-- ══════════════════════════════════════════════════════════
          PANE 1: SCORES DASHBOARD

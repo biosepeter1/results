@@ -55,15 +55,105 @@
      ADMIN MAIN APP SHELL
      ══════════════════════════════════════════════════════════ -->
   <div id="viewApp" style="display:none">
-    <header class="app-header">
+    <!-- Premium Main Menu Bar -->
+    <header class="main-menu-bar">
       <div class="header-inner">
-        <div class="school-identity">
-          <h1 class="school-title">Academic Administration Portal</h1>
+        <!-- Left: Brand / School Crest -->
+        <a href="#" class="menu-brand" onclick="switchTab('dashboard'); return false;">
+          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
+          <div class="menu-brand-text">
+            <span class="menu-brand-title">Honeyland Schools</span>
+            <span class="menu-brand-sub">Academic Results &amp; CBT Portal</span>
+          </div>
+          <span class="menu-role-badge">ADMIN</span>
+        </a>
+
+        <!-- Center: Desktop Main Menu Tabs -->
+        <nav class="menu-nav-links nav-tabs" aria-label="Administration Sections" style="border:none;margin:0;padding:4px;overflow:visible">
+          <button class="nav-tab active" id="tabDashboard" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-tab" id="tabScores" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Scores</span>
+          </button>
+          <button class="nav-tab" id="tabTeachers" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Teachers</span>
+            <span class="tab-badge" id="teacherCountBadge">0</span>
+          </button>
+          <button class="nav-tab" id="tabUpload" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload</span>
+          </button>
+          <button class="nav-tab" id="tabCBT" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>CBT Exams</span>
+            <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
+          </button>
+        </nav>
+
+        <!-- Right: Utility Tray (Live Status, Teacher Portal Link, User Chip, Sign Out, Mobile Toggle) -->
+        <div class="menu-utility-tray">
+          <div class="menu-status-pill" title="Live Database Synchronization Active">
+            <span class="pulse-dot"></span>
+            <span class="status-text">Cloud Sync</span>
+          </div>
+
+          <a href="index.html" class="menu-portal-link" target="_blank" title="Open Teacher Portal in new tab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>Teacher Portal</span>
+          </a>
+
+          <div class="menu-user-profile">
+            <div class="menu-avatar">AD</div>
+            <div class="menu-user-details">
+              <span class="menu-user-name">Administrator</span>
+              <span class="menu-user-sub">Super Admin</span>
+            </div>
+          </div>
+
+          <button class="menu-signout-btn" id="adminSignOutBtn" type="button" title="Sign out of Administration">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign out</span>
+          </button>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button class="menu-mobile-toggle" id="adminMobileToggleBtn" type="button" aria-label="Toggle navigation menu">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+          </button>
         </div>
-        <div class="header-actions">
-          <a href="index.html" class="btn btn-secondary btn-sm" target="_blank">Teacher portal</a>
-          <button class="btn btn-secondary btn-sm" id="adminSignOutBtn" type="button">Sign out</button>
-        </div>
+      </div>
+
+      <!-- Mobile Dropdown Navigation Drawer -->
+      <div class="menu-mobile-drawer" id="adminMobileDrawer">
+        <button class="mobile-nav-item active" data-tab="dashboard" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Executive Dashboard
+        </button>
+        <button class="mobile-nav-item" data-tab="scores" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Student Scores
+        </button>
+        <button class="mobile-nav-item" data-tab="teachers" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Manage Teachers
+        </button>
+        <button class="mobile-nav-item" data-tab="upload" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
+          Upload Exam Scores
+        </button>
+        <button class="mobile-nav-item" data-tab="cbt" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          CBT Exams &amp; Offline JSON
+        </button>
+        <a href="index.html" class="mobile-nav-item" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/></svg>
+          Switch to Teacher Portal
+        </a>
       </div>
     </header>
 
@@ -73,26 +163,6 @@
         <strong>Institutional Administration:</strong> Review student examination scores and grade distributions, manage
         teacher login accounts, publish term scores, and export offline CBT exam packages.
       </div>
-
-      <!-- Main Navigation Tabs -->
-      <nav class="nav-tabs" aria-label="Administration Sections">
-        <button class="nav-tab active" id="tabDashboard" type="button" style="display:inline-flex;align-items:center;gap:6px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          Executive Dashboard
-        </button>
-        <button class="nav-tab" id="tabScores" type="button">
-          Student scores
-        </button>
-        <button class="nav-tab" id="tabTeachers" type="button">
-          Manage teachers <span class="tab-badge" id="teacherCountBadge">0</span>
-        </button>
-        <button class="nav-tab" id="tabUpload" type="button">
-          Upload exam scores
-        </button>
-        <button class="nav-tab" id="tabCBT" type="button">
-          CBT Exams &amp; Offline JSON <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
-        </button>
-      </nav>
 
       <!-- ══════════════════════════════════════════════════════
          SECTION 0: EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL VIEW)

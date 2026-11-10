@@ -538,6 +538,11 @@ function switchTeacherPortalTab(target) {
   if ($paneScores) $paneScores.style.display = isCbt ? "none" : "block";
   if ($paneCbt) $paneCbt.style.display = isCbt ? "block" : "none";
 
+  // Sync mobile drawer items
+  document.querySelectorAll(".mobile-nav-item[data-teacher-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.teacherTab === target);
+  });
+
   if (isCbt) {
     loadActiveCbtTerm();
     loadTeacherCbtDefaults();
@@ -567,6 +572,20 @@ function updateTeacherViewTabs() {
 
 if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
 if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
+
+// Mobile Hamburger Drawer Event Wiring
+if ($("teacherMobileToggleBtn")) {
+  $("teacherMobileToggleBtn").onclick = () => {
+    const drawer = $("teacherMobileDrawer");
+    if (drawer) drawer.classList.toggle("open");
+  };
+}
+document.querySelectorAll(".mobile-nav-item[data-teacher-tab]").forEach(btn => {
+  btn.onclick = () => {
+    switchTeacherPortalTab(btn.dataset.teacherTab);
+    $("teacherMobileDrawer")?.classList.remove("open");
+  };
+});
 
 if ($("tabTeacherViewAll")) {
   $("tabTeacherViewAll").addEventListener("click", () => {
@@ -616,6 +635,14 @@ function showApp() {
   $login.style.display = "none";
   $app.style.display = "block";
   $("who").textContent = teacher.name;
+  const initials = (teacher.name || "TC")
+    .split(" ")
+    .map(w => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "TC";
+  if ($("teacherAvatar")) $("teacherAvatar").textContent = initials;
   const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
   const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
   const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";

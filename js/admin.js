@@ -96,6 +96,11 @@ function switchTab(target) {
     if ($(BTNS[t])) $(BTNS[t]).classList.toggle("active", t === target);
     if ($(PANES[t])) $(PANES[t]).style.display = (t === target) ? "block" : "none";
   });
+  // Sync mobile drawer items
+  document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.tab === target);
+  });
+
   if (target === "dashboard") renderExecutiveDashboard();
   if (target === "teachers") loadTeachers(true);
   if (target === "upload") {
@@ -114,10 +119,24 @@ function switchTab(target) {
   if (target === "scores") { initConversionPanel(); loadStudentScores(); }
 }
 if ($("tabDashboard")) $("tabDashboard").onclick = () => switchTab("dashboard");
-$("tabScores").onclick = () => switchTab("scores");
-$("tabTeachers").onclick = () => switchTab("teachers");
-$("tabUpload").onclick = () => switchTab("upload");
-$("tabCBT").onclick = () => switchTab("cbt");
+if ($("tabScores")) $("tabScores").onclick = () => switchTab("scores");
+if ($("tabTeachers")) $("tabTeachers").onclick = () => switchTab("teachers");
+if ($("tabUpload")) $("tabUpload").onclick = () => switchTab("upload");
+if ($("tabCBT")) $("tabCBT").onclick = () => switchTab("cbt");
+
+// Mobile Hamburger Drawer Event Wiring
+if ($("adminMobileToggleBtn")) {
+  $("adminMobileToggleBtn").onclick = () => {
+    const drawer = $("adminMobileDrawer");
+    if (drawer) drawer.classList.toggle("open");
+  };
+}
+document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(btn => {
+  btn.onclick = () => {
+    switchTab(btn.dataset.tab);
+    $("adminMobileDrawer")?.classList.remove("open");
+  };
+});
 
 // ══════════════════════════════════════════════════════════
 // EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL & LEADERSHIP VIEW)
