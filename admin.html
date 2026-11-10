@@ -696,35 +696,30 @@
           <!-- Left: Upload Step -->
           <div>
             <div class="card">
-              <div class="card-header">
+              <div class="card-header" style="flex-wrap:wrap;gap:8px">
                 <div>
                   <h2 class="card-title">Step 1 — Choose Test / Term</h2>
-                  <p class="card-sub">Select the term for this scores export</p>
+                  <p class="card-sub">Select the term for this scores export, or edit / add custom terms</p>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button type="button" class="btn btn-secondary btn-sm" id="addNewUploadTermBtn">+ Add Term</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="resetUploadTermsBtn" title="Reset term options to defaults">Reset Defaults</button>
                 </div>
               </div>
 
               <div class="term-selector" id="termSelector">
-                <button type="button" class="term-btn active" data-term="First Test">
-                  <div class="term-btn-title">First Test</div>
-                  <div class="term-btn-meta" id="metaFirstTest">Checking…</div>
-                </button>
-                <button type="button" class="term-btn" data-term="Mid Term Test">
-                  <div class="term-btn-title">Mid Term Test</div>
-                  <div class="term-btn-meta" id="metaMidTerm">Checking…</div>
-                </button>
-                <button type="button" class="term-btn" data-term="Third Term Examination">
-                  <div class="term-btn-title">Third Term Examination</div>
-                  <div class="term-btn-meta" id="metaThirdTerm">Checking…</div>
-                </button>
-                <button type="button" class="term-btn" data-term="__custom">
-                  <div class="term-btn-title">Custom Term</div>
-                  <div class="term-btn-meta">Other test name</div>
-                </button>
+                <!-- Dynamically populated from saved term options -->
               </div>
 
-              <div class="form-field" id="customTermGroup" style="display:none">
-                <label class="form-label" for="customTermInput">Custom Term Name</label>
-                <input class="form-input" id="customTermInput" type="text" placeholder="e.g. Mock Examination 2026">
+              <div class="form-field" id="customTermGroup" style="display:none;margin-top:12px;background:var(--surface-alt);padding:12px;border:1px solid var(--border);border-radius:6px">
+                <label class="form-label" for="customTermInput" style="font-weight:700">Add or Set Custom Term</label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input class="form-input" id="customTermInput" type="text" placeholder="e.g. First Term Examination" style="flex:1;min-width:200px">
+                  <button type="button" class="btn btn-sm" id="saveCustomTermOptionBtn" style="white-space:nowrap">💾 Save as Option</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+                  💡 <em>Whatever you choose or save here will automatically be added as a permanent option button!</em>
+                </div>
               </div>
 
               <div class="card-header" style="margin-top:20px">
@@ -809,49 +804,59 @@
         <!-- School-Wide Active Examination Term for Teacher CBT Uploads -->
         <div class="card" style="margin-bottom:20px;border-left:4px solid var(--accent)">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
-            <div style="max-width:520px">
-              <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Active Examination Term for
-                Teacher Uploads</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin:0">Set the active examination term and assessment type. When teachers
-                prepare exams, their exam titles will automatically format with this term (e.g.
-                <code>YEAR 8 FRENCH MID TERM EXAMINATION</code> or <code>MATHEMATICS FIRST TEST</code>).</p>
+            <div style="max-width:540px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0">Active Examination Term for Teacher Uploads</h3>
+                <span class="badge" style="background:rgba(235,87,87,0.15);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">CBT Sync</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0 0">
+                Set the active examination term. Teachers preparing exams will automatically inherit this term for all exam titles (e.g. <code>YEAR 8 FRENCH MID TERM TEST</code> or <code>MATHEMATICS FIRST TERM EXAMINATION</code>).
+              </p>
             </div>
-            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end" class="cbt-term-controls-wrap">
-              <!-- Academic Term Era (First Term | Second Term | Third Term) -->
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-                <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Term Era:</span>
-                <div id="cbtAdminEraSelector" style="display:inline-flex;gap:5px;background:var(--surface-alt);padding:3px;border-radius:6px;border:1px solid var(--border)">
-                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn active" data-era="First Term">First Term</button>
-                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn" data-era="Second Term">Second Term</button>
-                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn" data-era="Third Term">Third Term</button>
-                </div>
-              </div>
-
-              <!-- Assessment Type (First Test | Mid Term Examination | Term Examination | Custom...) -->
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-                <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Assessment:</span>
-                <div id="cbtAdminAssessmentSelector" style="display:inline-flex;gap:6px;flex-wrap:wrap">
-                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="First Test">First Test</button>
-                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn active" data-assess="Mid Term Examination">Mid Term Exam</button>
-                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="Term Examination" id="cbtAssessTermExamBtn">First Term Exam</button>
-                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="__custom">Custom...</button>
-                </div>
-              </div>
-
-              <div id="cbtAdminCustomTermWrap" style="display:none;align-items:center;gap:6px;justify-content:flex-end">
-                <input type="text" id="cbtAdminCustomTermInput" class="form-input"
-                  style="padding:4px 10px;font-size:12px;width:190px" placeholder="e.g. MOCK EXAMINATION">
-                <button type="button" class="btn btn-sm" id="cbtAdminSaveCustomTermBtn"
-                  style="font-size:12px;padding:4px 10px">Set</button>
-              </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtAddCustomTermBtn" style="font-size:12px;padding:5px 12px">➕ Add Term</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtResetTermsBtn" style="font-size:12px;padding:5px 10px;color:var(--text-muted)" title="Restore standard school term presets">↺ Defaults</button>
             </div>
           </div>
-          <div
-            style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
+
+          <!-- Dynamic Active Term Options (Editable & Clickable) -->
+          <div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">
+              Select Active Term (Click to set active, ✏️ to rename, ✕ to delete):
+            </div>
+            <div id="cbtAdminTermsContainer" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+              <!-- Dynamically populated from saved CBT term options -->
+            </div>
+          </div>
+
+          <!-- Custom Term Input Drawer (Automatically saves as an option button) -->
+          <div id="cbtAdminCustomTermDrawer" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
+              ➕ Add Custom Examination Term
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="text" id="cbtAdminCustomTermInput" class="form-input"
+                style="padding:6px 12px;font-size:13px;min-width:260px;flex:1;max-width:440px"
+                placeholder="e.g. FIRST TERM EXAMINATION, MOCK EXAM 2026...">
+              <button type="button" class="btn btn-sm btn-primary" id="cbtAdminSaveCustomTermBtn"
+                style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none">
+                💾 Save as Option &amp; Set Active
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtAdminCancelCustomBtn"
+                style="font-size:12px;padding:6px 12px">
+                Cancel
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+              💡 <em>Whatever custom term you enter automatically saves permanently as a selectable button option and becomes the active term for all teachers!</em>
+            </div>
+          </div>
+
+          <!-- Active Term Status Banner -->
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px">
             <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay"
-                style="color:var(--accent);letter-spacing:0.5px">FIRST TERM MID TERM EXAMINATION</strong></span>
-            <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
-              for all teachers!</span>
+                style="color:var(--accent);letter-spacing:0.5px">FIRST TERM EXAMINATION</strong></span>
+            <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated for all teachers!</span>
           </div>
 
           <!-- School-Wide Exam Duration & Marks per Question -->

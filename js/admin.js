@@ -98,7 +98,12 @@ function switchTab(target) {
   });
   if (target === "dashboard") renderExecutiveDashboard();
   if (target === "teachers") loadTeachers(true);
-  if (target === "upload") loadLiveTerms();
+  if (target === "upload") {
+    loadSavedUploadTerms();
+    renderUploadTermSelector();
+    loadLiveTerms();
+    syncUploadTermsWithCloud();
+  }
   if (target === "cbt") {
     loadAdminCbtActiveTerm();
     loadAdminCbtDefaults();
@@ -1494,30 +1499,273 @@ async function deleteTeacher(docId) {
 }
 
 // ══════════════════════════════════════════════════════════
-// EXAM SCORES CSV UPLOAD MODULE
+// EXAM SCORES CSV UPLOAD MODULE & DYNAMIC EDITABLE TERMS
 // ══════════════════════════════════════════════════════════
+const DEFAULT_UPLOAD_TERMS = [
+  "First Test",
+  "Mid Term Test",
+  "First Term Examination",
+  "Second Term First Test",
+  "Second Term Mid Term Test",
+  "Second Term Examination",
+  "Third Term First Test",
+  "Third Term Mid Term Test",
+  "Third Term Examination"
+];
+
+let savedUploadTerms = [...DEFAULT_UPLOAD_TERMS];
 let selectedTerm = "First Test";
-document.querySelectorAll(".term-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".term-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedTerm = btn.dataset.term;
-    $("customTermGroup").style.display = (selectedTerm === "__custom") ? "block" : "none";
-    updateTargetLabel();
-    checkUploadReady();
-  };
-});
+let termScoreCountsMap = {};
+
+function loadSavedUploadTerms() {
+  try {
+    const raw = localStorage.getItem("school_upload_terms_v2");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        savedUploadTerms = parsed;
+      }
+    }
+  } catch (e) {}
+}
+loadSavedUploadTerms();
+
+async function syncUploadTermsWithCloud() {
+  try {
+    if (window.dbClient && typeof window.dbClient.getMeta === "function") {
+      const meta = await window.dbClient.getMeta("upload_terms_list");
+      if (meta && Array.isArray(meta.terms) && meta.terms.length > 0) {
+        meta.terms.forEach(t => {
+          if (!savedUploadTerms.includes(t)) savedUploadTerms.push(t);
+        });
+        localStorage.setItem("school_upload_terms_v2", JSON.stringify(savedUploadTerms));
+        renderUploadTermSelector();
+      }
+    }
+  } catch (err) {
+    console.warn("Could not sync upload terms from cloud:", err);
+  }
+}
+
+async function saveUploadTermsList() {
+  try {
+    localStorage.setItem("school_upload_terms_v2", JSON.stringify(savedUploadTerms));
+    if (window.dbClient && typeof window.dbClient.setMeta === "function") {
+      await window.dbClient.setMeta("upload_terms_list", {
+        terms: savedUploadTerms,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } catch (e) {
+    console.warn("Could not persist upload terms to cloud:", e);
+  }
+}
+
+function renderUploadTermSelector() {
+  const container = $("termSelector");
+  if (!container) return;
+
+  // Merge any live terms from the database so existing terms always appear as options
+  Object.keys(termScoreCountsMap).forEach(liveT => {
+    if (liveT && !savedUploadTerms.includes(liveT)) {
+      savedUploadTerms.push(liveT);
+    }
+  });
+
+  let html = "";
+  savedUploadTerms.forEach(term => {
+    const isSelected = (selectedTerm === term);
+    const count = termScoreCountsMap[term] || 0;
+    const metaText = count > 0 ? `${count.toLocaleString()} scores` : "Not uploaded";
+
+    html += `
+      <div class="term-btn ${isSelected ? 'active' : ''}" data-term="${esc(term)}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+          <div class="term-btn-title" style="flex:1;word-break:break-word">${esc(term)}</div>
+          <div class="term-btn-actions" style="display:flex;gap:4px;flex-shrink:0">
+            <button type="button" class="term-action-btn" data-edit-term="${esc(term)}" title="Rename / Edit term" style="background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px">✏️</button>
+            <button type="button" class="term-action-btn" data-del-term-opt="${esc(term)}" title="Remove this term option" style="background:none;border:none;cursor:pointer;font-size:13px;padding:1px 3px;color:var(--status-fail)">&times;</button>
+          </div>
+        </div>
+        <div class="term-btn-meta" style="margin-top:6px">${metaText}</div>
+      </div>
+    `;
+  });
+
+  // Custom Term / Add Option Button
+  const isCustomSelected = (selectedTerm === "__custom");
+  html += `
+    <div class="term-btn ${isCustomSelected ? 'active' : ''}" data-term="__custom" style="border-style:dashed;background:rgba(255,255,255,0.02)">
+      <div class="term-btn-title" style="color:var(--accent)">+ Custom Term</div>
+      <div class="term-btn-meta">Type &amp; save new option</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Bind Term selection clicks
+  container.querySelectorAll(".term-btn").forEach(card => {
+    card.onclick = (e) => {
+      if (e.target.closest(".term-action-btn")) return;
+      const t = card.dataset.term;
+      selectUploadTerm(t);
+    };
+  });
+
+  // Bind Edit Action
+  container.querySelectorAll("[data-edit-term]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const oldTerm = btn.dataset.editTerm;
+      editUploadTermName(oldTerm);
+    };
+  });
+
+  // Bind Delete Option Action
+  container.querySelectorAll("[data-del-term-opt]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const termToDel = btn.dataset.delTermOpt;
+      removeUploadTermOption(termToDel);
+    };
+  });
+
+  updateTargetLabel();
+  checkUploadReady();
+}
+
+function selectUploadTerm(t) {
+  selectedTerm = t;
+  document.querySelectorAll(".term-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.term === t);
+  });
+  const customGroup = $("customTermGroup");
+  if (customGroup) {
+    customGroup.style.display = (t === "__custom") ? "block" : "none";
+    if (t === "__custom") {
+      $("customTermInput")?.focus();
+    }
+  }
+  updateTargetLabel();
+  checkUploadReady();
+}
+
+function editUploadTermName(oldTerm) {
+  const newName = prompt(`Edit term name:\n\n(Tip: Enter the exact name for this term)`, oldTerm);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    alert("Term name cannot be empty.");
+    return;
+  }
+  if (trimmed === oldTerm) return;
+
+  const idx = savedUploadTerms.indexOf(oldTerm);
+  if (idx !== -1) {
+    savedUploadTerms[idx] = trimmed;
+  } else {
+    savedUploadTerms.push(trimmed);
+  }
+
+  // Preserve counts map under new name
+  if (termScoreCountsMap[oldTerm] !== undefined) {
+    termScoreCountsMap[trimmed] = termScoreCountsMap[oldTerm];
+    delete termScoreCountsMap[oldTerm];
+  }
+
+  if (selectedTerm === oldTerm) {
+    selectedTerm = trimmed;
+  }
+
+  saveUploadTermsList();
+  renderUploadTermSelector();
+}
+
+function removeUploadTermOption(term) {
+  if (!confirm(`Remove "${term}" from the options list?\n\n(Existing uploaded student scores for this term will not be deleted).`)) return;
+  savedUploadTerms = savedUploadTerms.filter(t => t !== term);
+  if (selectedTerm === term) {
+    selectedTerm = savedUploadTerms[0] || "First Test";
+  }
+  saveUploadTermsList();
+  renderUploadTermSelector();
+}
+
+function addCustomTermAsOption(termName) {
+  const trimmed = (termName || "").trim();
+  if (!trimmed) return false;
+
+  if (!savedUploadTerms.includes(trimmed)) {
+    savedUploadTerms.push(trimmed);
+    saveUploadTermsList();
+  }
+
+  selectedTerm = trimmed;
+  renderUploadTermSelector();
+
+  if ($("customTermInput")) $("customTermInput").value = "";
+  if ($("customTermGroup")) $("customTermGroup").style.display = "none";
+  updateTargetLabel();
+  checkUploadReady();
+  return true;
+}
 
 function getTermName() {
   if (!selectedTerm) return null;
-  if (selectedTerm === "__custom") return $("customTermInput").value.trim() || null;
+  if (selectedTerm === "__custom") {
+    const val = $("customTermInput")?.value.trim();
+    return val || null;
+  }
   return selectedTerm;
 }
 
 function updateTargetLabel() {
-  $("targetTermLabel").textContent = getTermName() || "(enter custom term name)";
+  if ($("targetTermLabel")) {
+    $("targetTermLabel").textContent = getTermName() || "(enter custom term name)";
+  }
 }
-$("customTermInput").oninput = () => { updateTargetLabel(); checkUploadReady(); };
+
+// Bind Custom Term and Add buttons
+if ($("saveCustomTermOptionBtn")) {
+  $("saveCustomTermOptionBtn").onclick = () => {
+    const val = $("customTermInput")?.value.trim();
+    if (!val) {
+      alert("Please enter a custom term name to save as an option.");
+      return;
+    }
+    addCustomTermAsOption(val);
+  };
+}
+
+if ($("customTermInput")) {
+  $("customTermInput").oninput = () => {
+    updateTargetLabel();
+    checkUploadReady();
+  };
+  $("customTermInput").onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("saveCustomTermOptionBtn")?.click();
+    }
+  };
+}
+
+if ($("addNewUploadTermBtn")) {
+  $("addNewUploadTermBtn").onclick = () => {
+    selectUploadTerm("__custom");
+  };
+}
+
+if ($("resetUploadTermsBtn")) {
+  $("resetUploadTermsBtn").onclick = () => {
+    if (!confirm("Reset term options back to the default list?")) return;
+    savedUploadTerms = [...DEFAULT_UPLOAD_TERMS];
+    saveUploadTermsList();
+    renderUploadTermSelector();
+  };
+}
+
+renderUploadTermSelector();
 
 const dropZone = $("csvDropZone");
 const csvFileInput = $("csvFileInput");
@@ -1645,6 +1893,11 @@ $("uploadScoresBtn").onclick = async () => {
   const term = getTermName();
   if (!term || !totalParsedRecords) return;
 
+  // Auto-save custom term as a permanent selectable option
+  if (selectedTerm === "__custom" && term) {
+    addCustomTermAsOption(term);
+  }
+
   $("uploadScoresBtn").disabled = true;
   setUploadError("");
   $("uploadSuccessBox").style.display = "none";
@@ -1706,18 +1959,11 @@ async function loadLiveTerms() {
   if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabase...</div>';
   try {
     const termList = await window.dbClient.getLiveTerms(allScoreRows);
-    const map = {};
-    termList.forEach(t => { map[t.term] = t; });
+    termScoreCountsMap = {};
+    termList.forEach(t => { termScoreCountsMap[t.term] = t.count; });
 
-    const metaFields = {
-      "First Test": $("metaFirstTest"),
-      "Mid Term Test": $("metaMidTerm"),
-      "Third Term Examination": $("metaThirdTerm")
-    };
-    Object.entries(metaFields).forEach(([t, el]) => {
-      const match = map[t] || (t === "Third Term Examination" ? map["Third Term Test"] : null);
-      if (el) el.textContent = match ? (match.count.toLocaleString() + " scores") : "Not uploaded";
-    });
+    // Update dynamic term selector with live score counts
+    renderUploadTermSelector();
 
     if (!termList.length) {
       if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No test scores uploaded yet.</div>';
@@ -1744,6 +1990,7 @@ async function deleteTerm(term) {
   if (!confirm(`Are you sure you want to delete all scores for "${term}"?\n\nThis will remove it from all teacher portal views.`)) return;
   try {
     await window.dbClient.deleteTerm(term);
+    delete termScoreCountsMap[term];
     await loadLiveTerms();
   } catch (e) {
     alert("Delete failed: " + e.message);
@@ -1761,8 +2008,185 @@ let cbtCurrentPage = 1;
 let cbtPageSize = 10;
 let activePreviewSubmission = null;
 
-// ── School-Wide Active CBT Examination Term ──
-let activeCbtExamTerm = "MID TERM EXAMINATION";
+// ── School-Wide Active CBT Examination Term (Dynamic & Editable Options) ──
+const DEFAULT_CBT_TERMS = [
+  "FIRST TERM EXAMINATION",
+  "MID TERM TEST",
+  "FIRST TEST",
+  "SECOND TERM EXAMINATION",
+  "SECOND TERM MID TERM TEST",
+  "THIRD TERM EXAMINATION",
+  "THIRD TERM MID TERM TEST"
+];
+
+let savedCbtTerms = [...DEFAULT_CBT_TERMS];
+let activeCbtExamTerm = "FIRST TERM EXAMINATION";
+
+function loadSavedCbtTerms() {
+  try {
+    const raw = localStorage.getItem("cbt_term_options_v2");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        savedCbtTerms = parsed;
+      }
+    }
+  } catch (e) {}
+}
+loadSavedCbtTerms();
+
+async function syncCbtTermsWithCloud() {
+  try {
+    if (window.dbClient && typeof window.dbClient.getMeta === "function") {
+      const meta = await window.dbClient.getMeta("cbt_term_options_list");
+      if (meta && Array.isArray(meta.terms) && meta.terms.length > 0) {
+        meta.terms.forEach(t => {
+          if (!savedCbtTerms.includes(t)) savedCbtTerms.push(t);
+        });
+        localStorage.setItem("cbt_term_options_v2", JSON.stringify(savedCbtTerms));
+        renderCbtTermOptions();
+      }
+    }
+  } catch (err) {
+    console.warn("Could not sync cbt terms from cloud:", err);
+  }
+}
+
+async function saveCbtTermsList() {
+  try {
+    localStorage.setItem("cbt_term_options_v2", JSON.stringify(savedCbtTerms));
+    if (window.dbClient && typeof window.dbClient.setMeta === "function") {
+      await window.dbClient.setMeta("cbt_term_options_list", {
+        terms: savedCbtTerms,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } catch (e) {
+    console.warn("Could not persist cbt terms to cloud:", e);
+  }
+}
+
+function renderCbtTermOptions() {
+  const container = $("cbtAdminTermsContainer");
+  if (!container) return;
+
+  // Ensure activeCbtExamTerm is in savedCbtTerms
+  if (activeCbtExamTerm && !savedCbtTerms.some(t => t.toUpperCase() === activeCbtExamTerm.toUpperCase())) {
+    savedCbtTerms.push(activeCbtExamTerm);
+  }
+
+  let html = "";
+  savedCbtTerms.forEach(term => {
+    const isSelected = (activeCbtExamTerm && activeCbtExamTerm.trim().toUpperCase() === term.trim().toUpperCase());
+    html += `
+      <div class="cbt-term-option-btn ${isSelected ? 'active' : ''}" data-cbt-term="${esc(term)}" title="Click to set as active examination term">
+        <span class="cbt-term-label">${isSelected ? '✓ ' : ''}${esc(term)}</span>
+        <span class="cbt-term-action" data-edit-cbt-term="${esc(term)}" title="Rename / edit this option">✏️</span>
+        <span class="cbt-term-action" data-del-cbt-term="${esc(term)}" title="Delete this option" style="color:rgba(255,100,100,0.85)">&times;</span>
+      </div>
+    `;
+  });
+
+  // + Custom button directly inline
+  html += `
+    <button type="button" class="btn btn-secondary btn-sm" id="cbtOpenCustomTermBtn" style="font-size:12px;padding:6px 12px;border-style:dashed;color:var(--accent);font-weight:600">
+      + Custom...
+    </button>
+  `;
+
+  container.innerHTML = html;
+
+  // Click on term button -> set as active
+  container.querySelectorAll(".cbt-term-option-btn").forEach(btn => {
+    btn.onclick = (e) => {
+      if (e.target.closest("[data-edit-cbt-term]") || e.target.closest("[data-del-cbt-term]")) return;
+      const term = btn.dataset.cbtTerm;
+      if (term) {
+        setAdminCbtActiveTerm(term);
+      }
+    };
+  });
+
+  // Rename term option
+  container.querySelectorAll("[data-edit-cbt-term]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const oldTerm = btn.dataset.editCbtTerm;
+      const newTerm = prompt("Rename exam term option:", oldTerm);
+      if (newTerm && newTerm.trim() && newTerm.trim().toUpperCase() !== oldTerm.toUpperCase()) {
+        const cleaned = newTerm.trim().toUpperCase();
+        const idx = savedCbtTerms.indexOf(oldTerm);
+        if (idx !== -1) savedCbtTerms[idx] = cleaned;
+        else savedCbtTerms.push(cleaned);
+
+        saveCbtTermsList();
+        if (activeCbtExamTerm.toUpperCase() === oldTerm.toUpperCase()) {
+          setAdminCbtActiveTerm(cleaned);
+        } else {
+          renderCbtTermOptions();
+        }
+      }
+    };
+  });
+
+  // Delete term option
+  container.querySelectorAll("[data-del-cbt-term]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const termToDel = btn.dataset.delCbtTerm;
+      if (confirm(`Remove "${termToDel}" from active term options?`)) {
+        savedCbtTerms = savedCbtTerms.filter(t => t !== termToDel);
+        if (savedCbtTerms.length === 0) savedCbtTerms = [...DEFAULT_CBT_TERMS];
+        saveCbtTermsList();
+        if (activeCbtExamTerm.toUpperCase() === termToDel.toUpperCase()) {
+          setAdminCbtActiveTerm(savedCbtTerms[0]);
+        } else {
+          renderCbtTermOptions();
+        }
+      }
+    };
+  });
+
+  // Wire + Custom... button
+  const openCustomBtn = $("cbtOpenCustomTermBtn");
+  if (openCustomBtn) {
+    openCustomBtn.onclick = () => {
+      const drawer = $("cbtAdminCustomTermDrawer");
+      if (drawer) {
+        drawer.style.display = (drawer.style.display === "none" || !drawer.style.display) ? "block" : "none";
+        if (drawer.style.display === "block") {
+          const input = $("cbtAdminCustomTermInput");
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+        }
+      }
+    };
+  }
+}
+
+function addCustomCbtTermOption(termName) {
+  if (!termName || !termName.trim()) {
+    alert("Please enter a term name (e.g. FIRST TERM EXAMINATION).");
+    return;
+  }
+  const cleaned = termName.trim().toUpperCase();
+
+  // If not already in options, add it permanently!
+  if (!savedCbtTerms.some(t => t.toUpperCase() === cleaned)) {
+    savedCbtTerms.push(cleaned);
+    saveCbtTermsList();
+  }
+
+  // Set as active term
+  setAdminCbtActiveTerm(cleaned);
+
+  // Close custom drawer & clear input
+  const drawer = $("cbtAdminCustomTermDrawer");
+  if (drawer) drawer.style.display = "none";
+  if ($("cbtAdminCustomTermInput")) $("cbtAdminCustomTermInput").value = "";
+}
 
 async function loadAdminCbtActiveTerm() {
   try {
@@ -1777,6 +2201,7 @@ async function loadAdminCbtActiveTerm() {
       localStorage.setItem("cbt_active_term", activeCbtExamTerm);
       updateAdminCbtTermUI();
     }
+    await syncCbtTermsWithCloud();
   } catch (e) {
     console.warn("Could not load cbt_active_term from Supabase:", e);
   }
@@ -1786,19 +2211,86 @@ async function setAdminCbtActiveTerm(newTerm) {
   if (!newTerm || !newTerm.trim()) return;
   activeCbtExamTerm = newTerm.trim().toUpperCase();
   localStorage.setItem("cbt_active_term", activeCbtExamTerm);
+
+  // Ensure active term is part of saved options
+  if (!savedCbtTerms.some(t => t.toUpperCase() === activeCbtExamTerm)) {
+    savedCbtTerms.push(activeCbtExamTerm);
+    saveCbtTermsList();
+  }
+
   updateAdminCbtTermUI();
 
   try {
     await window.dbClient.setActiveCbtTerm(activeCbtExamTerm);
     const badge = $("cbtAdminTermSavedBadge");
     if (badge) {
+      badge.textContent = `✓ Set active: "${activeCbtExamTerm}" (Updated for all teachers!)`;
       badge.style.display = "inline";
-      setTimeout(() => { badge.style.display = "none"; }, 3000);
+      setTimeout(() => { badge.style.display = "none"; }, 4000);
     }
   } catch (err) {
-    alert("Could not update active term in Supabase: " + err.message);
+    console.error("Could not update active term in Supabase:", err);
   }
 }
+
+function updateAdminCbtTermUI() {
+  if ($("cbtAdminActiveTermDisplay")) {
+    $("cbtAdminActiveTermDisplay").textContent = activeCbtExamTerm;
+  }
+  renderCbtTermOptions();
+}
+
+// Global buttons wiring for CBT Active Term
+if ($("cbtAddCustomTermBtn")) {
+  $("cbtAddCustomTermBtn").onclick = () => {
+    const drawer = $("cbtAdminCustomTermDrawer");
+    if (drawer) {
+      drawer.style.display = "block";
+      const input = $("cbtAdminCustomTermInput");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+    }
+  };
+}
+
+if ($("cbtResetTermsBtn")) {
+  $("cbtResetTermsBtn").onclick = () => {
+    if (confirm("Reset CBT active term options to defaults (First Term Examination, Mid Term Test, First Test, etc.)?")) {
+      savedCbtTerms = [...DEFAULT_CBT_TERMS];
+      saveCbtTermsList();
+      renderCbtTermOptions();
+    }
+  };
+}
+
+if ($("cbtAdminSaveCustomTermBtn")) {
+  $("cbtAdminSaveCustomTermBtn").onclick = () => {
+    const val = $("cbtAdminCustomTermInput")?.value;
+    addCustomCbtTermOption(val);
+  };
+}
+
+if ($("cbtAdminCancelCustomBtn")) {
+  $("cbtAdminCancelCustomBtn").onclick = () => {
+    const drawer = $("cbtAdminCustomTermDrawer");
+    if (drawer) drawer.style.display = "none";
+  };
+}
+
+if ($("cbtAdminCustomTermInput")) {
+  $("cbtAdminCustomTermInput").onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("cbtAdminSaveCustomTermBtn")?.click();
+    }
+  };
+}
+
+// Initial load of CBT active term and defaults
+loadAdminCbtActiveTerm();
+loadAdminCbtDefaults();
 
 // ── School-Wide CBT Exam Defaults (Duration & Marks) ──
 let adminCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
@@ -1851,136 +2343,6 @@ async function saveAdminCbtDefaults() {
   } catch (err) {
     alert("Could not save exam defaults to Supabase: " + err.message);
   }
-}
-
-// ── Era & Assessment Dual Controls for CBT Active Term ──
-let currentCbtEra = "First Term";
-let currentCbtAssessment = "Mid Term Examination";
-
-function detectCbtEraAndAssessment(termStr) {
-  const upper = (termStr || "").toUpperCase().trim();
-  let era = "First Term";
-  if (upper.includes("SECOND TERM") || upper.includes("2ND TERM")) {
-    era = "Second Term";
-  } else if (upper.includes("THIRD TERM") || upper.includes("3RD TERM")) {
-    era = "Third Term";
-  } else {
-    era = "First Term";
-  }
-
-  let assess = "Mid Term Examination";
-  if (upper.includes("FIRST TEST") || upper.includes("1ST TEST")) {
-    assess = "First Test";
-  } else if (upper.includes("MID TERM") || upper.includes("MID-TERM") || upper.includes("MIDTERM")) {
-    assess = "Mid Term Examination";
-  } else if (upper.includes("EXAMINATION") || upper.includes("EXAM")) {
-    assess = "Term Examination";
-  } else {
-    assess = "__custom";
-  }
-
-  return { era, assess };
-}
-
-function buildCbtTermString(era, assess) {
-  if (assess === "__custom") {
-    return $("cbtAdminCustomTermInput")?.value.trim().toUpperCase() || activeCbtExamTerm;
-  }
-  const eUpper = (era || "First Term").toUpperCase();
-  if (assess === "First Test") {
-    return `${eUpper} FIRST TEST`;
-  }
-  if (assess === "Mid Term Examination") {
-    return `${eUpper} MID TERM EXAMINATION`;
-  }
-  if (assess === "Term Examination") {
-    return `${eUpper} EXAMINATION`;
-  }
-  return activeCbtExamTerm;
-}
-
-function updateAdminCbtTermUI() {
-  if ($("cbtAdminActiveTermDisplay")) {
-    $("cbtAdminActiveTermDisplay").textContent = activeCbtExamTerm;
-  }
-
-  const detected = detectCbtEraAndAssessment(activeCbtExamTerm);
-  currentCbtEra = detected.era;
-  currentCbtAssessment = detected.assess;
-
-  // Update Era Buttons (First Term, Second Term, Third Term)
-  document.querySelectorAll(".cbt-era-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.era === currentCbtEra);
-  });
-
-  // Update Term Exam Button Label (e.g. "First Term Exam", "Second Term Exam", "Third Term Exam")
-  if ($("cbtAssessTermExamBtn")) {
-    $("cbtAssessTermExamBtn").textContent = `${currentCbtEra} Exam`;
-  }
-
-  // Update Assessment Buttons (First Test, Mid Term, Term Exam, Custom)
-  document.querySelectorAll(".cbt-assess-btn").forEach(btn => {
-    const a = btn.dataset.assess;
-    btn.classList.toggle("active", a === currentCbtAssessment);
-  });
-
-  // Show/hide custom input
-  if ($("cbtAdminCustomTermWrap")) {
-    const isCustom = currentCbtAssessment === "__custom";
-    $("cbtAdminCustomTermWrap").style.display = isCustom ? "inline-flex" : "none";
-    if (isCustom && $("cbtAdminCustomTermInput")) {
-      $("cbtAdminCustomTermInput").value = activeCbtExamTerm;
-    }
-  }
-}
-
-// Attach Era button handlers
-document.querySelectorAll(".cbt-era-btn").forEach(btn => {
-  btn.onclick = () => {
-    currentCbtEra = btn.dataset.era;
-    if (currentCbtAssessment === "__custom") {
-      currentCbtAssessment = "Mid Term Examination";
-    }
-    const newTerm = buildCbtTermString(currentCbtEra, currentCbtAssessment);
-    setAdminCbtActiveTerm(newTerm);
-  };
-});
-
-// Attach Assessment button handlers
-document.querySelectorAll(".cbt-assess-btn").forEach(btn => {
-  btn.onclick = () => {
-    const a = btn.dataset.assess;
-    currentCbtAssessment = a;
-    if (a === "__custom") {
-      if ($("cbtAdminCustomTermWrap")) {
-        $("cbtAdminCustomTermWrap").style.display = "inline-flex";
-      }
-      $("cbtAdminCustomTermInput")?.focus();
-      document.querySelectorAll(".cbt-assess-btn").forEach(b => b.classList.toggle("active", b === btn));
-    } else {
-      if ($("cbtAdminCustomTermWrap")) $("cbtAdminCustomTermWrap").style.display = "none";
-      const newTerm = buildCbtTermString(currentCbtEra, a);
-      setAdminCbtActiveTerm(newTerm);
-    }
-  };
-});
-
-if ($("cbtAdminSaveCustomTermBtn")) {
-  $("cbtAdminSaveCustomTermBtn").onclick = () => {
-    const customVal = $("cbtAdminCustomTermInput")?.value.trim();
-    if (customVal) {
-      currentCbtAssessment = "__custom";
-      setAdminCbtActiveTerm(customVal);
-    }
-  };
-}
-if ($("cbtAdminCustomTermInput")) {
-  $("cbtAdminCustomTermInput").onkeydown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      $("cbtAdminSaveCustomTermBtn")?.click();
-    }
-  };
 }
 
 // Download a JavaScript object as a .json file
