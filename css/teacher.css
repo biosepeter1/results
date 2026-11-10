@@ -901,7 +901,7 @@ tbody td.muted-cell {
   }
 
   .summary-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     margin-bottom: 16px;
   }
 
@@ -1544,5 +1544,100 @@ tbody td.muted-cell {
     justify-content: center !important;
     font-size: 14px !important;
     border-radius: var(--radius) !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TEACHER REWRITE & ACTION ROSTER STYLES
+   ══════════════════════════════════════════════════════════ */
+.teacher-tab-btn {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  min-height: 38px !important;
+  border-radius: var(--radius) !important;
+  transition: all 0.15s ease-in-out !important;
+  cursor: pointer !important;
+}
+
+.teacher-tab-btn:hover {
+  background: var(--surface-alt) !important;
+  color: var(--text) !important;
+}
+
+.teacher-tab-btn.active {
+  background: var(--surface-alt) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+#tabTeacherViewRewrite.active {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.dash-student-row:hover {
+  background: var(--surface-alt) !important;
+}
+
+.dash-student-drawer td {
+  border-top: none !important;
+}
+
+.dash-tab-pill-badge {
+  padding: 1px 6px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.dash-badge-pass {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #10b981 !important;
+}
+
+.dash-badge-fail {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #ef4444 !important;
+}
+
+/* Printing Modal / Student Resit Slip for Teachers */
+@media print {
+  body.printing-modal #login,
+  body.printing-modal #app {
+    display: none !important;
+  }
+  body.printing-modal #teacherStudentScoreModal.open {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  body.printing-modal #teacherStudentScoreModal.open .modal-box {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body.printing-modal #teacherStudentScoreModal .modal-actions,
+  body.printing-modal #teacherStudentScoreModal .btn-close {
+    display: none !important;
+  }
+  body.printing-modal #teacherModalSchoolHeader,
+  body.printing-modal #teacherModalPrintSignatures {
+    display: block !important;
   }
 }

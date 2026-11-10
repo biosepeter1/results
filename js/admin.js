@@ -104,6 +104,7 @@ function switchTab(target) {
     loadAdminCbtDefaults();
     loadCBTSubmissions();
     refreshCbtSubjectsCatalog();
+    initCbtTermsManager();
   }
   if (target === "scores") { initConversionPanel(); loadStudentScores(); }
 }
@@ -2504,6 +2505,148 @@ $("cbtSubjectModalCloseBtn").onclick = closeCbtSubjectModal;
 $("cbtSubjectModalCancelBtn").onclick = closeCbtSubjectModal;
 $("cbtSubjectModalSaveBtn").onclick = saveCbtSubjectFromModal;
 
+// ══════════════════════════════════════════════════════════
+// CBT TERMS & ACADEMIC SESSIONS CATALOG MANAGER
+// ══════════════════════════════════════════════════════════
+
+async function loadCbtTermsMappings() {
+  try {
+    if (window.dbClient && typeof window.dbClient.getMeta === "function") {
+      const meta = await window.dbClient.getMeta("cbt_term_mappings");
+      if (meta && typeof meta === "object") {
+        if (meta.terms && typeof meta.terms === "object") {
+          localStorage.setItem("school_cbt_custom_terms_v1", JSON.stringify(meta.terms));
+        }
+        if (meta.sessions && typeof meta.sessions === "object") {
+          localStorage.setItem("school_cbt_custom_sessions_v1", JSON.stringify(meta.sessions));
+        }
+        if (typeof refreshCbtTermsAndSessions === "function") refreshCbtTermsAndSessions();
+      }
+    }
+  } catch (e) {
+    console.warn("Failed fetching cbt_term_mappings from cloud:", e);
+  }
+
+  const termInputs = document.querySelectorAll(".cbt-term-id-input");
+  termInputs.forEach(inp => {
+    const key = inp.dataset.termKey;
+    if (key && CBT_CONFIG.terms && CBT_CONFIG.terms[key]) {
+      inp.value = CBT_CONFIG.terms[key];
+    }
+  });
+
+  const sessInput = $("mongoSessionIdInput");
+  if (sessInput) {
+    sessInput.value = CBT_CONFIG.session || (CBT_CONFIG.sessions && Object.values(CBT_CONFIG.sessions)[0]) || "6aabf6c9fe918aaa23f28245";
+  }
+}
+
+async function saveCbtTermsMappings() {
+  const customTerms = { ...(CBT_CONFIG.terms || DEFAULT_CBT_TERMS) };
+  const termInputs = document.querySelectorAll(".cbt-term-id-input");
+  let hasInvalid = false;
+
+  termInputs.forEach(inp => {
+    const key = inp.dataset.termKey;
+    const val = (inp.value || "").trim();
+    if (val) {
+      if (!/^[0-9a-fA-F]{24}$/.test(val)) {
+        inp.style.borderColor = "#ef4444";
+        hasInvalid = true;
+      } else {
+        inp.style.borderColor = "";
+        customTerms[key] = val;
+        if (key === "FIRST TERM FIRST TEST") customTerms["FIRST TEST"] = val;
+        if (key === "MID TERM EXAMINATION") {
+          customTerms["MID TERM"] = val;
+          customTerms["MID TERM TEST"] = val;
+          customTerms["FIRST TERM MID TERM EXAMINATION"] = val;
+        }
+        if (key === "FIRST TERM EXAMINATION") customTerms["FIRST TERM"] = val;
+        if (key === "SECOND TERM EXAMINATION") customTerms["SECOND TERM"] = val;
+        if (key === "THIRD TERM EXAMINATION") customTerms["THIRD TERM"] = val;
+      }
+    }
+  });
+
+  if (hasInvalid) {
+    alert("One or more MongoDB ObjectIds are invalid. Each ObjectId must be exactly 24 hexadecimal characters (0-9, a-f).");
+    return;
+  }
+
+  const sessInput = $("mongoSessionIdInput");
+  const sessVal = (sessInput?.value || "").trim();
+  const customSessions = { ...(CBT_CONFIG.sessions || DEFAULT_CBT_SESSIONS) };
+  if (sessVal) {
+    if (!/^[0-9a-fA-F]{24}$/.test(sessVal)) {
+      if (sessInput) sessInput.style.borderColor = "#ef4444";
+      alert("Academic Session ObjectId must be exactly 24 hexadecimal characters.");
+      return;
+    }
+    if (sessInput) sessInput.style.borderColor = "";
+    CBT_CONFIG.session = sessVal;
+    customSessions["2026/2027"] = sessVal;
+    customSessions["active"] = sessVal;
+  }
+
+  localStorage.setItem("school_cbt_custom_terms_v1", JSON.stringify(customTerms));
+  localStorage.setItem("school_cbt_custom_sessions_v1", JSON.stringify(customSessions));
+
+  if (typeof refreshCbtTermsAndSessions === "function") refreshCbtTermsAndSessions();
+
+  try {
+    if (window.dbClient && typeof window.dbClient.setMeta === "function") {
+      await window.dbClient.setMeta("cbt_term_mappings", {
+        terms: customTerms,
+        sessions: customSessions,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } catch (err) {
+    console.warn("Could not sync cbt_term_mappings to cloud:", err);
+  }
+
+  const fb = $("cbtTermsSavedFeedback");
+  if (fb) {
+    fb.style.display = "inline";
+    setTimeout(() => { fb.style.display = "none"; }, 3500);
+  }
+}
+
+function exportCbtTermsJson() {
+  const termsList = [
+    { name: "First Term First Test", key: "FIRST TERM FIRST TEST" },
+    { name: "Mid Term Test", key: "MID TERM EXAMINATION" },
+    { name: "First Term Examination", key: "FIRST TERM EXAMINATION" },
+    { name: "Second Term First Test", key: "SECOND TERM FIRST TEST" },
+    { name: "Second Term Mid Term Examination", key: "SECOND TERM MID TERM EXAMINATION" },
+    { name: "Second Term Examination", key: "SECOND TERM EXAMINATION" },
+    { name: "Third Term First Test", key: "THIRD TERM FIRST TEST" },
+    { name: "Third Term Mid Term Examination", key: "THIRD TERM MID TERM EXAMINATION" },
+    { name: "Third Term Examination", key: "THIRD TERM EXAMINATION" }
+  ];
+
+  const mongoTerms = termsList.map(t => {
+    const id = (CBT_CONFIG.terms && CBT_CONFIG.terms[t.key]) || generateObjectId();
+    return {
+      _id: { $oid: id },
+      term: t.name,
+      session: { $oid: CBT_CONFIG.session || "6aabf6c9fe918aaa23f28245" },
+      createdAt: { $date: new Date().toISOString() },
+      updatedAt: { $date: new Date().toISOString() },
+      __v: 0
+    };
+  });
+
+  triggerJsonDownload("cbtApp_v2.terms.json", mongoTerms);
+}
+
+function initCbtTermsManager() {
+  loadCbtTermsMappings();
+  if ($("cbtSaveTermsMappingsBtn")) $("cbtSaveTermsMappingsBtn").onclick = saveCbtTermsMappings;
+  if ($("cbtExportTermsJsonBtn")) $("cbtExportTermsJsonBtn").onclick = exportCbtTermsJson;
+}
+
 function getSanitizedSlug(title) {
   return (title || "cbtApp_v2").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "cbt_exam";
 }
@@ -2516,8 +2659,8 @@ function buildExportData(sub) {
   const realClassId = classInfo.id;
   const realSubjectId = subjectInfo.id;
   const realArms = (classInfo.arms || []).map(a => ({ "$oid": a }));
-  const realSessionId = CBT_CONFIG.session;
-  const realTermId = CBT_CONFIG.term;
+  const realSessionId = sub.sessionId || resolveCbtSessionId(sub.sessionName) || CBT_CONFIG.session;
+  const realTermId = sub.termId || resolveCbtTermId(sub.termName || sub.title || activeCbtExamTerm);
 
   // Selected cohort arms or all arms
   let finalArms = realArms;

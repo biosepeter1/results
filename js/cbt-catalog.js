@@ -52,9 +52,35 @@ const DEFAULT_CBT_SUBJECTS = {
   "Social and Citizenship Studies": "6985e1d521fa2427ffc9c0b0"
 };
 
+const DEFAULT_CBT_TERMS = {
+  "FIRST TERM FIRST TEST": "6ad23855ba97e63fcc418c98",
+  "FIRST TEST": "6ad23855ba97e63fcc418c98",
+  "MID TERM EXAMINATION": "6ad23855ba97e63fcc418c99",
+  "MID TERM TEST": "6ad23855ba97e63fcc418c99",
+  "MID TERM": "6ad23855ba97e63fcc418c99",
+  "FIRST TERM MID TERM EXAMINATION": "6ad23855ba97e63fcc418c99",
+  "FIRST TERM EXAMINATION": "6af2fad4eff03ebd34477ed1",
+  "FIRST TERM": "6af2fad4eff03ebd34477ed1",
+  "SECOND TERM FIRST TEST": "6ad23855ba97e63fcc418ca1",
+  "SECOND TERM MID TERM EXAMINATION": "6ad23855ba97e63fcc418ca2",
+  "SECOND TERM EXAMINATION": "6ad23855ba97e63fcc418ca3",
+  "SECOND TERM": "6ad23855ba97e63fcc418ca3",
+  "THIRD TERM FIRST TEST": "6ad23855ba97e63fcc418cb1",
+  "THIRD TERM MID TERM EXAMINATION": "6ad23855ba97e63fcc418cb2",
+  "THIRD TERM EXAMINATION": "6ad23855ba97e63fcc418cb3",
+  "THIRD TERM": "6ad23855ba97e63fcc418cb3"
+};
+
+const DEFAULT_CBT_SESSIONS = {
+  "2026/2027": "6aabf6c9fe918aaa23f28245",
+  "2025/2026": "6aabf6c9fe918aaa23f28244"
+};
+
 const CBT_CONFIG = {
   session: "6aabf6c9fe918aaa23f28245",
   term: "6ad23855ba97e63fcc418c99",
+  terms: { ...DEFAULT_CBT_TERMS },
+  sessions: { ...DEFAULT_CBT_SESSIONS },
   classes: {
     "Year 7": {
       id: "68f3601b98086fbe04ba3fb0",
@@ -272,3 +298,63 @@ function refreshTeacherCbtSubjects() {
   CBT_CONFIG.subjects = merged;
 }
 refreshTeacherCbtSubjects();
+
+function refreshCbtTermsAndSessions() {
+  const mergedTerms = { ...DEFAULT_CBT_TERMS };
+  const mergedSessions = { ...DEFAULT_CBT_SESSIONS };
+  try {
+    const rawT = localStorage.getItem("school_cbt_custom_terms_v1");
+    if (rawT) {
+      const p = JSON.parse(rawT);
+      if (p && typeof p === "object") Object.assign(mergedTerms, p);
+    }
+    const rawS = localStorage.getItem("school_cbt_custom_sessions_v1");
+    if (rawS) {
+      const p = JSON.parse(rawS);
+      if (p && typeof p === "object") Object.assign(mergedSessions, p);
+    }
+  } catch (e) {}
+  CBT_CONFIG.terms = mergedTerms;
+  CBT_CONFIG.sessions = mergedSessions;
+}
+refreshCbtTermsAndSessions();
+
+function resolveCbtTermId(termName) {
+  refreshCbtTermsAndSessions();
+  if (!termName) return CBT_CONFIG.terms["MID TERM EXAMINATION"] || "6ad23855ba97e63fcc418c99";
+  const s = String(termName).trim().toUpperCase();
+
+  if (CBT_CONFIG.terms[s]) return CBT_CONFIG.terms[s];
+
+  if (s.includes("SECOND TERM") || s.includes("2ND TERM")) {
+    if (s.includes("FIRST TEST") || s.includes("1ST TEST")) return CBT_CONFIG.terms["SECOND TERM FIRST TEST"] || "6ad23855ba97e63fcc418ca1";
+    if (s.includes("MID TERM") || s.includes("MID-TERM")) return CBT_CONFIG.terms["SECOND TERM MID TERM EXAMINATION"] || "6ad23855ba97e63fcc418ca2";
+    return CBT_CONFIG.terms["SECOND TERM EXAMINATION"] || CBT_CONFIG.terms["SECOND TERM"] || "6ad23855ba97e63fcc418ca3";
+  }
+
+  if (s.includes("THIRD TERM") || s.includes("3RD TERM")) {
+    if (s.includes("FIRST TEST") || s.includes("1ST TEST")) return CBT_CONFIG.terms["THIRD TERM FIRST TEST"] || "6ad23855ba97e63fcc418cb1";
+    if (s.includes("MID TERM") || s.includes("MID-TERM")) return CBT_CONFIG.terms["THIRD TERM MID TERM EXAMINATION"] || "6ad23855ba97e63fcc418cb2";
+    return CBT_CONFIG.terms["THIRD TERM EXAMINATION"] || CBT_CONFIG.terms["THIRD TERM"] || "6ad23855ba97e63fcc418cb3";
+  }
+
+  if (s.includes("FIRST TEST") || s.includes("1ST TEST")) {
+    return CBT_CONFIG.terms["FIRST TERM FIRST TEST"] || CBT_CONFIG.terms["FIRST TEST"] || "6ad23855ba97e63fcc418c98";
+  }
+  if (s.includes("MID TERM") || s.includes("MID-TERM") || s.includes("MIDTERM")) {
+    return CBT_CONFIG.terms["MID TERM EXAMINATION"] || CBT_CONFIG.terms["MID TERM"] || "6ad23855ba97e63fcc418c99";
+  }
+  if (s.includes("FIRST TERM") || s.includes("1ST TERM") || s.includes("EXAMINATION") || s.includes("EXAM")) {
+    return CBT_CONFIG.terms["FIRST TERM EXAMINATION"] || CBT_CONFIG.terms["FIRST TERM"] || "6af2fad4eff03ebd34477ed1";
+  }
+
+  return CBT_CONFIG.terms["MID TERM EXAMINATION"] || "6ad23855ba97e63fcc418c99";
+}
+
+function resolveCbtSessionId(sessionName) {
+  refreshCbtTermsAndSessions();
+  if (!sessionName) return CBT_CONFIG.session || "6aabf6c9fe918aaa23f28245";
+  const s = String(sessionName).trim();
+  if (CBT_CONFIG.sessions && CBT_CONFIG.sessions[s]) return CBT_CONFIG.sessions[s];
+  return CBT_CONFIG.session || "6aabf6c9fe918aaa23f28245";
+}

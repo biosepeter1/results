@@ -53,6 +53,10 @@ let allRows = [], teacher = null, currentTerm = null;
 let activeFilteredRows = [];
 let currentPage = 1;
 let sortCol = "student", sortAsc = true;
+let teacherActiveViewTab = "all"; // "all" or "rewrite"
+let teacherRewriteCutoffPct = 25; // Default: <= 25%
+let teacherRewriteStudents = [];
+let teacherStudentByIdMap = new Map();
 
 // ── Teacher Score Conversion & Sync ─────────────────────────
 const SCORE_CONVERSION_KEY = "SCORE_CONVERSION_SETTING_v1";
@@ -435,26 +439,104 @@ function switchTeacherPortalTab(target) {
     localStorage.setItem("teacher_active_tab_v1", target);
   } catch(e) {}
   const isCbt = (target === "cbt");
+  const isRewrite = (target === "rewrite");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
+  const $btnRewrite = $("btnTeacherNavRewrite");
   const $paneScores = $("paneTeacherScores");
   const $paneCbt = $("paneTeacherCbt");
 
-  if ($btnScores) $btnScores.classList.toggle("active", !isCbt);
+  if ($btnScores) $btnScores.classList.toggle("active", target === "scores");
   if ($btnCbt) $btnCbt.classList.toggle("active", isCbt);
+  if ($btnRewrite) $btnRewrite.classList.toggle("active", isRewrite);
   if ($paneScores) $paneScores.style.display = isCbt ? "none" : "block";
   if ($paneCbt) $paneCbt.style.display = isCbt ? "block" : "none";
 
   if (isCbt) {
-        loadActiveCbtTerm();
+    loadActiveCbtTerm();
     loadTeacherCbtDefaults();
     initTeacherCbtForm();
     loadTeacherSubmissions();
+  } else if (isRewrite) {
+    teacherActiveViewTab = "rewrite";
+    updateTeacherViewTabs();
+    if (typeof renderTableOnly === "function") renderTableOnly();
+  } else {
+    teacherActiveViewTab = "all";
+    updateTeacherViewTabs();
+    if (typeof renderTableOnly === "function") renderTableOnly();
+  }
+}
+
+function updateTeacherViewTabs() {
+  const isAll = (teacherActiveViewTab === "all");
+  const tabAll = $("tabTeacherViewAll");
+  const tabRewrite = $("tabTeacherViewRewrite");
+  const toolbar = $("teacherRewriteToolbar");
+  const standardToolbar = $("teacherTableStandardActions");
+  const headingText = $("tableHeadingText");
+
+  if (tabAll) tabAll.classList.toggle("active", isAll);
+  if (tabRewrite) tabRewrite.classList.toggle("active", !isAll);
+  if (toolbar) toolbar.style.display = isAll ? "none" : "flex";
+  if (standardToolbar) standardToolbar.style.display = isAll ? "flex" : "none";
+  if (headingText) {
+    headingText.textContent = isAll
+      ? "Student Examination Scores"
+      : `Students That Need to Rewrite Examination (≤${teacherRewriteCutoffPct}%)`;
   }
 }
 
 if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
 if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
+if ($("btnTeacherNavRewrite")) $("btnTeacherNavRewrite").addEventListener("click", () => switchTeacherPortalTab("rewrite"));
+
+if ($("tabTeacherViewAll")) {
+  $("tabTeacherViewAll").addEventListener("click", () => {
+    teacherActiveViewTab = "all";
+    const btnScores = $("btnTeacherNavScores");
+    const btnRewrite = $("btnTeacherNavRewrite");
+    if (btnScores) btnScores.classList.add("active");
+    if (btnRewrite) btnRewrite.classList.remove("active");
+    updateTeacherViewTabs();
+    renderTableOnly();
+  });
+}
+
+if ($("tabTeacherViewRewrite")) {
+  $("tabTeacherViewRewrite").addEventListener("click", () => {
+    teacherActiveViewTab = "rewrite";
+    const btnScores = $("btnTeacherNavScores");
+    const btnRewrite = $("btnTeacherNavRewrite");
+    if (btnScores) btnScores.classList.remove("active");
+    if (btnRewrite) btnRewrite.classList.add("active");
+    updateTeacherViewTabs();
+    renderTableOnly();
+  });
+}
+
+if ($("cardTeacherRewrite")) {
+  $("cardTeacherRewrite").addEventListener("click", () => {
+    switchTeacherPortalTab("rewrite");
+    const tbl = $("tabTeacherViewRewrite");
+    if (tbl) tbl.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+if ($("tRewriteCutoffSelect")) {
+  $("tRewriteCutoffSelect").addEventListener("change", (e) => {
+    teacherRewriteCutoffPct = Number(e.target.value) || 25;
+    render();
+  });
+}
+
+if ($("btnTeacherExportRewrite")) {
+  $("btnTeacherExportRewrite").addEventListener("click", () => exportTeacherRewriteCSV());
+}
+
+if ($("btnTeacherPrintRewrite")) {
+  $("btnTeacherPrintRewrite").addEventListener("click", () => window.print());
+}
 
 // ── Show App ──
 function showApp() {
@@ -591,9 +673,12 @@ function populate(sel, vals) {
 }
 
 // ── Sorting ──
-document.querySelectorAll("thead th.sortable").forEach(th => {
-  th.addEventListener("click", () => {
+if ($("teacherTableHead")) {
+  $("teacherTableHead").addEventListener("click", (e) => {
+    const th = e.target.closest("th.sortable");
+    if (!th) return;
     const col = th.dataset.sort;
+    if (!col) return;
     if (sortCol === col) {
       sortAsc = !sortAsc;
     } else {
@@ -603,7 +688,7 @@ document.querySelectorAll("thead th.sortable").forEach(th => {
     updateSortIndicators();
     renderTableOnly();
   });
-});
+}
 
 function updateSortIndicators() {
   document.querySelectorAll(".sort-indicator").forEach(el => el.textContent = "");
@@ -701,12 +786,69 @@ function render() {
   const highest = total ? Math.max(...activeFilteredRows.map(r => getRowEffectivePct(r))) : 0;
   const lowest = total ? Math.min(...activeFilteredRows.map(r => getRowEffectivePct(r))) : 0;
 
+  // ── Compute Student Rewrite & Analysis for Authorized Teacher Scope ──
+  const studentMap = new Map();
+  activeFilteredRows.forEach(r => {
+    const rawScore = parseFloat(r.score) || 0;
+    const dispScore = applyTeacherScoreConversion(rawScore, r.term);
+    const convPct = applyTeacherPctConversion(rawScore, r.term);
+    const pctVal = convPct !== null ? convPct : (r.pct || 0);
+
+    const sKey = (r.reg && r.reg.trim()) ? r.reg.trim().toLowerCase() : (r.student || "").trim().toLowerCase();
+    if (!studentMap.has(sKey)) {
+      studentMap.set(sKey, {
+        id: "tstud_" + Math.abs(sKey.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)).toString(36),
+        name: (r.student || "").toUpperCase(),
+        reg: r.reg || "",
+        class: r.class || "",
+        arm: r.arm || "",
+        term: r.term || currentTerm || "",
+        scores: []
+      });
+    }
+    studentMap.get(sKey).scores.push({
+      subject: r.subject,
+      score: dispScore,
+      rawScore: rawScore,
+      pct: pctVal,
+      date: r.date
+    });
+  });
+
+  teacherRewriteStudents = [];
+  teacherStudentByIdMap = new Map();
+
+  studentMap.forEach(s => {
+    const sum = s.scores.reduce((acc, sc) => acc + sc.pct, 0);
+    s.avgScore = s.scores.length ? Math.round(sum / s.scores.length) : 0;
+    s.failedSubjects = s.scores.filter(sc => sc.pct < 50);
+    s.rewriteSubjects = s.scores.filter(sc => sc.pct <= teacherRewriteCutoffPct);
+
+    if (s.rewriteSubjects.length > 0) {
+      teacherRewriteStudents.push(s);
+    }
+    teacherStudentByIdMap.set(s.id, s);
+  });
+
+  // Sort rewrite students by count of rewrite subjects descending, then lowest average
+  teacherRewriteStudents.sort((a, b) => {
+    if (b.rewriteSubjects.length !== a.rewriteSubjects.length) {
+      return b.rewriteSubjects.length - a.rewriteSubjects.length;
+    }
+    return a.avgScore - b.avgScore;
+  });
+
   $("st-total").textContent = total.toLocaleString();
   $("st-students").textContent = uniq.toLocaleString();
   $("st-avg").textContent = avg + "%";
   $("st-highest").textContent = highest + "%";
   $("st-lowest").textContent = lowest + "%";
-  $("rowcount").textContent = ` · ${total.toLocaleString()} record${total !== 1 ? "s" : ""}`;
+  if ($("st-rewrite-count")) $("st-rewrite-count").textContent = teacherRewriteStudents.length.toLocaleString();
+  if ($("badgeTeacherAllCount")) $("badgeTeacherAllCount").textContent = total.toLocaleString();
+  if ($("badgeTeacherRewriteCount")) $("badgeTeacherRewriteCount").textContent = teacherRewriteStudents.length.toLocaleString();
+  if ($("tBadgeRewriteNav")) $("tBadgeRewriteNav").textContent = teacherRewriteStudents.length.toLocaleString();
+
+  updateTeacherViewTabs();
 
   // Update Score Distribution Chart
   updateChart(activeFilteredRows);
@@ -749,17 +891,178 @@ function updateChart(rows) {
 
 // ── Render Table & Pagination ──
 function renderTableOnly() {
+  const isRewrite = (teacherActiveViewTab === "rewrite");
+  const thead = $("teacherTableHead");
+  const q = $q.value.toLowerCase().trim();
+
+  if (isRewrite) {
+    if ($("paginationBar")) $("paginationBar").style.display = "none";
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:36px;">#</th>
+          <th>STUDENT NAME</th>
+          <th>REG NUMBER</th>
+          <th>CLASS &amp; ARM</th>
+          <th>MANDATORY REWRITE SUBJECTS (WITH EXACT MARKS)</th>
+          <th style="text-align:center;">AVG SCORE</th>
+        </tr>
+      `;
+    }
+
+    const filteredRewrite = teacherRewriteStudents.filter(s => {
+      if (!q) return true;
+      return s.name.toLowerCase().includes(q) ||
+        s.reg.toLowerCase().includes(q) ||
+        s.class.toLowerCase().includes(q) ||
+        s.arm.toLowerCase().includes(q) ||
+        s.rewriteSubjects.some(sub => sub.subject.toLowerCase().includes(q));
+    });
+
+    $("rowcount").textContent = ` · ${filteredRewrite.length.toLocaleString()} student${filteredRewrite.length !== 1 ? "s" : ""} needing rewrite`;
+
+    if (!filteredRewrite.length) {
+      $tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-muted);font-size:13px;">No students currently require rewrite under the selected cutoff (&le;${teacherRewriteCutoffPct}%).</td></tr>`;
+      $empty.style.display = "none";
+      return;
+    }
+
+    $empty.style.display = "none";
+    const frag = document.createDocumentFragment();
+
+    filteredRewrite.forEach((s, idx) => {
+      const rewriteBadges = s.rewriteSubjects.map(rSub => {
+        const scoreDisplay = (rSub.score !== undefined && rSub.score !== null && String(rSub.score) !== String(rSub.pct))
+          ? `${rSub.score} (${rSub.pct}%)`
+          : `${rSub.pct}%`;
+        return `
+          <span onclick="event.stopPropagation(); window.toggleTeacherStudentDrawer('${s.id}', '${esc(rSub.subject)}');"
+            title="Click to reveal exact marks for ${esc(rSub.subject)}"
+            style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:4px; background:rgba(245,158,11,0.18); color:#d97706; font-size:11px; font-weight:700; border:1px solid rgba(245,158,11,0.45); transition:transform 0.15s, background 0.15s;">
+            <span>${esc(rSub.subject)}</span>
+            <strong style="background:rgba(245,158,11,0.3); padding:1px 6px; border-radius:3px; color:#b45309;">${scoreDisplay}</strong>
+          </span>
+        `;
+      }).join("");
+
+      const tr = document.createElement("tr");
+      tr.className = "dash-student-row";
+      tr.style.cursor = "pointer";
+      tr.style.borderBottom = "1px solid var(--border-subtle)";
+      tr.title = "Click to reveal all assessment scores";
+      tr.onclick = () => window.toggleTeacherStudentDrawer(s.id);
+      tr.innerHTML = `
+        <td data-label="#" style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
+        <td data-label="Student Name" style="padding:10px 8px;font-weight:600;color:var(--text);">
+          <div>${esc(s.name)}</div>
+          <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:5px;">
+            <svg id="t-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+            <span>Click to reveal scores</span>
+          </div>
+        </td>
+        <td data-label="Reg Number" style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
+        <td data-label="Class &amp; Arm" style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
+        <td data-label="Mandatory Rewrite Subjects" style="padding:10px 8px;">${rewriteBadges}</td>
+        <td data-label="Avg Score" style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
+      `;
+      frag.appendChild(tr);
+
+      const drawerTr = document.createElement("tr");
+      drawerTr.id = `t-drawer-${s.id}`;
+      drawerTr.className = "dash-student-drawer";
+      drawerTr.style.display = "none";
+      drawerTr.style.background = "var(--surface-alt)";
+      drawerTr.innerHTML = `
+        <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+            <div>
+              <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Examination Rewrite Breakdown: ${esc(s.name)}
+              </span>
+              <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (&le;${teacherRewriteCutoffPct}%)</span>
+              <button type="button" class="btn-text" onclick="event.stopPropagation(); window.openTeacherResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706; display:inline-flex; align-items:center; gap:5px; border:1px solid rgba(245,158,11,0.4); border-radius:4px; background:var(--surface);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print Resit Slip
+              </button>
+            </div>
+          </div>
+
+          <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
+            ${s.scores.map(sc => {
+              const isPass = sc.pct >= 50;
+              const isRw = sc.pct <= teacherRewriteCutoffPct;
+              const cardId = `t-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+              const borderColor = isRw ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
+              const borderLeftColor = isRw ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
+              const badgeText = isRw ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
+              const badgeBg = isRw ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
+              const badgeColor = isRw ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
+
+              return `
+                <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                    <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
+                    <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${badgeBg}; color:${badgeColor}; white-space:nowrap;">
+                      ${badgeText}
+                    </span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
+                    <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                    <span style="font-size:13px; font-weight:700; color:${badgeColor};">${sc.pct}%</span>
+                  </div>
+                  <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
+                    <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${borderLeftColor};"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </td>
+      `;
+      frag.appendChild(drawerTr);
+    });
+
+    $tb.innerHTML = "";
+    $tb.appendChild(frag);
+    return;
+  }
+
+  // ── "All" View Mode (Original Standard Table) ──
+  if (thead) {
+    thead.innerHTML = `
+      <tr>
+        <th class="sortable" data-sort="index">#<span class="sort-indicator" id="si-index"></span></th>
+        <th class="sortable" data-sort="student">STUDENT NAME<span class="sort-indicator" id="si-student"></span></th>
+        <th class="sortable" data-sort="reg">REG NUMBER<span class="sort-indicator" id="si-reg"></span></th>
+        <th class="sortable" data-sort="subject">SUBJECT<span class="sort-indicator" id="si-subject"></span></th>
+        <th class="sortable" data-sort="class">CLASS<span class="sort-indicator" id="si-class"></span></th>
+        <th class="sortable" data-sort="arm">ARM<span class="sort-indicator" id="si-arm"></span></th>
+        <th class="sortable numeric" data-sort="score">SCORE<span class="sort-indicator" id="si-score"></span></th>
+        <th class="sortable numeric" data-sort="pct">PERCENTAGE<span class="sort-indicator" id="si-pct"></span></th>
+        <th class="sortable" data-sort="status">STATUS<span class="sort-indicator" id="si-status"></span></th>
+        <th class="sortable" data-sort="date">DATE &amp; TIME<span class="sort-indicator" id="si-date"></span></th>
+      </tr>
+    `;
+    updateSortIndicators();
+  }
+
   const sorted = getSortedRows();
   const total = sorted.length;
+  $("rowcount").textContent = ` · ${total.toLocaleString()} record${total !== 1 ? "s" : ""}`;
 
   if (!total) {
     $tb.innerHTML = "";
     $empty.style.display = "block";
-    $("paginationBar").style.display = "none";
+    if ($("paginationBar")) $("paginationBar").style.display = "none";
     return;
   }
   $empty.style.display = "none";
-  $("paginationBar").style.display = "flex";
+  if ($("paginationBar")) $("paginationBar").style.display = "flex";
 
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -816,6 +1119,179 @@ function renderTableOnly() {
 
   $tb.innerHTML = "";
   $tb.appendChild(frag);
+}
+
+// ── Teacher Student Drawer & Resit Slip Modal Handlers ──
+window.toggleTeacherStudentDrawer = function (studentId, highlightSubject) {
+  const drawer = $(`t-drawer-${studentId}`);
+  const chevron = $(`t-chevron-${studentId}`);
+  if (!drawer) return;
+
+  const isClosed = (drawer.style.display === "none");
+  if (isClosed) {
+    drawer.style.display = "table-row";
+    if (chevron) chevron.style.transform = "rotate(180deg)";
+  } else if (!highlightSubject) {
+    drawer.style.display = "none";
+    if (chevron) chevron.style.transform = "rotate(0deg)";
+    return;
+  }
+
+  if (highlightSubject) {
+    const slug = highlightSubject.replace(/[^a-zA-Z0-9]/g, '_');
+    const card = document.getElementById(`t-card-${studentId}-${slug}`);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      card.style.outline = "2px solid #ef4444";
+      card.style.boxShadow = "0 0 12px rgba(239,68,68,0.6)";
+      card.style.transform = "scale(1.02)";
+      setTimeout(() => {
+        card.style.outline = "";
+        card.style.boxShadow = "";
+        card.style.transform = "";
+      }, 2500);
+    }
+  }
+};
+
+window.openTeacherStudentScoreModal = function (studentId, isResit = false) {
+  const s = teacherStudentByIdMap.get(studentId);
+  if (!s) return;
+
+  const schoolHdr = $("teacherModalSchoolHeader");
+  const docTitle = $("teacherModalDocTitle");
+  const resitNotice = $("teacherModalResitNotice");
+  const sigBlock = $("teacherModalPrintSignatures");
+  const issueDate = $("teacherModalIssueDate");
+  const modalPrintBtn = $("teacherStudentModalPrintBtn");
+
+  if (issueDate) issueDate.textContent = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+  if (isResit) {
+    if ($("teacherStudentModalName")) $("teacherStudentModalName").textContent = `Examination Resit Authorization: ${s.name}`;
+    if (docTitle) docTitle.textContent = "OFFICIAL EXAMINATION RESIT & REWRITE AUTHORIZATION SLIP";
+    if (resitNotice) resitNotice.style.display = "block";
+    if (sigBlock) sigBlock.style.display = "block";
+    if (schoolHdr) schoolHdr.style.display = "block";
+    if (modalPrintBtn) modalPrintBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Resit Authorization Slip`;
+  } else {
+    if ($("teacherStudentModalName")) $("teacherStudentModalName").textContent = `Student Academic Scorecard: ${s.name}`;
+    if (docTitle) docTitle.textContent = "OFFICIAL STUDENT ACADEMIC RECORD";
+    if (resitNotice) resitNotice.style.display = "none";
+    if (sigBlock) sigBlock.style.display = "none";
+    if (schoolHdr) schoolHdr.style.display = "block";
+    if (modalPrintBtn) modalPrintBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Student Result Slip`;
+  }
+
+  if ($("teacherStudentModalMeta")) $("teacherStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || currentTerm || "All Terms"}`;
+  if ($("teacherStudentModalAvg")) {
+    $("teacherStudentModalAvg").textContent = `${s.avgScore}%`;
+    $("teacherStudentModalAvg").style.color = s.avgScore >= 50 ? "#10b981" : "#ef4444";
+  }
+
+  if ($("teacherStudentModalTotalSubjects")) $("teacherStudentModalTotalSubjects").textContent = s.scores.length;
+  if ($("teacherStudentModalPassed")) $("teacherStudentModalPassed").textContent = s.scores.length - s.failedSubjects.length;
+  if ($("teacherStudentModalFailed")) $("teacherStudentModalFailed").textContent = s.failedSubjects.length;
+
+  const tbody = $("teacherStudentModalTbody");
+  if (tbody) {
+    tbody.innerHTML = s.scores.map((sc, i) => {
+      const isP = sc.pct >= 50;
+      const isRewrite = sc.pct <= teacherRewriteCutoffPct;
+      let grade = "F";
+      let remark = "Fail";
+      if (sc.pct >= 75) { grade = "A"; remark = "Distinction"; }
+      else if (sc.pct >= 60) { grade = "B"; remark = "Credit"; }
+      else if (sc.pct >= 50) { grade = "C"; remark = "Pass"; }
+      else if (isRewrite) { grade = "F"; remark = "Mandatory Rewrite"; }
+
+      const rowBg = (isResit && isRewrite) ? "background:rgba(245,158,11,0.08);" : "";
+
+      return `
+        <tr style="border-bottom:1px solid var(--border-subtle); ${rowBg}">
+          <td style="padding:10px 8px;font-weight:600;color:var(--text-subtle);">${i + 1}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
+            ${esc(sc.subject)}
+            ${isRewrite ? `<span style="font-size:10px;padding:2px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;letter-spacing:0.02em;">REWRITE</span>` : ""}
+          </td>
+          <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">${sc.pct}%</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;">${grade}</td>
+          <td style="padding:10px 8px;text-align:center;">
+            <span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${isP ? 'rgba(16,185,129,0.12)' : (isRewrite ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)')};color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">
+              ${remark}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  if ($("teacherStudentScoreModal")) $("teacherStudentScoreModal").classList.add("open");
+};
+
+window.openTeacherResitSlip = function (studentId) {
+  window.openTeacherStudentScoreModal(studentId, true);
+};
+
+// Modal close handlers
+function closeTeacherScoreModal() {
+  if ($("teacherStudentScoreModal")) $("teacherStudentScoreModal").classList.remove("open");
+}
+if ($("teacherStudentModalCloseBtn")) $("teacherStudentModalCloseBtn").addEventListener("click", closeTeacherScoreModal);
+if ($("teacherStudentModalCloseBottomBtn")) $("teacherStudentModalCloseBottomBtn").addEventListener("click", closeTeacherScoreModal);
+if ($("teacherStudentScoreModal")) {
+  $("teacherStudentScoreModal").addEventListener("click", (e) => {
+    if (e.target === $("teacherStudentScoreModal")) closeTeacherScoreModal();
+  });
+}
+if ($("teacherStudentModalPrintBtn")) {
+  $("teacherStudentModalPrintBtn").addEventListener("click", () => {
+    document.body.classList.add("printing-modal");
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove("printing-modal");
+    }, 1000);
+  });
+}
+
+function exportTeacherRewriteCSV() {
+  if (!teacherRewriteStudents || !teacherRewriteStudents.length) {
+    alert("No students currently require rewrite under the selected cutoff (≤" + teacherRewriteCutoffPct + "%).");
+    return;
+  }
+
+  const rows = [];
+  rows.push(["S/N", "Student Name", "Registration Number", "Class", "Arm", "Subject to Rewrite", "Raw Score", "Percentage (%)", "Resit Benchmark", "Status", "Academic Term"]);
+
+  let sn = 1;
+  teacherRewriteStudents.forEach(s => {
+    (s.rewriteSubjects || []).forEach(rSub => {
+      rows.push([
+        sn++,
+        `"${(s.name || '').replace(/"/g, '""')}"`,
+        `"${(s.reg || '').replace(/"/g, '""')}"`,
+        `"${formatClassAbbr(s.class) || (s.class || '')}"`,
+        `"${formatArmAbbr(s.arm) || (s.arm || '')}"`,
+        `"${(rSub.subject || '').replace(/"/g, '""')}"`,
+        rSub.score !== undefined ? rSub.score : "-",
+        `${rSub.pct}%`,
+        `≤ ${teacherRewriteCutoffPct}%`,
+        "MANDATORY REWRITE REQUIRED",
+        `"${(s.term || currentTerm || '').replace(/"/g, '""')}"`
+      ]);
+    });
+  });
+
+  const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  const termSlug = (currentTerm || "All_Terms").replace(/[^a-zA-Z0-9]/g, "_");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Teacher_Rewrite_Roster_${termSlug}_Cutoff_${teacherRewriteCutoffPct}pct.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ── Pagination Handlers ──

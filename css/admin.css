@@ -1591,6 +1591,32 @@ table.inst-table tr:hover td {
   }
 }
 
+/* Stacked Buttons for Subject Performance & Intervention Radar on Tablets & Mobile (<= 768px) */
+@media (max-width: 768px) {
+  .dash-radar-segmented-tabs {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: 12px !important;
+  }
+  .dash-radar-segmented-tabs > button {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius) !important;
+  }
+}
+
 /* Mobile Devices & Phones (<= 680px) */
 @media (max-width: 680px) {
   /* Prevent Any Horizontal Page Shifting */
