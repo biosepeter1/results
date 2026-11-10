@@ -2296,10 +2296,6 @@ if ($("cbtAdminCustomTermInput")) {
   };
 }
 
-// Initial load of CBT active term and defaults
-loadAdminCbtActiveTerm();
-loadAdminCbtDefaults();
-
 // ── School-Wide CBT Exam Defaults (Duration & Marks) ──
 let adminCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
 
@@ -2352,6 +2348,10 @@ async function saveAdminCbtDefaults() {
     alert("Could not save exam defaults to Supabase: " + err.message);
   }
 }
+
+// Initial load of CBT active term and defaults (called after declarations)
+loadAdminCbtActiveTerm();
+loadAdminCbtDefaults();
 
 // Download a JavaScript object as a .json file
 function triggerJsonDownload(filename, data) {
