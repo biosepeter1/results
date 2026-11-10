@@ -4,6 +4,95 @@
 
 function $(id) { return document.getElementById(id); }
 
+// ══════════════════════════════════════════════════════════
+// MODERN NOTIFICATION & TOAST SYSTEM
+// ══════════════════════════════════════════════════════════
+function showToast(options) {
+  let opts = typeof options === "string" ? { message: options } : (options || {});
+  const type = opts.type || "info"; // "error" | "warning" | "success" | "info"
+  const title = opts.title || (type === "error" ? "Action Required" : type === "warning" ? "Attention" : type === "success" ? "Success" : "Notification");
+  const message = opts.message || "";
+  const list = Array.isArray(opts.list) ? opts.list : [];
+  const duration = typeof opts.duration === "number" ? opts.duration : (type === "error" ? 7500 : 4500);
+
+  let container = $("appToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "appToastContainer";
+    container.className = "app-toast-container";
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    error: "❌",
+    warning: "⚠️",
+    success: "✅",
+    info: "ℹ️"
+  };
+
+  const toast = document.createElement("div");
+  toast.className = `app-toast toast-${type}`;
+
+  const iconEl = document.createElement("div");
+  iconEl.className = "app-toast-icon";
+  iconEl.textContent = icons[type] || "ℹ️";
+  toast.appendChild(iconEl);
+
+  const contentEl = document.createElement("div");
+  contentEl.className = "app-toast-content";
+
+  const titleEl = document.createElement("div");
+  titleEl.className = "app-toast-title";
+  titleEl.textContent = title;
+  contentEl.appendChild(titleEl);
+
+  if (message) {
+    const msgEl = document.createElement("div");
+    msgEl.className = "app-toast-body";
+    msgEl.textContent = message;
+    contentEl.appendChild(msgEl);
+  }
+
+  if (list.length > 0) {
+    const ul = document.createElement("ul");
+    ul.className = "app-toast-list";
+    list.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+    contentEl.appendChild(ul);
+  }
+
+  toast.appendChild(contentEl);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "app-toast-close";
+  closeBtn.innerHTML = "&times;";
+  closeBtn.setAttribute("aria-label", "Close notification");
+  closeBtn.onclick = () => dismissToast(toast);
+  toast.appendChild(closeBtn);
+
+  container.appendChild(toast);
+
+  let timer = null;
+  if (duration > 0) {
+    timer = setTimeout(() => dismissToast(toast), duration);
+  }
+
+  function dismissToast(el) {
+    if (timer) clearTimeout(timer);
+    el.style.animation = "appToastFadeOut 200ms ease forwards";
+    setTimeout(() => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }, 200);
+  }
+
+  return toast;
+}
+window.showToast = showToast;
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Independent Supabase Engine Active (Zero Firebase Dependency)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -208,7 +297,7 @@ async function doLogin() {
     if (window.dbClient && window.dbClient.getTeacher) {
       found = await window.dbClient.getTeacher(clean);
     }
-  } catch(e) {
+  } catch (e) {
     console.warn("Supabase teacher fetch error, checking backup:", e);
   }
 
@@ -236,14 +325,14 @@ async function doLogin() {
       pass: pass,
       teacher: teacher
     }));
-  } catch(err) {
+  } catch (err) {
     console.warn("Unable to save session to localStorage:", err);
   }
 
   try {
     await loadData();
     showApp();
-  } catch(e) {
+  } catch (e) {
     $msg.textContent = e.message || "Unable to connect. Check your internet connection.";
     console.error(e);
   }
@@ -314,7 +403,7 @@ function clearTeacherCache(username) {
         localStorage.removeItem(k);
       }
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function showTeacherFreshness(timeStr, isOffline = false) {
@@ -333,7 +422,7 @@ async function loadData() {
   const clean = (teacher.username || "").toLowerCase().replace(/[^a-z0-9]/g, '');
   const cached = getTeacherCache(clean);
   const hasSubjectRestriction = teacher.subjects && teacher.subjects.length > 0;
-  const hasClassRestriction   = teacher.classes && teacher.classes.length > 0;
+  const hasClassRestriction = teacher.classes && teacher.classes.length > 0;
 
   // 1. Read the tiny version document from Supabase
   let cloudVersion = null;
@@ -351,7 +440,7 @@ async function loadData() {
   // 2. If cached data matches cloud version, USE IT DIRECTLY!
   if (isCloudAvailable && cloudVersion && cached && cached.version && cached.version === cloudVersion && Array.isArray(cached.rows) && cached.rows.length > 0) {
     allRows = deduplicateScoreRows(cached.rows);
-    showTeacherFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }), false);
+    showTeacherFreshness(cached.lastUpdatedText || new Date(cached.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), false);
     return;
   }
 
@@ -437,7 +526,7 @@ async function loadData() {
 function switchTeacherPortalTab(target) {
   try {
     localStorage.setItem("teacher_active_tab_v1", target);
-  } catch(e) {}
+  } catch (e) { }
   const isCbt = (target === "cbt");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
@@ -549,12 +638,12 @@ function doSignOut() {
   try {
     localStorage.removeItem("teacher_session_v1");
     localStorage.removeItem("teacher_active_tab_v1");
-  } catch(e) {}
+  } catch (e) { }
 
   document.documentElement.classList.remove("restoring-teacher-session");
 
   // Clear teacher caches from localStorage
-  Object.keys(localStorage).forEach(function(k) {
+  Object.keys(localStorage).forEach(function (k) {
     if (k.startsWith(TEACHER_CACHE_PREFIX)) localStorage.removeItem(k);
   });
 
@@ -567,7 +656,7 @@ function doSignOut() {
   // Switch back to login screen
   $app.style.display = 'none';
   $login.style.display = 'flex';
-  if ($u) setTimeout(function() { $u.focus(); }, 50);
+  if ($u) setTimeout(function () { $u.focus(); }, 50);
 }
 
 // Wire Sign Out button at startup
@@ -854,10 +943,10 @@ function updateChart(rows) {
   }
 
   const fail = rows.filter(r => getRowEffectivePct(r) < 50).length;
-  const p50  = rows.filter(r => getRowEffectivePct(r) >= 50 && getRowEffectivePct(r) < 60).length;
-  const p60  = rows.filter(r => getRowEffectivePct(r) >= 60 && getRowEffectivePct(r) < 70).length;
-  const p70  = rows.filter(r => getRowEffectivePct(r) >= 70 && getRowEffectivePct(r) < 80).length;
-  const p80  = rows.filter(r => getRowEffectivePct(r) >= 80).length;
+  const p50 = rows.filter(r => getRowEffectivePct(r) >= 50 && getRowEffectivePct(r) < 60).length;
+  const p60 = rows.filter(r => getRowEffectivePct(r) >= 60 && getRowEffectivePct(r) < 70).length;
+  const p70 = rows.filter(r => getRowEffectivePct(r) >= 70 && getRowEffectivePct(r) < 80).length;
+  const p80 = rows.filter(r => getRowEffectivePct(r) >= 80).length;
 
   const setB = (k, count) => {
     const pct = Math.round((count / total) * 100);
@@ -977,16 +1066,16 @@ function renderTableOnly() {
 
           <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
             ${s.scores.map(sc => {
-              const isPass = sc.pct >= 50;
-              const isRw = sc.pct <= teacherRewriteCutoffPct;
-              const cardId = `t-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-              const borderColor = isRw ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
-              const borderLeftColor = isRw ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
-              const badgeText = isRw ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
-              const badgeBg = isRw ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
-              const badgeColor = isRw ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
+        const isPass = sc.pct >= 50;
+        const isRw = sc.pct <= teacherRewriteCutoffPct;
+        const cardId = `t-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const borderColor = isRw ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
+        const borderLeftColor = isRw ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
+        const badgeText = isRw ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
+        const badgeBg = isRw ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
+        const badgeColor = isRw ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
 
-              return `
+        return `
                 <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
                   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
                     <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
@@ -1003,7 +1092,7 @@ function renderTableOnly() {
                   </div>
                 </div>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </td>
       `;
@@ -1240,7 +1329,11 @@ if ($("teacherStudentModalPrintBtn")) {
 
 function exportTeacherRewriteCSV() {
   if (!teacherRewriteStudents || !teacherRewriteStudents.length) {
-    alert("No students currently require rewrite under the selected cutoff (≤" + teacherRewriteCutoffPct + "%).");
+    showToast({
+      type: "info",
+      title: "No Rewrite Records",
+      message: "No students currently require rewrite under the selected cutoff (≤" + teacherRewriteCutoffPct + "%)."
+    });
     return;
   }
 
@@ -1319,7 +1412,12 @@ function formatArmAbbr(armName) {
 $("exportBtn").addEventListener("click", async () => {
   await syncTeacherScoreConversion(false);
   if (!activeFilteredRows.length) {
-    alert("No records to export."); return;
+    showToast({
+      type: "info",
+      title: "No Records to Export",
+      message: "No student records found under the current filter selection."
+    });
+    return;
   }
   const headers = ["Subject", "Class", "Arm", "Student", "Score"];
   const csvContent = [
@@ -1342,7 +1440,7 @@ $("exportBtn").addEventListener("click", async () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `results_${currentTerm || "export"}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `results_${currentTerm || "export"}_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 });
@@ -1405,7 +1503,7 @@ async function loadActiveCbtTerm() {
         updateTeacherActiveTermUI();
       }
     }
-  } catch(e) {
+  } catch (e) {
     // Offline / fallback
   }
 }
@@ -1429,21 +1527,18 @@ function updateTeacherExamTitle() {
 function initTeacherCbtForm() {
   if (!teacher) return;
   refreshTeacherCbtSubjects();
-  
-  // Prioritize teacher's assigned subjects, with full catalog accessible
+
+  // Only allow assigned subjects for teachers
   const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
-    ? teacher.subjects.filter(s => s && s.trim())
+    ? teacher.subjects.filter(s => s && s.trim()).sort((a, b) => a.localeCompare(b))
     : [];
 
-  const allCatalogSubjects = Object.keys(CBT_CONFIG.subjects || {}).sort((a,b) => a.localeCompare(b));
   let subjectHtml = "";
   if (assigned.length > 0) {
-    subjectHtml += `<optgroup label="My Assigned Subjects">` + assigned.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("") + `</optgroup>`;
-    const otherSubs = allCatalogSubjects.filter(s => !assigned.includes(s));
-    if (otherSubs.length > 0) {
-      subjectHtml += `<optgroup label="Other School Subjects">` + otherSubs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("") + `</optgroup>`;
-    }
+    subjectHtml = assigned.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
   } else {
+    // Fallback for Administrator or accounts without restricted subjects
+    const allCatalogSubjects = Object.keys(CBT_CONFIG.subjects || {}).sort((a, b) => a.localeCompare(b));
     subjectHtml = allCatalogSubjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
   }
 
@@ -1475,6 +1570,12 @@ function initTeacherCbtForm() {
   const todayStr = new Date().toISOString().slice(0, 10);
   if ($("tCbtLaunchDate") && !$("tCbtLaunchDate").value) {
     $("tCbtLaunchDate").value = todayStr;
+  }
+
+  // Initialize Planned Target Questions Controls & Validation Status
+  if (typeof initTargetQuestionsControls === "function") {
+    initTargetQuestionsControls();
+    updateTargetStatusBadge();
   }
 }
 
@@ -1651,13 +1752,20 @@ Answer: A`;
 
   updateTeacherExamTitle();
   if ($("tCbtSubject")) {
-    let opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === "biology");
-    if (!opt) {
-      opt = document.createElement("option");
-      opt.value = opt.textContent = "Biology";
-      $("tCbtSubject").appendChild(opt);
+    const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+      ? teacher.subjects.filter(s => s && s.trim())
+      : [];
+    if (assigned.length > 0) {
+      $("tCbtSubject").value = assigned[0];
+    } else {
+      let opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === "biology");
+      if (!opt) {
+        opt = document.createElement("option");
+        opt.value = opt.textContent = "Biology";
+        $("tCbtSubject").appendChild(opt);
+      }
+      $("tCbtSubject").value = opt.value;
     }
-    $("tCbtSubject").value = opt.value;
   }
 
   // Parse questions with sample diagram attached to Question 1
@@ -1684,8 +1792,8 @@ $("tCbtClearTextBtn").onclick = () => {
 
 // File drop/upload
 $("tCbtDropZone").onclick = () => $("tCbtFileInput").click();
-["dragenter","dragover"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.add("dragover"); }));
-["dragleave","drop"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.remove("dragover"); }));
+["dragenter", "dragover"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.add("dragover"); }));
+["dragleave", "drop"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.remove("dragover"); }));
 $("tCbtDropZone").addEventListener("drop", e => {
   const f = e.dataTransfer.files[0];
   if (f) handleTeacherFile(f);
@@ -1708,14 +1816,14 @@ function getCleanImageSrc(img) {
     try {
       const rawSvg = decodeURIComponent(s.split(",").slice(1).join(","));
       return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(rawSvg)));
-    } catch(e) {
+    } catch (e) {
       return s;
     }
   }
   if (s.startsWith("<svg")) {
     try {
       return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(s)));
-    } catch(e) {
+    } catch (e) {
       return s;
     }
   }
@@ -1859,23 +1967,22 @@ async function parseExamFromMammothHtml(html) {
 function handleTeacherFile(file) {
   $("tCbtParseMsg").textContent = "";
 
-  // Auto-detect subject from filename if present
+  // Auto-detect subject from filename if present (only among teacher's assigned subjects)
   if (file && file.name) {
     const fNameLow = file.name.toLowerCase();
-    if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
-      for (const sName of Object.keys(CBT_CONFIG.subjects)) {
-        if (fNameLow.includes(sName.toLowerCase())) {
-          if ($("tCbtSubject")) {
-            let opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === sName.toLowerCase());
-            if (!opt) {
-              opt = document.createElement("option");
-              opt.value = opt.textContent = sName;
-              $("tCbtSubject").appendChild(opt);
-            }
+    const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+      ? teacher.subjects.filter(s => s && s.trim())
+      : (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects ? Object.keys(CBT_CONFIG.subjects) : []);
+
+    for (const sName of assigned) {
+      if (fNameLow.includes(sName.toLowerCase())) {
+        if ($("tCbtSubject")) {
+          const opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === sName.toLowerCase());
+          if (opt) {
             $("tCbtSubject").value = opt.value;
           }
-          break;
         }
+        break;
       }
     }
   }
@@ -2119,6 +2226,11 @@ function parseTeacherCbtText() {
   if (!teacherParsedQuestions.length) {
     $("tCbtParseMsg").textContent = "No numbered questions recognized. Please ensure questions start with 1. 2. etc.";
     $("tCbtReviewCard").style.display = "none";
+    showToast({
+      type: "warning",
+      title: "No Questions Recognized",
+      message: "Could not identify question numbering. Please verify each question begins with 1. 2. 3. etc."
+    });
     return;
   }
 
@@ -2126,6 +2238,22 @@ function parseTeacherCbtText() {
   $("tCbtReviewCard").style.display = "block";
   $("tCbtSubmitSuccess").style.display = "none";
   renderTeacherReviewQuestions();
+
+  const val = validateTeacherQuestions();
+  if (val.valid) {
+    showToast({
+      type: "success",
+      title: "Questions Successfully Parsed!",
+      message: `Parsed exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options & answers ready!`
+    });
+  } else {
+    showToast({
+      type: "warning",
+      title: "Question Review Required",
+      message: `Parsed ${val.detectedCount} question${val.detectedCount !== 1 ? 's' : ''}. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to resolve in Step 3 before submitting.`,
+      list: val.issues.slice(0, 4).map(i => i.message)
+    });
+  }
 }
 
 $("tCbtParseBtn").onclick = parseTeacherCbtText;
@@ -2135,9 +2263,195 @@ let teacherEditingReviewQIdx = null;
 let teacherReviewTempImage = undefined;
 let currentTeacherReviewCorrectLetter = "A";
 
+// ══════════════════════════════════════════════════════════
+// TEACHER CBT QUESTION VALIDATION & COUNT ENFORCEMENT
+// ══════════════════════════════════════════════════════════
+function initTargetQuestionsControls() {
+  const targetInp = $("tCbtTargetQuestions");
+  const pills = document.querySelectorAll(".cbt-pill-btn");
+  if (!targetInp) return;
+
+  pills.forEach(p => {
+    p.onclick = () => {
+      targetInp.value = p.dataset.count;
+      pills.forEach(btn => btn.classList.toggle("active", btn === p));
+      updateTargetStatusBadge();
+      if (teacherParsedQuestions.length > 0) {
+        renderTeacherReviewQuestions();
+      }
+    };
+  });
+
+  targetInp.oninput = () => {
+    const val = targetInp.value.trim();
+    pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === val));
+    updateTargetStatusBadge();
+    if (teacherParsedQuestions.length > 0) {
+      renderTeacherReviewQuestions();
+    }
+  };
+}
+
+function updateTargetStatusBadge() {
+  const badge = $("tCbtTargetStatusBadge");
+  if (!badge) return;
+  const targetVal = $("tCbtTargetQuestions")?.value.trim();
+  const targetCount = targetVal ? parseInt(targetVal, 10) : null;
+  const detected = (teacherParsedQuestions || []).length;
+
+  if (targetCount === null || isNaN(targetCount) || targetCount <= 0) {
+    badge.textContent = detected > 0 ? "⚠️ Set planned question count" : "";
+    badge.style.color = "var(--text-muted)";
+    return;
+  }
+
+  if (detected === 0) {
+    badge.textContent = `Target: ${targetCount} questions`;
+    badge.style.color = "var(--text-muted)";
+    return;
+  }
+
+  if (detected === targetCount) {
+    badge.textContent = `✓ Target Matched (${detected}/${targetCount})`;
+    badge.style.color = "var(--status-good)";
+  } else if (detected < targetCount) {
+    const diff = targetCount - detected;
+    badge.textContent = `⚠️ ${detected}/${targetCount} (${diff} missing)`;
+    badge.style.color = "var(--status-fail)";
+  } else {
+    const diff = detected - targetCount;
+    badge.textContent = `⚠️ ${detected}/${targetCount} (${diff} extra)`;
+    badge.style.color = "var(--status-fail)";
+  }
+}
+
+function validateTeacherQuestions() {
+  const targetVal = $("tCbtTargetQuestions")?.value.trim();
+  const targetCount = targetVal ? parseInt(targetVal, 10) : null;
+  const detectedCount = (teacherParsedQuestions || []).length;
+
+  const issues = [];
+  const questionIssuesMap = {}; // idx -> string[]
+
+  // 1. Target Question Count Verification
+  if (targetCount === null || isNaN(targetCount) || targetCount <= 0) {
+    issues.push({
+      type: "target_missing",
+      title: "Planned Question Count Required",
+      message: "Please choose or enter your planned number of questions in Step 1 (e.g. 5, 10, 20, 30) so the system can verify you have not under-set or over-set."
+    });
+  } else if (detectedCount !== targetCount) {
+    if (detectedCount < targetCount) {
+      const diff = targetCount - detectedCount;
+      issues.push({
+        type: "under_count",
+        title: "Question Count Under Target",
+        message: `Under-setting detected: You planned to set ${targetCount} questions, but only ${detectedCount} question${detectedCount !== 1 ? 's were' : ' was'} detected (${diff} question${diff !== 1 ? 's' : ''} missing).`
+      });
+    } else {
+      const diff = detectedCount - targetCount;
+      issues.push({
+        type: "over_count",
+        title: "Question Count Over Target",
+        message: `Over-setting detected: You planned to set ${targetCount} questions, but ${detectedCount} questions were detected (${diff} extra question${diff !== 1 ? 's' : ''} over target).`
+      });
+    }
+  }
+
+  // 2. Question Completeness & Option Integrity Verification
+  (teacherParsedQuestions || []).forEach((q, idx) => {
+    const qNum = idx + 1;
+    const qErrors = [];
+
+    // Prompt text check
+    if (!q.text || !q.text.trim()) {
+      qErrors.push("Question prompt text is empty");
+    }
+
+    // Options check
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+
+    if (opts.length < 2) {
+      qErrors.push(`Requires at least 2 options (has ${opts.length})`);
+    }
+
+    opts.forEach((optText, oIdx) => {
+      const letter = String.fromCharCode(65 + oIdx);
+      if (!optText || !optText.trim()) {
+        qErrors.push(`Option ${letter} has no text (blank)`);
+      }
+    });
+
+    // Correct Answer check
+    const hasValidAnswer = Boolean(
+      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+    );
+
+    if (!hasValidAnswer) {
+      qErrors.push("Correct answer not selected (Click an option below to mark it as correct)");
+    }
+
+    if (qErrors.length > 0) {
+      questionIssuesMap[idx] = qErrors;
+      qErrors.forEach(errText => {
+        issues.push({
+          type: "question_incomplete",
+          qIdx: idx,
+          qNum: qNum,
+          title: `Question ${qNum}`,
+          message: `Question ${qNum}: ${errText}`
+        });
+      });
+    }
+  });
+
+  return {
+    valid: issues.length === 0,
+    targetCount,
+    detectedCount,
+    issues,
+    questionIssuesMap
+  };
+}
+
 function renderTeacherReviewQuestions() {
+  const val = validateTeacherQuestions();
+  updateTargetStatusBadge();
+
   if ($("tCbtQuestionCount")) {
-    $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
+    $("tCbtQuestionCount").textContent = val.targetCount
+      ? `${val.detectedCount} detected (Target: ${val.targetCount})`
+      : `${val.detectedCount} detected`;
+  }
+
+  // Update Real-Time Quality & Question Count Banner
+  const statusCard = $("tCbtValidationStatusCard");
+  if (statusCard) {
+    statusCard.style.display = "block";
+    if (!val.valid) {
+      statusCard.innerHTML = `
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:12px 16px;">
+          <div style="font-weight:700;color:#ef4444;display:flex;align-items:center;gap:8px;font-size:13px">
+            <span>⚠️ Question Quality &amp; Count Alert — ${val.issues.length} Issue${val.issues.length !== 1 ? 's' : ''} Must Be Fixed Before Submitting:</span>
+          </div>
+          <ul style="margin:8px 0 0 18px;font-size:12px;color:var(--text);line-height:1.6">
+            ${val.issues.map(iss => `<li style="margin-bottom:2px"><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
+          </ul>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+            💡 <em>Ensure question count matches your target, no options are left empty, and every question has its correct answer marked.</em>
+          </div>
+        </div>
+      `;
+    } else {
+      statusCard.innerHTML = `
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;color:#10b981;font-size:13px;font-weight:600">
+          <span>✅ Quality Checks Passed: Exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options &amp; answers verified!</span>
+          <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Ready for Admin Submission</span>
+        </div>
+      `;
+    }
   }
 
   if (teacherParsedQuestions.length === 0) {
@@ -2152,6 +2466,13 @@ function renderTeacherReviewQuestions() {
   $("tCbtQuestionsList").innerHTML = teacherParsedQuestions.map((q, idx) => {
     const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
     const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+    const qErrors = val.questionIssuesMap[idx] || [];
+    const hasError = qErrors.length > 0;
+    const issueBarHtml = hasError ? `
+      <div class="cbt-q-issue-bar">
+        <span>⚠️ ${qErrors.map(e => esc(e)).join(" · ")}</span>
+      </div>
+    ` : "";
 
     // Normal Review Card
     if (teacherEditingReviewQIdx !== idx) {
@@ -2178,7 +2499,7 @@ function renderTeacherReviewQuestions() {
       `;
 
       return `
-        <div class="cbt-q-card">
+        <div class="cbt-q-card ${hasError ? 'has-validation-error' : ''}">
           <div class="cbt-q-header">
             <span class="cbt-q-num">Question ${idx + 1}</span>
             <div style="display:flex;align-items:center;gap:12px">
@@ -2187,20 +2508,22 @@ function renderTeacherReviewQuestions() {
               <button type="button" class="btn-text" data-teacher-del-review-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
+          ${issueBarHtml}
           <div class="cbt-q-text" style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap">${esc(q.text)}</div>
           ${imgHtml}
           <div class="cbt-options-grid">
             ${opts.map((opt, oIdx) => {
-              const letter = String.fromCharCode(65 + oIdx);
-              const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
-              return `
-                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}">
+        const letter = String.fromCharCode(65 + oIdx);
+        const isEmptyOpt = !opt || !opt.trim();
+        const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
+        return `
+                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}">
                   <strong>${letter}.</strong>
-                  <span>${esc(opt)}</span>
+                  <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </button>
               `;
-            }).join("")}
+      }).join("")}
           </div>
         </div>
       `;
@@ -2245,9 +2568,9 @@ function renderTeacherReviewQuestions() {
           <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Options &amp; Correct Answer (Click "Mark as Correct" for the right answer):</label>
           <div style="display:flex;flex-direction:column;gap:8px" id="teacherReviewEditOptionsList">
             ${['A', 'B', 'C', 'D'].map((letter, oIdx) => {
-              const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
-              const isCorrect = currentTeacherReviewCorrectLetter === letter;
-              return `
+      const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
+      const isCorrect = currentTeacherReviewCorrectLetter === letter;
+      return `
                 <div style="display:flex;align-items:center;gap:8px">
                   <strong style="width:20px;font-size:13px;color:var(--text)">${letter}.</strong>
                   <input type="text" class="cbt-form-input teacher-review-opt-input" data-letter="${letter}" data-opt-idx="${oIdx}" value="${esc(optVal)}" placeholder="Option ${letter}" style="flex:1;font-size:13px;padding:6px 10px">
@@ -2256,7 +2579,7 @@ function renderTeacherReviewQuestions() {
                   </button>
                 </div>
               `;
-            }).join("")}
+    }).join("")}
           </div>
         </div>
 
@@ -2417,7 +2740,11 @@ function renderTeacherReviewQuestions() {
         const qIdx = parseInt($("teacherReviewSaveQBtn").dataset.saveIdx, 10);
         const newText = ($("teacherReviewEditText")?.value || "").trim();
         if (!newText) {
-          alert("Question text cannot be empty.");
+          showToast({
+            type: "warning",
+            title: "Question Text Required",
+            message: "Question prompt text cannot be empty."
+          });
           return;
         }
         const optInputs = document.querySelectorAll(".teacher-review-opt-input");
@@ -2484,20 +2811,64 @@ if ($("tCbtAddReviewQBtn")) {
   };
 }
 
-// Submit Exam to Firestore for Admin
+// Submit Exam to Supabase for Admin
 $("tCbtSubmitBtn").onclick = async () => {
   if (!teacherParsedQuestions.length) {
     if ($("tCbtRawText") && $("tCbtRawText").value.trim()) {
       parseTeacherCbtText();
     }
     if (!teacherParsedQuestions.length) {
-      alert("Please upload or paste questions and click 'Parse & Review Questions' first.");
+      showToast({
+        type: "warning",
+        title: "No Questions Provided",
+        message: "Please upload or paste questions and click 'Parse & Review Questions' first."
+      });
       return;
     }
   }
+
+  // Strict Question Count & Completeness Validation
+  const val = validateTeacherQuestions();
+  if (!val.valid) {
+    showToast({
+      type: "error",
+      title: "Cannot Submit Exam",
+      message: "Please fix the question count and completeness issues before submitting to the administrator:",
+      list: val.issues.slice(0, 6).map(i => i.message).concat(val.issues.length > 6 ? [`...and ${val.issues.length - 6} more issue(s)`] : []),
+      duration: 8500
+    });
+
+    const firstErr = document.querySelector(".cbt-q-card.has-validation-error");
+    if (firstErr) {
+      firstErr.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if ($("tCbtValidationStatusCard")) {
+      $("tCbtValidationStatusCard").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return;
+  }
+
   const subject = $("tCbtSubject") ? $("tCbtSubject").value.trim() : "";
+  const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+    ? teacher.subjects.filter(s => s && s.trim())
+    : [];
+
   if (!subject) {
-    alert("Please select a subject from your assigned subjects before submitting.");
+    showToast({
+      type: "warning",
+      title: "Subject Required",
+      message: "Please select a subject from your assigned subjects before submitting."
+    });
+    $("tCbtSubmitBtn").disabled = false;
+    $("tCbtSubmitBtn").textContent = "🚀 Submit Exam to School Admin";
+    return;
+  }
+
+  if (assigned.length > 0 && !assigned.includes(subject)) {
+    showToast({
+      type: "error",
+      title: "Unauthorized Subject",
+      message: `You are only authorized to upload exams for your assigned subjects: ${assigned.join(", ")}.`
+    });
     $("tCbtSubmitBtn").disabled = false;
     $("tCbtSubmitBtn").textContent = "🚀 Submit Exam to School Admin";
     return;
@@ -2580,7 +2951,9 @@ $("tCbtSubmitBtn").onclick = async () => {
     $("tCbtQuestionsList").innerHTML = "";
     $("tCbtRawText").value = "";
     $("tCbtTitle").value = "";
+    if ($("tCbtValidationStatusCard")) $("tCbtValidationStatusCard").style.display = "none";
     teacherParsedQuestions = [];
+    updateTargetStatusBadge();
 
     // Show clean success notification banner and scroll into view
     $("tCbtSuccessTitle").textContent = `🎉 "${title}" Successfully Submitted!`;
@@ -2588,9 +2961,19 @@ $("tCbtSubmitBtn").onclick = async () => {
     $("tCbtSubmitSuccess").style.display = "block";
     $("tCbtSubmitSuccess").scrollIntoView({ behavior: "smooth", block: "center" });
 
+    showToast({
+      type: "success",
+      title: "Exam Submitted Successfully!",
+      message: `"${title}" with ${formattedQuestions.length} verified questions has been sent to the administrator.`
+    });
+
     loadTeacherSubmissions();
   } catch (err) {
-    alert("Submission error: " + err.message);
+    showToast({
+      type: "error",
+      title: "Submission Error",
+      message: err.message || "Failed to submit exam. Please try again."
+    });
   }
 
   $("tCbtSubmitBtn").disabled = false;
@@ -2611,7 +2994,7 @@ function renderTeacherSubmissions() {
     if (rawDate) {
       const dStr = (typeof rawDate === "object" && rawDate.$date) ? rawDate.$date : rawDate;
       const d = new Date(dStr.includes("T") ? dStr : dStr + "T00:00:00");
-      if (!isNaN(d.getTime())) launchDisplay = d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+      if (!isNaN(d.getTime())) launchDisplay = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     }
     const timeDisplay = `${sub.startTime || sub.gateOpen || "08:00"} - ${sub.endTime || sub.gateClose || "20:00"}`;
     const shuffleDisplay = sub.shuffle !== false ? "Shuffled" : "Sequential";
@@ -2653,8 +3036,17 @@ function renderTeacherSubmissions() {
           throw sbErr;
         }
         loadTeacherSubmissions();
+        showToast({
+          type: "success",
+          title: "Exam Deleted",
+          message: "The exam submission has been deleted."
+        });
       } catch (e) {
-        alert("Error deleting: " + e.message);
+        showToast({
+          type: "error",
+          title: "Delete Failed",
+          message: e.message || "Could not delete submission."
+        });
       }
     };
   });
@@ -2712,7 +3104,11 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
       setTimeout(() => { notice.style.display = "none"; }, 3500);
     }
   } catch (err) {
-    alert("Failed to save changes to cloud: " + err.message);
+    showToast({
+      type: "error",
+      title: "Cloud Save Failed",
+      message: err.message || "Failed to save changes to cloud."
+    });
   }
 }
 
@@ -2789,16 +3185,16 @@ function renderTeacherSubmittedPreviewQuestions() {
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {
-              const letter = String.fromCharCode(65 + oIdx);
-              const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
-              return `
+        const letter = String.fromCharCode(65 + oIdx);
+        const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
+        return `
                 <div class="q-option-item ${isCorrect ? 'correct' : ''}">
                   <strong style="color:${isCorrect ? 'var(--status-good)' : 'var(--text-muted)'}">${letter}.</strong>
                   <span>${esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </div>
               `;
-            }).join("")}
+      }).join("")}
           </div>
         </div>
       `;
@@ -2843,9 +3239,9 @@ function renderTeacherSubmittedPreviewQuestions() {
           <label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Options &amp; Correct Answer (Click "Mark as Correct" for the right answer):</label>
           <div style="display:flex;flex-direction:column;gap:8px" id="teacherSubEditOptionsList">
             ${['A', 'B', 'C', 'D'].map((letter, oIdx) => {
-              const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
-              const isCorrect = currentTeacherSubmittedCorrectLetter === letter;
-              return `
+      const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
+      const isCorrect = currentTeacherSubmittedCorrectLetter === letter;
+      return `
                 <div style="display:flex;align-items:center;gap:8px">
                   <strong style="width:20px;font-size:13px;color:var(--text)">${letter}.</strong>
                   <input type="text" class="cbt-form-input teacher-sub-opt-input" data-letter="${letter}" data-opt-idx="${oIdx}" value="${esc(optVal)}" placeholder="Option ${letter}" style="flex:1;font-size:13px;padding:6px 10px">
@@ -2854,7 +3250,7 @@ function renderTeacherSubmittedPreviewQuestions() {
                   </button>
                 </div>
               `;
-            }).join("")}
+    }).join("")}
           </div>
         </div>
 
@@ -2960,7 +3356,11 @@ function renderTeacherSubmittedPreviewQuestions() {
         const qIdx = parseInt($("teacherSubSaveQBtn").dataset.saveIdx, 10);
         const newText = ($("teacherSubEditQText")?.value || "").trim();
         if (!newText) {
-          alert("Question text cannot be empty.");
+          showToast({
+            type: "warning",
+            title: "Question Text Required",
+            message: "Question prompt text cannot be empty."
+          });
           return;
         }
         const optInputs = document.querySelectorAll(".teacher-sub-opt-input");
@@ -3067,7 +3467,7 @@ async function autoRestoreTeacherSession() {
   let saved = null;
   try {
     saved = localStorage.getItem("teacher_session_v1");
-  } catch(e) {}
+  } catch (e) { }
   if (!saved) {
     document.documentElement.classList.remove("restoring-teacher-session");
     return;
@@ -3076,7 +3476,7 @@ async function autoRestoreTeacherSession() {
   let sess = null;
   try {
     sess = JSON.parse(saved);
-  } catch(e) {}
+  } catch (e) { }
   if (!sess || !sess.username) {
     document.documentElement.classList.remove("restoring-teacher-session");
     return;
@@ -3098,7 +3498,7 @@ async function autoRestoreTeacherSession() {
   try {
     await loadData();
     showApp();
-  } catch(e) {
+  } catch (e) {
     console.warn("Auto-restore loadData failed:", e);
     showApp();
   }
@@ -3116,7 +3516,7 @@ async function autoRestoreTeacherSession() {
         }
         teacher = { ...fresh, username: user };
         sess.teacher = teacher;
-        try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch(err) {}
+        try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch (err) { }
         if ($("who")) $("who").textContent = teacher.name;
         const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
         const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
@@ -3126,7 +3526,7 @@ async function autoRestoreTeacherSession() {
     } else {
       document.documentElement.classList.remove("restoring-teacher-session");
     }
-  } catch(err) {
+  } catch (err) {
     console.warn("Background teacher account validation error:", err);
   }
 }
