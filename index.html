@@ -10,17 +10,22 @@
     content="Institutional examination results reporting system for academic staff and administration.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>
-    (function() {
+    (function () {
       try {
         if (localStorage.getItem("teacher_session_v1")) {
           document.documentElement.classList.add("restoring-teacher-session");
         }
-      } catch(e) {}
+      } catch (e) { }
     })();
   </script>
   <style>
-    .restoring-teacher-session #login { display: none !important; }
-    .restoring-teacher-session #app { display: block !important; }
+    .restoring-teacher-session #login {
+      display: none !important;
+    }
+
+    .restoring-teacher-session #app {
+      display: block !important;
+    }
   </style>
   <link rel="stylesheet" href="css/teacher.css?v=2.8">
 </head>
@@ -33,7 +38,8 @@
   <div id="login">
     <div class="login-card">
       <div style="text-align:center;margin-bottom:14px">
-        <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo" style="height:68px;width:auto;object-fit:contain;margin:0 auto 10px;display:block">
+        <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo"
+          style="height:68px;width:auto;object-fit:contain;margin:0 auto 10px;display:block">
         <div class="school-meta-header">Academic Assessment Portal</div>
       </div>
       <h1>Teacher sign in</h1>
@@ -69,7 +75,8 @@
         <div class="header-brand-inner">
           <!-- Brand Identity -->
           <a href="#" class="menu-brand" onclick="switchTeacherPortalTab('scores'); return false;">
-            <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
+            <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest"
+              class="menu-brand-logo">
             <div class="menu-brand-text">
               <span class="menu-brand-title">Honeyland Schools</span>
               <span class="menu-brand-sub">Academic Assessment &amp; CBT Portal</span>
@@ -84,11 +91,6 @@
               <span class="status-text">Online</span>
             </div>
 
-            <a href="admin.html" class="menu-portal-link" target="_blank" title="Go to Administrator Portal">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>Admin</span>
-            </a>
-
             <div class="menu-user-profile">
               <div class="menu-avatar" id="teacherAvatar">TC</div>
               <div class="menu-user-details">
@@ -98,12 +100,18 @@
             </div>
 
             <button class="menu-signout-btn" id="out" type="button" title="Sign out of portal">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
               <span>Sign out</span>
             </button>
 
             <!-- Mobile Hamburger Button -->
-            <button class="menu-mobile-toggle" id="teacherMobileToggleBtn" type="button" aria-label="Open mobile navigation">
+            <button class="menu-mobile-toggle" id="teacherMobileToggleBtn" type="button"
+              aria-label="Open mobile navigation">
               <span class="hamburger-bar"></span>
               <span class="hamburger-bar"></span>
               <span class="hamburger-bar"></span>
@@ -116,11 +124,18 @@
       <nav class="header-nav-bar" aria-label="Teacher Sections">
         <div class="header-nav-inner">
           <button class="portal-nav-btn active" id="btnTeacherNavScores" type="button" data-tab="scores">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 20V10M12 20V4M6 20v-6" />
+            </svg>
             <span>Student Scores</span>
           </button>
           <button class="portal-nav-btn" id="btnTeacherNavCbt" type="button" data-tab="cbt">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
             <span>Set CBT Exam</span>
           </button>
         </div>
@@ -132,13 +147,15 @@
     <aside class="mobile-offcanvas-drawer" id="teacherMobileDrawer" aria-label="Mobile Navigation Menu">
       <div class="drawer-header">
         <div style="display:flex;align-items:center;gap:10px">
-          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo" style="height:32px;width:auto">
+          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo"
+            style="height:32px;width:auto">
           <div>
             <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:0.5px">HONEYLAND</div>
             <div style="font-size:10px;color:var(--text-muted)">TEACHER PORTAL</div>
           </div>
         </div>
-        <button class="drawer-close-btn" id="teacherDrawerCloseBtn" type="button" aria-label="Close menu">&times;</button>
+        <button class="drawer-close-btn" id="teacherDrawerCloseBtn" type="button"
+          aria-label="Close menu">&times;</button>
       </div>
 
       <div class="drawer-user-card">
@@ -152,24 +169,30 @@
       <div class="drawer-nav-list">
         <div class="drawer-section-label">Navigation</div>
         <button class="mobile-nav-item active" data-tab="scores" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 20V10M12 20V4M6 20v-6" />
+          </svg>
           <span>Student Scores</span>
         </button>
         <button class="mobile-nav-item" data-tab="cbt" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
           <span>Set CBT Exam</span>
         </button>
-
-        <div class="drawer-section-label" style="margin-top:12px">Quick Links</div>
-        <a href="admin.html" class="mobile-nav-item" target="_blank">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>Switch to Administrator Portal</span>
-        </a>
       </div>
 
       <div class="drawer-footer">
         <button class="drawer-signout-btn" id="teacherDrawerSignOutBtn" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
           <span>Sign Out</span>
         </button>
       </div>
@@ -178,11 +201,18 @@
     <!-- Mobile Fixed Bottom App Bar (Always Accessible for Mobile Thumbs) -->
     <nav class="mobile-bottom-bar" aria-label="Teacher Mobile Bottom Navigation">
       <button class="mobile-bottom-tab active" data-tab="scores" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 20V10M12 20V4M6 20v-6" />
+        </svg>
         <span>Scores</span>
       </button>
       <button class="mobile-bottom-tab" data-tab="cbt" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
         <span>Set CBT</span>
       </button>
     </nav>
@@ -195,7 +225,9 @@
       <div id="paneTeacherScores">
 
         <!-- Score Conversion Notice for Teachers -->
-        <div id="teacherConvNotice" style="display:none;background:rgba(124,131,253,0.12);border:1px solid rgba(124,131,253,0.35);padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--text-primary,#e8eaf6);display:none;align-items:center;gap:8px;"></div>
+        <div id="teacherConvNotice"
+          style="display:none;background:rgba(124,131,253,0.12);border:1px solid rgba(124,131,253,0.35);padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--text-primary,#e8eaf6);display:none;align-items:center;gap:8px;">
+        </div>
 
         <!-- Examination Terms Navigation -->
         <nav class="term-navigation" aria-label="Examination Period">
@@ -225,7 +257,9 @@
             <div class="summary-value" id="st-lowest">0%</div>
             <div class="summary-label">Lowest</div>
           </div>
-          <div class="summary-card" id="cardTeacherRewrite" style="border-top:3px solid #f59e0b;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;" title="Click to view all students needing rewrite">
+          <div class="summary-card" id="cardTeacherRewrite"
+            style="border-top:3px solid #f59e0b;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;"
+            title="Click to view all students needing rewrite">
             <div class="summary-value" id="st-rewrite-count" style="color:#f59e0b;">0</div>
             <div class="summary-label" style="color:#f59e0b;font-weight:700;">Needs Rewrite (≤25%)</div>
           </div>
@@ -310,42 +344,80 @@
         <!-- Results Table Area -->
         <section class="table-container" aria-label="Student Results Table">
           <!-- View Switcher Tabs (All Scores vs Students Needing Rewrite) -->
-          <div class="teacher-table-tabs" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-            <button type="button" class="btn-text teacher-tab-btn active" id="tabTeacherViewAll" style="font-size:13px;font-weight:600;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <div class="teacher-table-tabs"
+            style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+            <button type="button" class="btn-text teacher-tab-btn active" id="tabTeacherViewAll"
+              style="font-size:13px;font-weight:600;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
               <span>All Examination Scores</span>
-              <span id="badgeTeacherAllCount" style="padding:1px 6px;border-radius:10px;font-size:10px;background:rgba(128,128,128,0.2);font-weight:700;">0</span>
+              <span id="badgeTeacherAllCount"
+                style="padding:1px 6px;border-radius:10px;font-size:10px;background:rgba(128,128,128,0.2);font-weight:700;">0</span>
             </button>
-            <button type="button" class="btn-text teacher-tab-btn" id="tabTeacherViewRewrite" style="font-size:13px;font-weight:600;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border);color:#f59e0b;display:inline-flex;align-items:center;gap:6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            <button type="button" class="btn-text teacher-tab-btn" id="tabTeacherViewRewrite"
+              style="font-size:13px;font-weight:600;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border);color:#f59e0b;display:inline-flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <polyline points="23 20 23 14 17 14" />
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+              </svg>
               <span>Students That Need to Rewrite</span>
-              <span id="badgeTeacherRewriteCount" style="padding:1px 6px;border-radius:10px;font-size:10px;background:rgba(245,158,11,0.2);color:#f59e0b;font-weight:700;">0</span>
+              <span id="badgeTeacherRewriteCount"
+                style="padding:1px 6px;border-radius:10px;font-size:10px;background:rgba(245,158,11,0.2);color:#f59e0b;font-weight:700;">0</span>
             </button>
           </div>
 
           <!-- Rewrite Controls Toolbar (Visible when Rewrite View is active) -->
-          <div id="teacherRewriteToolbar" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div id="teacherRewriteToolbar"
+            style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;">
               <span style="color:#f59e0b;font-weight:700;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
                 Rewrite Threshold:
               </span>
-              <select id="tRewriteCutoffSelect" style="padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;">
+              <select id="tRewriteCutoffSelect"
+                style="padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;">
                 <option value="20">Scores ≤ 20% (Critically low)</option>
                 <option value="25" selected>Scores ≤ 25% (Standard Resit Threshold)</option>
                 <option value="30">Scores ≤ 30% (Remedial &amp; Resit)</option>
                 <option value="40">Scores ≤ 40% (Below Average)</option>
                 <option value="50">All Scores &lt; 50% (All Fails)</option>
               </select>
-              <span style="color:var(--text-muted);font-size:12px;">Mandatory resit required for students with scores at or below this cutoff</span>
+              <span style="color:var(--text-muted);font-size:12px;">Mandatory resit required for students with scores at
+                or below this cutoff</span>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button type="button" class="btn-text" id="btnTeacherExportRewrite" style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <button type="button" class="btn-text" id="btnTeacherExportRewrite"
+                style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
                 Export Rewrite Roster (CSV)
               </button>
-              <button type="button" class="btn-text" id="btnTeacherPrintRewrite" style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              <button type="button" class="btn-text" id="btnTeacherPrintRewrite"
+                style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9" />
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                  <rect x="6" y="14" width="12" height="8" />
+                </svg>
                 Print Resit Roster
               </button>
             </div>
@@ -449,7 +521,8 @@
               <select class="cbt-form-select" id="tCbtClass"></select>
             </div>
             <div class="cbt-form-field">
-              <label class="cbt-form-label" for="tCbtTargetQuestions" style="display:flex;align-items:center;justify-content:space-between">
+              <label class="cbt-form-label" for="tCbtTargetQuestions"
+                style="display:flex;align-items:center;justify-content:space-between">
                 <span>🎯 Planned Question Count</span>
                 <span id="tCbtTargetStatusBadge" style="font-size:11px;font-weight:700"></span>
               </label>
@@ -465,14 +538,18 @@
                   <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="40">40</button>
                 </div>
               </div>
-              <span style="font-size:11px;color:var(--text-muted);margin-top:2px;display:block">Strict check: Prevents over-setting or under-setting exam questions</span>
+              <span style="font-size:11px;color:var(--text-muted);margin-top:2px;display:block">Strict check: Prevents
+                over-setting or under-setting exam questions</span>
             </div>
             <div class="cbt-form-field" style="grid-column: 1 / -1; margin-top: 4px;">
-              <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px">
+              <div
+                style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px">
                 <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-                  <span>⏱️ <strong>Duration:</strong> <span id="tCbtDurationDisplay" style="color:var(--accent);font-weight:700">30</span> minutes</span>
+                  <span>⏱️ <strong>Duration:</strong> <span id="tCbtDurationDisplay"
+                      style="color:var(--accent);font-weight:700">30</span> minutes</span>
                   <span style="color:var(--border)">|</span>
-                  <span>🎯 <strong>Marks / Question:</strong> <span id="tCbtMarksDisplay" style="color:var(--accent);font-weight:700">1.5</span> marks</span>
+                  <span>🎯 <strong>Marks / Question:</strong> <span id="tCbtMarksDisplay"
+                      style="color:var(--accent);font-weight:700">1.5</span> marks</span>
                 </div>
                 <span style="color:var(--text-muted);font-size:11px">🔒 Enforced by School Administrator</span>
               </div>
@@ -676,49 +753,69 @@
   </div>
 
   <!-- Student Academic Scorecard & Resit Slip Modal (Teacher View) -->
-  <div class="modal-overlay" id="teacherStudentScoreModal" style="z-index:9998;align-items:center;justify-content:center;">
-    <div class="modal-box modal-wide" style="max-height:90vh;overflow-y:auto;width:95%;max-width:850px;position:relative;">
+  <div class="modal-overlay" id="teacherStudentScoreModal"
+    style="z-index:9998;align-items:center;justify-content:center;">
+    <div class="modal-box modal-wide"
+      style="max-height:90vh;overflow-y:auto;width:95%;max-width:850px;position:relative;">
       <!-- Printable Official Header -->
-      <div id="teacherModalSchoolHeader" style="display:none;text-align:center;margin-bottom:16px;border-bottom:2px solid #333;padding-bottom:12px;">
-        <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo" style="height:60px;width:auto;margin:0 auto 6px;display:block;">
+      <div id="teacherModalSchoolHeader"
+        style="display:none;text-align:center;margin-bottom:16px;border-bottom:2px solid #333;padding-bottom:12px;">
+        <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo"
+          style="height:60px;width:auto;margin:0 auto 6px;display:block;">
         <div style="font-size:16px;font-weight:800;letter-spacing:0.5px;color:#000;">HONEYLAND INT'L SCHOOLS</div>
         <div style="font-size:12px;color:#444;">ACADEMIC EVALUATION &amp; OFFICIAL EXAMINATION DOSSIER</div>
-        <div style="font-weight:700;font-size:13px;margin-top:6px;letter-spacing:0.5px;text-transform:uppercase;" id="teacherModalDocTitle">OFFICIAL STUDENT EXAMINATION RECORD</div>
+        <div style="font-weight:700;font-size:13px;margin-top:6px;letter-spacing:0.5px;text-transform:uppercase;"
+          id="teacherModalDocTitle">OFFICIAL STUDENT EXAMINATION RECORD</div>
       </div>
 
-      <div class="modal-head" style="align-items:flex-start;display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="modal-head"
+        style="align-items:flex-start;display:flex;justify-content:space-between;margin-bottom:14px;">
         <div>
-          <h3 class="modal-title" id="teacherStudentModalName" style="font-size:18px;font-weight:700;">Student Academic Scorecard</h3>
+          <h3 class="modal-title" id="teacherStudentModalName" style="font-size:18px;font-weight:700;">Student Academic
+            Scorecard</h3>
           <p style="font-size:13px;color:var(--text-muted);margin-top:4px;" id="teacherStudentModalMeta"></p>
         </div>
-        <button class="btn-close" id="teacherStudentModalCloseBtn" type="button" style="font-size:24px;background:none;border:none;cursor:pointer;color:var(--text);">&times;</button>
+        <button class="btn-close" id="teacherStudentModalCloseBtn" type="button"
+          style="font-size:24px;background:none;border:none;cursor:pointer;color:var(--text);">&times;</button>
       </div>
 
       <!-- Official Resit Directive Box (Shown when viewing Resit Slip) -->
-      <div id="teacherModalResitNotice" style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text);line-height:1.5;">
+      <div id="teacherModalResitNotice"
+        style="display:none;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text);line-height:1.5;">
         <strong style="color:#f59e0b;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
           MANDATORY EXAMINATION REWRITE DIRECTIVE
         </strong>
-        <span>This student scored at or below the resit benchmark in the subject(s) highlighted below and is hereby scheduled for an official remedial rewrite in accordance with academic standards.</span>
+        <span>This student scored at or below the resit benchmark in the subject(s) highlighted below and is hereby
+          scheduled for an official remedial rewrite in accordance with academic standards.</span>
       </div>
 
       <!-- Quick Metrics Summary -->
-      <div class="teacher-modal-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:18px;">
+      <div class="teacher-modal-metrics-grid"
+        style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:18px;">
         <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Overall Average</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Overall Average
+          </div>
           <div style="font-size:20px;font-weight:700;" id="teacherStudentModalAvg">0%</div>
         </div>
         <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Evaluated</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects
+            Evaluated</div>
           <div style="font-size:20px;font-weight:700;color:var(--text);" id="teacherStudentModalTotalSubjects">0</div>
         </div>
         <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Passed</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Passed
+          </div>
           <div style="font-size:20px;font-weight:700;color:#10b981;" id="teacherStudentModalPassed">0</div>
         </div>
         <div style="padding:10px;background:var(--surface-alt);border-radius:var(--radius);text-align:center;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Failed</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Subjects Failed
+          </div>
           <div style="font-size:20px;font-weight:700;color:#ef4444;" id="teacherStudentModalFailed">0</div>
         </div>
       </div>
@@ -741,7 +838,8 @@
       </div>
 
       <!-- Print Signature Block -->
-      <div id="teacherModalPrintSignatures" style="display:none;margin-top:24px;padding-top:16px;border-top:1px dashed #999;font-size:12px;">
+      <div id="teacherModalPrintSignatures"
+        style="display:none;margin-top:24px;padding-top:16px;border-top:1px dashed #999;font-size:12px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;">
           <div style="text-align:center;width:200px;">
             <div style="border-bottom:1px solid #333;margin-bottom:6px;height:24px;"></div>
@@ -760,8 +858,14 @@
 
       <div class="modal-actions" style="display:flex;justify-content:space-between;gap:10px;margin-top:16px;">
         <button class="btn-text" id="teacherStudentModalCloseBottomBtn" type="button">Close</button>
-        <button class="btn-primary" id="teacherStudentModalPrintBtn" type="button" style="display:inline-flex;align-items:center;gap:6px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <button class="btn-primary" id="teacherStudentModalPrintBtn" type="button"
+          style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
           Print Result Slip
         </button>
       </div>
