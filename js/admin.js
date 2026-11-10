@@ -4,6 +4,95 @@
 
 function $(id) { return document.getElementById(id); }
 
+// ══════════════════════════════════════════════════════════
+// MODERN APP TOAST NOTIFICATION SYSTEM
+// ══════════════════════════════════════════════════════════
+function showToast(options) {
+  let opts = typeof options === "string" ? { message: options } : (options || {});
+  const type = opts.type || "info"; // "error" | "warning" | "success" | "info"
+  const title = opts.title || (type === "error" ? "Action Required" : type === "warning" ? "Attention" : type === "success" ? "Success" : "Notification");
+  const message = opts.message || "";
+  const list = Array.isArray(opts.list) ? opts.list : [];
+  const duration = typeof opts.duration === "number" ? opts.duration : (type === "error" ? 7500 : 4500);
+
+  let container = $("appToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "appToastContainer";
+    container.className = "app-toast-container";
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    error: "❌",
+    warning: "⚠️",
+    success: "✅",
+    info: "ℹ️"
+  };
+
+  const toast = document.createElement("div");
+  toast.className = `app-toast toast-${type}`;
+
+  const iconEl = document.createElement("div");
+  iconEl.className = "app-toast-icon";
+  iconEl.textContent = icons[type] || "ℹ️";
+  toast.appendChild(iconEl);
+
+  const contentEl = document.createElement("div");
+  contentEl.className = "app-toast-content";
+
+  const titleEl = document.createElement("div");
+  titleEl.className = "app-toast-title";
+  titleEl.textContent = title;
+  contentEl.appendChild(titleEl);
+
+  if (message) {
+    const msgEl = document.createElement("div");
+    msgEl.className = "app-toast-body";
+    msgEl.textContent = message;
+    contentEl.appendChild(msgEl);
+  }
+
+  if (list.length > 0) {
+    const ul = document.createElement("ul");
+    ul.className = "app-toast-list";
+    list.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+    contentEl.appendChild(ul);
+  }
+
+  toast.appendChild(contentEl);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "app-toast-close";
+  closeBtn.innerHTML = "&times;";
+  closeBtn.setAttribute("aria-label", "Close notification");
+  closeBtn.onclick = () => dismissToast(toast);
+  toast.appendChild(closeBtn);
+
+  container.appendChild(toast);
+
+  let timer = null;
+  if (duration > 0) {
+    timer = setTimeout(() => dismissToast(toast), duration);
+  }
+
+  function dismissToast(el) {
+    if (timer) clearTimeout(timer);
+    el.style.animation = "appToastFadeOut 200ms ease forwards";
+    setTimeout(() => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }, 200);
+  }
+
+  return toast;
+}
+window.showToast = showToast;
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Universal Supabase Database Engine Active
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -96,8 +185,14 @@ function switchTab(target) {
     if ($(BTNS[t])) $(BTNS[t]).classList.toggle("active", t === target);
     if ($(PANES[t])) $(PANES[t]).style.display = (t === target) ? "block" : "none";
   });
+
   // Sync mobile drawer items
   document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.tab === target);
+  });
+
+  // Sync mobile bottom app bar tabs
+  document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(el => {
     el.classList.toggle("active", el.dataset.tab === target);
   });
 
@@ -124,17 +219,50 @@ if ($("tabTeachers")) $("tabTeachers").onclick = () => switchTab("teachers");
 if ($("tabUpload")) $("tabUpload").onclick = () => switchTab("upload");
 if ($("tabCBT")) $("tabCBT").onclick = () => switchTab("cbt");
 
-// Mobile Hamburger Drawer Event Wiring
+// Mobile Drawer & Bottom Navigation Wiring
+function closeAdminMobileDrawer() {
+  $("adminMobileDrawer")?.classList.remove("open");
+  $("adminDrawerOverlay")?.classList.remove("open");
+}
+function openAdminMobileDrawer() {
+  $("adminMobileDrawer")?.classList.add("open");
+  $("adminDrawerOverlay")?.classList.add("open");
+}
+
 if ($("adminMobileToggleBtn")) {
-  $("adminMobileToggleBtn").onclick = () => {
-    const drawer = $("adminMobileDrawer");
-    if (drawer) drawer.classList.toggle("open");
+  $("adminMobileToggleBtn").onclick = (e) => {
+    e.stopPropagation();
+    openAdminMobileDrawer();
   };
 }
+if ($("adminDrawerCloseBtn")) {
+  $("adminDrawerCloseBtn").onclick = (e) => {
+    e.stopPropagation();
+    closeAdminMobileDrawer();
+  };
+}
+if ($("adminDrawerOverlay")) {
+  $("adminDrawerOverlay").onclick = closeAdminMobileDrawer;
+}
+if ($("adminDrawerSignOutBtn")) {
+  $("adminDrawerSignOutBtn").onclick = () => {
+    closeAdminMobileDrawer();
+    $("adminSignOutBtn")?.click();
+  };
+}
+
+// Drawer items
 document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(btn => {
   btn.onclick = () => {
     switchTab(btn.dataset.tab);
-    $("adminMobileDrawer")?.classList.remove("open");
+    closeAdminMobileDrawer();
+  };
+});
+
+// Mobile bottom bar tabs
+document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(btn => {
+  btn.onclick = () => {
+    switchTab(btn.dataset.tab);
   };
 });
 
@@ -1547,7 +1675,7 @@ function loadSavedUploadTerms() {
         savedUploadTerms = parsed;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 loadSavedUploadTerms();
 
@@ -2054,7 +2182,7 @@ function loadSavedCbtTerms() {
         savedCbtTerms = parsed;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 loadSavedCbtTerms();
 

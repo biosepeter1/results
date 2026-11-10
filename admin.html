@@ -24,7 +24,7 @@
     .restoring-admin-session #viewLogin { display: none !important; }
     .restoring-admin-session #viewApp { display: block !important; }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=2.5">
+  <link rel="stylesheet" href="css/admin.css?v=2.6">
 </head>
 
 <body>
@@ -55,107 +55,170 @@
      ADMIN MAIN APP SHELL
      ══════════════════════════════════════════════════════════ -->
   <div id="viewApp" style="display:none">
-    <!-- Premium Main Menu Bar -->
-    <header class="main-menu-bar">
-      <div class="header-inner">
-        <!-- Left: Brand / School Crest -->
-        <a href="#" class="menu-brand" onclick="switchTab('dashboard'); return false;">
-          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
-          <div class="menu-brand-text">
-            <span class="menu-brand-title">Honeyland Schools</span>
-            <span class="menu-brand-sub">Academic Results &amp; CBT Portal</span>
-          </div>
-          <span class="menu-role-badge">ADMIN</span>
-        </a>
-
-        <!-- Center: Desktop Main Menu Tabs -->
-        <nav class="menu-nav-links nav-tabs" aria-label="Administration Sections" style="border:none;margin:0;padding:4px;overflow:visible">
-          <button class="nav-tab active" id="tabDashboard" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            <span>Dashboard</span>
-          </button>
-          <button class="nav-tab" id="tabScores" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-            <span>Scores</span>
-          </button>
-          <button class="nav-tab" id="tabTeachers" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Teachers</span>
-            <span class="tab-badge" id="teacherCountBadge">0</span>
-          </button>
-          <button class="nav-tab" id="tabUpload" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Upload</span>
-          </button>
-          <button class="nav-tab" id="tabCBT" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            <span>CBT Exams</span>
-            <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
-          </button>
-        </nav>
-
-        <!-- Right: Utility Tray (Live Status, Teacher Portal Link, User Chip, Sign Out, Mobile Toggle) -->
-        <div class="menu-utility-tray">
-          <div class="menu-status-pill" title="Live Database Synchronization Active">
-            <span class="pulse-dot"></span>
-            <span class="status-text">Cloud Sync</span>
-          </div>
-
-          <a href="index.html" class="menu-portal-link" target="_blank" title="Open Teacher Portal in new tab">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            <span>Teacher Portal</span>
+    <!-- ══════════════════════════════════════════════════════════
+       MASTER INSTITUTIONAL HEADER (2-TIER DESKTOP + MOBILE)
+       ══════════════════════════════════════════════════════════ -->
+    <header class="app-master-header">
+      <!-- Tier 1: Institutional Brand & Utility Bar -->
+      <div class="header-brand-bar">
+        <div class="header-brand-inner">
+          <!-- Brand Identity -->
+          <a href="#" class="menu-brand" onclick="switchTab('dashboard'); return false;">
+            <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
+            <div class="menu-brand-text">
+              <span class="menu-brand-title">Honeyland Schools</span>
+              <span class="menu-brand-sub">Academic Results &amp; CBT Portal</span>
+            </div>
+            <span class="menu-role-badge">ADMIN</span>
           </a>
 
-          <div class="menu-user-profile">
-            <div class="menu-avatar">AD</div>
-            <div class="menu-user-details">
-              <span class="menu-user-name">Administrator</span>
-              <span class="menu-user-sub">Super Admin</span>
+          <!-- Right: Utility Tray -->
+          <div class="header-right-tools">
+            <div class="menu-status-pill" title="Live Database Synchronization Active">
+              <span class="pulse-dot"></span>
+              <span class="status-text">Cloud Sync</span>
             </div>
+
+            <a href="index.html" class="menu-portal-link" target="_blank" title="Open Teacher Portal in new tab">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>Teacher Portal</span>
+            </a>
+
+            <div class="menu-user-profile">
+              <div class="menu-avatar">AD</div>
+              <div class="menu-user-details">
+                <span class="menu-user-name">Administrator</span>
+                <span class="menu-user-sub">Super Admin</span>
+              </div>
+            </div>
+
+            <button class="menu-signout-btn" id="adminSignOutBtn" type="button" title="Sign out of Administration">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Sign out</span>
+            </button>
+
+            <!-- Mobile Hamburger Button -->
+            <button class="menu-mobile-toggle" id="adminMobileToggleBtn" type="button" aria-label="Open mobile navigation">
+              <span class="hamburger-bar"></span>
+              <span class="hamburger-bar"></span>
+              <span class="hamburger-bar"></span>
+            </button>
           </div>
-
-          <button class="menu-signout-btn" id="adminSignOutBtn" type="button" title="Sign out of Administration">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Sign out</span>
-          </button>
-
-          <!-- Mobile Hamburger Toggle -->
-          <button class="menu-mobile-toggle" id="adminMobileToggleBtn" type="button" aria-label="Toggle navigation menu">
-            <span class="hamburger-bar"></span>
-            <span class="hamburger-bar"></span>
-            <span class="hamburger-bar"></span>
-          </button>
         </div>
       </div>
 
-      <!-- Mobile Dropdown Navigation Drawer -->
-      <div class="menu-mobile-drawer" id="adminMobileDrawer">
+      <!-- Tier 2: Dedicated Navigation Menu Bar (Desktop Full-Width Horizontal Bar) -->
+      <nav class="header-nav-bar" aria-label="Administration Sections">
+        <div class="header-nav-inner">
+          <button class="nav-tab active" id="tabDashboard" type="button" data-tab="dashboard">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-tab" id="tabScores" type="button" data-tab="scores">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Scores</span>
+          </button>
+          <button class="nav-tab" id="tabTeachers" type="button" data-tab="teachers">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Teachers</span>
+            <span class="tab-badge" id="teacherCountBadge">0</span>
+          </button>
+          <button class="nav-tab" id="tabUpload" type="button" data-tab="upload">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload Scores</span>
+          </button>
+          <button class="nav-tab" id="tabCBT" type="button" data-tab="cbt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>CBT Exams &amp; Offline JSON</span>
+            <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Mobile Off-Canvas Drawer & Overlay -->
+    <div class="mobile-drawer-overlay" id="adminDrawerOverlay"></div>
+    <aside class="mobile-offcanvas-drawer" id="adminMobileDrawer" aria-label="Mobile Navigation Menu">
+      <div class="drawer-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png" alt="Logo" style="height:32px;width:auto">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:0.5px">HONEYLAND</div>
+            <div style="font-size:10px;color:var(--text-muted)">ADMIN PORTAL</div>
+          </div>
+        </div>
+        <button class="drawer-close-btn" id="adminDrawerCloseBtn" type="button" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="drawer-user-card">
+        <div class="menu-avatar">AD</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff">Administrator</div>
+          <div style="font-size:11px;color:var(--text-muted)">Super Admin · Live Connected</div>
+        </div>
+      </div>
+
+      <div class="drawer-nav-list">
+        <div class="drawer-section-label">Navigation</div>
         <button class="mobile-nav-item active" data-tab="dashboard" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          Executive Dashboard
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Executive Dashboard</span>
         </button>
         <button class="mobile-nav-item" data-tab="scores" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-          Student Scores
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          <span>Student Scores</span>
         </button>
         <button class="mobile-nav-item" data-tab="teachers" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          Manage Teachers
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Manage Teachers</span>
         </button>
         <button class="mobile-nav-item" data-tab="upload" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
-          Upload Exam Scores
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
+          <span>Upload Scores</span>
         </button>
         <button class="mobile-nav-item" data-tab="cbt" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
-          CBT Exams &amp; Offline JSON
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          <span>CBT Exams &amp; Offline JSON</span>
         </button>
+
+        <div class="drawer-section-label" style="margin-top:12px">Quick Links</div>
         <a href="index.html" class="mobile-nav-item" target="_blank">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/></svg>
-          Switch to Teacher Portal
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/></svg>
+          <span>Switch to Teacher Portal</span>
         </a>
       </div>
-    </header>
+
+      <div class="drawer-footer">
+        <button class="drawer-signout-btn" id="adminDrawerSignOutBtn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Fixed Bottom App Bar (Always Accessible for Mobile Thumbs) -->
+    <nav class="mobile-bottom-bar" aria-label="Mobile Bottom Navigation">
+      <button class="mobile-bottom-tab active" data-tab="dashboard" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="mobile-bottom-tab" data-tab="scores" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span>Scores</span>
+      </button>
+      <button class="mobile-bottom-tab" data-tab="teachers" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Teachers</span>
+      </button>
+      <button class="mobile-bottom-tab" data-tab="upload" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
+        <span>Upload</span>
+      </button>
+      <button class="mobile-bottom-tab" data-tab="cbt" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+        <span>CBT</span>
+      </button>
+    </nav>
 
     <main class="main-content">
       <!-- Notice -->
@@ -1518,12 +1581,15 @@
     </div>
   </div>
 
+  <!-- Modern App Toast Notification Container -->
+  <div id="appToastContainer" class="app-toast-container" aria-live="polite"></div>
+
   <script src="js/mammoth.browser.min.js"
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=2.5"></script>
+  <script src="js/admin.js?v=2.6"></script>
 </body>
 
 </html>

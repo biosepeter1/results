@@ -528,19 +528,30 @@ function switchTeacherPortalTab(target) {
     localStorage.setItem("teacher_active_tab_v1", target);
   } catch (e) { }
   const isCbt = (target === "cbt");
-  const $btnScores = $("btnTeacherNavScores");
-  const $btnCbt = $("btnTeacherNavCbt");
   const $paneScores = $("paneTeacherScores");
   const $paneCbt = $("paneTeacherCbt");
 
-  if ($btnScores) $btnScores.classList.toggle("active", !isCbt);
-  if ($btnCbt) $btnCbt.classList.toggle("active", isCbt);
   if ($paneScores) $paneScores.style.display = isCbt ? "none" : "block";
   if ($paneCbt) $paneCbt.style.display = isCbt ? "block" : "none";
 
+  // Sync desktop tabs
+  document.querySelectorAll(".header-nav-bar .portal-nav-btn[data-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.tab === target);
+  });
+  if ($("btnTeacherNavScores")) $("btnTeacherNavScores").classList.toggle("active", !isCbt);
+  if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").classList.toggle("active", isCbt);
+
   // Sync mobile drawer items
+  document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.tab === target);
+  });
   document.querySelectorAll(".mobile-nav-item[data-teacher-tab]").forEach(el => {
     el.classList.toggle("active", el.dataset.teacherTab === target);
+  });
+
+  // Sync mobile bottom app bar tabs
+  document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(el => {
+    el.classList.toggle("active", el.dataset.tab === target);
   });
 
   if (isCbt) {
@@ -551,41 +562,61 @@ function switchTeacherPortalTab(target) {
   }
 }
 
-function updateTeacherViewTabs() {
-  const isAll = (teacherActiveViewTab === "all");
-  const tabAll = $("tabTeacherViewAll");
-  const tabRewrite = $("tabTeacherViewRewrite");
-  const toolbar = $("teacherRewriteToolbar");
-  const standardToolbar = $("teacherTableStandardActions");
-  const headingText = $("tableHeadingText");
-
-  if (tabAll) tabAll.classList.toggle("active", isAll);
-  if (tabRewrite) tabRewrite.classList.toggle("active", !isAll);
-  if (toolbar) toolbar.style.display = isAll ? "none" : "flex";
-  if (standardToolbar) standardToolbar.style.display = isAll ? "flex" : "none";
-  if (headingText) {
-    headingText.textContent = isAll
-      ? "Student Examination Scores"
-      : `Students That Need to Rewrite Examination (≤${teacherRewriteCutoffPct}%)`;
-  }
+// Mobile Drawer & Bottom Navigation Wiring
+function closeTeacherMobileDrawer() {
+  $("teacherMobileDrawer")?.classList.remove("open");
+  $("teacherDrawerOverlay")?.classList.remove("open");
+}
+function openTeacherMobileDrawer() {
+  $("teacherMobileDrawer")?.classList.add("open");
+  $("teacherDrawerOverlay")?.classList.add("open");
 }
 
-if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
-if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
-
-// Mobile Hamburger Drawer Event Wiring
 if ($("teacherMobileToggleBtn")) {
-  $("teacherMobileToggleBtn").onclick = () => {
-    const drawer = $("teacherMobileDrawer");
-    if (drawer) drawer.classList.toggle("open");
+  $("teacherMobileToggleBtn").onclick = (e) => {
+    e.stopPropagation();
+    openTeacherMobileDrawer();
   };
 }
+if ($("teacherDrawerCloseBtn")) {
+  $("teacherDrawerCloseBtn").onclick = (e) => {
+    e.stopPropagation();
+    closeTeacherMobileDrawer();
+  };
+}
+if ($("teacherDrawerOverlay")) {
+  $("teacherDrawerOverlay").onclick = closeTeacherMobileDrawer;
+}
+if ($("teacherDrawerSignOutBtn")) {
+  $("teacherDrawerSignOutBtn").onclick = () => {
+    closeTeacherMobileDrawer();
+    doSignOut();
+  };
+}
+
+// Mobile drawer navigation buttons
+document.querySelectorAll(".mobile-nav-item[data-tab]").forEach(btn => {
+  btn.onclick = () => {
+    switchTeacherPortalTab(btn.dataset.tab);
+    closeTeacherMobileDrawer();
+  };
+});
 document.querySelectorAll(".mobile-nav-item[data-teacher-tab]").forEach(btn => {
   btn.onclick = () => {
     switchTeacherPortalTab(btn.dataset.teacherTab);
-    $("teacherMobileDrawer")?.classList.remove("open");
+    closeTeacherMobileDrawer();
   };
 });
+
+// Mobile bottom bar tabs
+document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(btn => {
+  btn.onclick = () => {
+    switchTeacherPortalTab(btn.dataset.tab);
+  };
+});
+
+if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
+if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
 
 if ($("tabTeacherViewAll")) {
   $("tabTeacherViewAll").addEventListener("click", () => {
@@ -634,7 +665,8 @@ function showApp() {
   document.documentElement.classList.add("restoring-teacher-session");
   $login.style.display = "none";
   $app.style.display = "block";
-  $("who").textContent = teacher.name;
+  if ($("who")) $("who").textContent = teacher.name;
+  if ($("teacherDrawerWho")) $("teacherDrawerWho").textContent = teacher.name;
   const initials = (teacher.name || "TC")
     .split(" ")
     .map(w => w[0])
@@ -643,10 +675,13 @@ function showApp() {
     .join("")
     .toUpperCase() || "TC";
   if ($("teacherAvatar")) $("teacherAvatar").textContent = initials;
+  if ($("teacherDrawerAvatar")) $("teacherDrawerAvatar").textContent = initials;
   const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
   const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
   const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
-  $("subinfo").textContent = `${sl} · ${cl}${al}`;
+  const subText = `${sl} · ${cl}${al}`;
+  if ($("subinfo")) $("subinfo").textContent = subText;
+  if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
   const activeTab = localStorage.getItem("teacher_active_tab_v1") || "scores";
   switchTeacherPortalTab(activeTab);
   buildTermTabs();
@@ -1818,15 +1853,35 @@ $("tCbtClearTextBtn").onclick = () => {
 };
 
 // File drop/upload
-$("tCbtDropZone").onclick = () => $("tCbtFileInput").click();
+function checkTargetQuestionsNotice() {
+  const targetVal = $("tCbtTargetQuestions")?.value.trim();
+  if (!targetVal || isNaN(parseInt(targetVal, 10)) || parseInt(targetVal, 10) <= 0) {
+    showToast({
+      type: "info",
+      title: "Planned Question Count Check",
+      message: "Tip: Select your planned question count in Step 1 (e.g. 5, 10, 20) before uploading to ensure the system strictly verifies you do not over or under-set questions."
+    });
+  }
+}
+
+$("tCbtDropZone").onclick = () => {
+  checkTargetQuestionsNotice();
+  $("tCbtFileInput").click();
+};
 ["dragenter", "dragover"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.add("dragover"); }));
 ["dragleave", "drop"].forEach(evt => $("tCbtDropZone").addEventListener(evt, e => { e.preventDefault(); $("tCbtDropZone").classList.remove("dragover"); }));
 $("tCbtDropZone").addEventListener("drop", e => {
   const f = e.dataTransfer.files[0];
-  if (f) handleTeacherFile(f);
+  if (f) {
+    checkTargetQuestionsNotice();
+    handleTeacherFile(f);
+  }
 });
 if ($("tCbtBrowseFileBtn")) {
-  $("tCbtBrowseFileBtn").onclick = () => $("tCbtFileInput").click();
+  $("tCbtBrowseFileBtn").onclick = () => {
+    checkTargetQuestionsNotice();
+    $("tCbtFileInput").click();
+  };
 }
 
 $("tCbtFileInput").onchange = (e) => {
@@ -2038,6 +2093,22 @@ function handleTeacherFile(file) {
             const diagInfo = diagCount ? ` (${diagCount} diagram${diagCount > 1 ? 's' : ''} extracted)` : "";
             $("tCbtParseMsg").textContent = `✓ Successfully extracted ${teacherParsedQuestions.length} questions${diagInfo}. Review below!`;
             renderTeacherReviewQuestions();
+
+            const val = validateTeacherQuestions();
+            if (val.valid) {
+              showToast({
+                type: "success",
+                title: "Exam Questions Successfully Extracted!",
+                message: `Extracted exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options & answers ready!`
+              });
+            } else {
+              showToast({
+                type: "warning",
+                title: "Question Quality & Count Alert",
+                message: `Extracted ${val.detectedCount} questions. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to resolve in Step 3 before submitting.`,
+                list: val.issues.slice(0, 4).map(i => i.message)
+              });
+            }
           } else {
             $("tCbtParseMsg").style.color = "var(--status-fail)";
             $("tCbtParseMsg").textContent = "Could not identify question numbering. Please verify questions begin with 1. 2. etc.";
@@ -3545,10 +3616,13 @@ async function autoRestoreTeacherSession() {
         sess.teacher = teacher;
         try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch (err) { }
         if ($("who")) $("who").textContent = teacher.name;
+        if ($("teacherDrawerWho")) $("teacherDrawerWho").textContent = teacher.name;
         const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
         const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
         const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
-        if ($("subinfo")) $("subinfo").textContent = `${sl} · ${cl}${al}`;
+        const subText = `${sl} · ${cl}${al}`;
+        if ($("subinfo")) $("subinfo").textContent = subText;
+        if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
       }
     } else {
       document.documentElement.classList.remove("restoring-teacher-session");
