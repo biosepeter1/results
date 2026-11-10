@@ -604,6 +604,19 @@ function renderDashboardSubjectRadar() {
   } else {
     // Most fails / lowest pass rate first
     list.sort((a, b) => b.fails - a.fails || a.passRate - b.passRate);
+    const hasAnyFails = list.some(s => s.fails > 0);
+    if (!hasAnyFails) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:24px 14px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.3);width:100%;box-sizing:border-box;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#10b981;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="font-weight:700;color:#10b981;font-size:13px;margin-bottom:2px;">No Curriculum Interventions Required</div>
+          <div style="font-size:11px;color:var(--text-muted);">All evaluated subjects currently meet academic benchmarks with zero failing outcomes.</div>
+        </div>
+      `;
+      return;
+    }
   }
 
   container.innerHTML = list.slice(0, 10).map(s => {
@@ -613,15 +626,15 @@ function renderDashboardSubjectRadar() {
       : "border-left:4px solid #10b981;";
 
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);${accentBorder}">
-        <div style="min-width:0;flex:1;padding-right:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);${accentBorder}width:100%;box-sizing:border-box;gap:8px;">
+        <div style="min-width:0;flex:1;overflow:hidden;">
           <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.subject)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
             ${s.total} evaluated · Avg: <strong style="color:var(--text);">${s.avgScore}%</strong>
           </div>
         </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:13px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
+        <div style="text-align:right;flex-shrink:0;white-space:nowrap;">
+          <div style="font-size:12px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
           <div style="font-size:11px;color:${s.fails > 0 ? '#ef4444' : '#10b981'};font-weight:600;">
             ${s.fails > 0 ? `${s.fails} failed` : 'Zero fails'}
           </div>
