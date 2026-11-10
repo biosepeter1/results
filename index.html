@@ -22,7 +22,7 @@
     .restoring-teacher-session #login { display: none !important; }
     .restoring-teacher-session #app { display: block !important; }
   </style>
-  <link rel="stylesheet" href="css/teacher.css?v=2.5">
+  <link rel="stylesheet" href="css/teacher.css?v=2.6">
 </head>
 
 <body>
@@ -80,7 +80,6 @@
       <!-- Teacher Portal Section Navigation -->
       <div class="portal-nav-bar">
         <button type="button" class="portal-nav-btn active" id="btnTeacherNavScores">📊 Student Examination Scores</button>
-        <button type="button" class="portal-nav-btn" id="btnTeacherNavRewrite" style="color:#f59e0b;">🔄 Students Needing Rewrite <span id="tBadgeRewriteNav" style="display:none;background:rgba(245,158,11,0.2);color:#f59e0b;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px;">0</span></button>
         <button type="button" class="portal-nav-btn" id="btnTeacherNavCbt">📝 Upload CBT Exam (Notepad / Word)</button>
       </div>
 
@@ -343,6 +342,25 @@
               <label class="cbt-form-label" for="tCbtClass">Class</label>
               <select class="cbt-form-select" id="tCbtClass"></select>
             </div>
+            <div class="cbt-form-field">
+              <label class="cbt-form-label" for="tCbtTargetQuestions" style="display:flex;align-items:center;justify-content:space-between">
+                <span>🎯 Planned Question Count</span>
+                <span id="tCbtTargetStatusBadge" style="font-size:11px;font-weight:700"></span>
+              </label>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <input class="cbt-form-input" id="tCbtTargetQuestions" type="number" min="1" max="200"
+                  placeholder="e.g. 20" style="font-weight:700;font-size:14px;max-width:110px">
+                <div class="cbt-count-pills" id="tCbtCountPills" style="display:inline-flex;gap:4px;flex-wrap:wrap">
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="5">5</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="10">10</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="15">15</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="20">20</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="30">30</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-pill-btn" data-count="40">40</button>
+                </div>
+              </div>
+              <span style="font-size:11px;color:var(--text-muted);margin-top:2px;display:block">Strict check: Prevents over-setting or under-setting exam questions</span>
+            </div>
             <div class="cbt-form-field" style="grid-column: 1 / -1; margin-top: 4px;">
               <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px">
                 <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -461,6 +479,9 @@
                 style="min-height:44px;padding:0 24px;font-weight:700">🚀 Submit Exam to School Admin</button>
             </div>
           </div>
+
+          <!-- Real-Time Question Validation Summary Card -->
+          <div id="tCbtValidationStatusCard" style="margin-bottom:16px;display:none"></div>
 
           <div id="tCbtQuestionsList" style="max-height:500px;overflow-y:auto;padding-right:4px"></div>
         </div>
@@ -655,12 +676,15 @@
     </div>
   </div>
 
+  <!-- Modern App Toast Notification Container -->
+  <div id="appToastContainer" class="app-toast-container" aria-live="polite"></div>
+
   <script src="js/mammoth.browser.min.js"
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/teacher.js?v=2.5"></script>
+  <script src="js/teacher.js?v=2.6"></script>
 </body>
 
 </html>

@@ -439,16 +439,13 @@ function switchTeacherPortalTab(target) {
     localStorage.setItem("teacher_active_tab_v1", target);
   } catch(e) {}
   const isCbt = (target === "cbt");
-  const isRewrite = (target === "rewrite");
   const $btnScores = $("btnTeacherNavScores");
   const $btnCbt = $("btnTeacherNavCbt");
-  const $btnRewrite = $("btnTeacherNavRewrite");
   const $paneScores = $("paneTeacherScores");
   const $paneCbt = $("paneTeacherCbt");
 
-  if ($btnScores) $btnScores.classList.toggle("active", target === "scores");
+  if ($btnScores) $btnScores.classList.toggle("active", !isCbt);
   if ($btnCbt) $btnCbt.classList.toggle("active", isCbt);
-  if ($btnRewrite) $btnRewrite.classList.toggle("active", isRewrite);
   if ($paneScores) $paneScores.style.display = isCbt ? "none" : "block";
   if ($paneCbt) $paneCbt.style.display = isCbt ? "block" : "none";
 
@@ -457,14 +454,6 @@ function switchTeacherPortalTab(target) {
     loadTeacherCbtDefaults();
     initTeacherCbtForm();
     loadTeacherSubmissions();
-  } else if (isRewrite) {
-    teacherActiveViewTab = "rewrite";
-    updateTeacherViewTabs();
-    if (typeof renderTableOnly === "function") renderTableOnly();
-  } else {
-    teacherActiveViewTab = "all";
-    updateTeacherViewTabs();
-    if (typeof renderTableOnly === "function") renderTableOnly();
   }
 }
 
@@ -489,15 +478,10 @@ function updateTeacherViewTabs() {
 
 if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
 if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
-if ($("btnTeacherNavRewrite")) $("btnTeacherNavRewrite").addEventListener("click", () => switchTeacherPortalTab("rewrite"));
 
 if ($("tabTeacherViewAll")) {
   $("tabTeacherViewAll").addEventListener("click", () => {
     teacherActiveViewTab = "all";
-    const btnScores = $("btnTeacherNavScores");
-    const btnRewrite = $("btnTeacherNavRewrite");
-    if (btnScores) btnScores.classList.add("active");
-    if (btnRewrite) btnRewrite.classList.remove("active");
     updateTeacherViewTabs();
     renderTableOnly();
   });
@@ -506,10 +490,6 @@ if ($("tabTeacherViewAll")) {
 if ($("tabTeacherViewRewrite")) {
   $("tabTeacherViewRewrite").addEventListener("click", () => {
     teacherActiveViewTab = "rewrite";
-    const btnScores = $("btnTeacherNavScores");
-    const btnRewrite = $("btnTeacherNavRewrite");
-    if (btnScores) btnScores.classList.remove("active");
-    if (btnRewrite) btnRewrite.classList.add("active");
     updateTeacherViewTabs();
     renderTableOnly();
   });
@@ -517,7 +497,10 @@ if ($("tabTeacherViewRewrite")) {
 
 if ($("cardTeacherRewrite")) {
   $("cardTeacherRewrite").addEventListener("click", () => {
-    switchTeacherPortalTab("rewrite");
+    switchTeacherPortalTab("scores");
+    teacherActiveViewTab = "rewrite";
+    updateTeacherViewTabs();
+    renderTableOnly();
     const tbl = $("tabTeacherViewRewrite");
     if (tbl) tbl.scrollIntoView({ behavior: "smooth", block: "start" });
   });
