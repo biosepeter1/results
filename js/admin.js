@@ -1516,6 +1516,8 @@ const DEFAULT_UPLOAD_TERMS = [
 let savedUploadTerms = [...DEFAULT_UPLOAD_TERMS];
 let selectedTerm = "First Test";
 let termScoreCountsMap = {};
+let parsedSubjects = {};
+let totalParsedRecords = 0;
 
 function loadSavedUploadTerms() {
   try {
@@ -1769,18 +1771,17 @@ renderUploadTermSelector();
 
 const dropZone = $("csvDropZone");
 const csvFileInput = $("csvFileInput");
-dropZone.onclick = () => csvFileInput.click();
-dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add("drag"); };
-dropZone.ondragleave = () => dropZone.classList.remove("drag");
-dropZone.ondrop = e => {
-  e.preventDefault();
-  dropZone.classList.remove("drag");
-  handleCSVFile(e.dataTransfer.files[0]);
-};
-csvFileInput.onchange = () => handleCSVFile(csvFileInput.files[0]);
-
-let parsedSubjects = {};
-let totalParsedRecords = 0;
+if (dropZone && csvFileInput) {
+  dropZone.onclick = () => csvFileInput.click();
+  dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add("drag"); };
+  dropZone.ondragleave = () => dropZone.classList.remove("drag");
+  dropZone.ondrop = e => {
+    e.preventDefault();
+    dropZone.classList.remove("drag");
+    handleCSVFile(e.dataTransfer.files[0]);
+  };
+  csvFileInput.onchange = () => handleCSVFile(csvFileInput.files[0]);
+}
 
 function handleCSVFile(file) {
   if (!file || !file.name.toLowerCase().endsWith(".csv")) {
@@ -1878,7 +1879,10 @@ $("csvClearBtn").onclick = () => {
 };
 
 function checkUploadReady() {
-  $("uploadScoresBtn").disabled = !(totalParsedRecords > 0 && getTermName());
+  const btn = $("uploadScoresBtn");
+  if (btn) {
+    btn.disabled = !(totalParsedRecords > 0 && getTermName());
+  }
 }
 
 function setUploadError(msg) {
@@ -2195,11 +2199,13 @@ async function loadAdminCbtActiveTerm() {
       activeCbtExamTerm = cached.toUpperCase();
       updateAdminCbtTermUI();
     }
-    const cloudTerm = await window.dbClient.getActiveCbtTerm();
-    if (cloudTerm) {
-      activeCbtExamTerm = cloudTerm.toUpperCase();
-      localStorage.setItem("cbt_active_term", activeCbtExamTerm);
-      updateAdminCbtTermUI();
+    if (window.dbClient && typeof window.dbClient.getActiveCbtTerm === "function") {
+      const cloudTerm = await window.dbClient.getActiveCbtTerm();
+      if (cloudTerm) {
+        activeCbtExamTerm = cloudTerm.toUpperCase();
+        localStorage.setItem("cbt_active_term", activeCbtExamTerm);
+        updateAdminCbtTermUI();
+      }
     }
     await syncCbtTermsWithCloud();
   } catch (e) {
@@ -2221,7 +2227,9 @@ async function setAdminCbtActiveTerm(newTerm) {
   updateAdminCbtTermUI();
 
   try {
-    await window.dbClient.setActiveCbtTerm(activeCbtExamTerm);
+    if (window.dbClient && typeof window.dbClient.setActiveCbtTerm === "function") {
+      await window.dbClient.setActiveCbtTerm(activeCbtExamTerm);
+    }
     const badge = $("cbtAdminTermSavedBadge");
     if (badge) {
       badge.textContent = `✓ Set active: "${activeCbtExamTerm}" (Updated for all teachers!)`;
