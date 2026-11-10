@@ -24,7 +24,7 @@
     .restoring-admin-session #viewLogin { display: none !important; }
     .restoring-admin-session #viewApp { display: block !important; }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=2.2">
+  <link rel="stylesheet" href="css/admin.css?v=2.3">
 </head>
 
 <body>
@@ -313,19 +313,19 @@
               </div>
             </div>
             <div class="dash-radar-segmented-tabs">
-              <button type="button" class="btn btn-secondary btn-sm active" id="dashSubjectTabNeedsSupport" data-view="needs_support">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span>Needs Intervention</span>
-                <span id="dashBadgeSubjectFailCount" class="dash-tab-pill-badge dash-badge-fail">0</span>
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashSubjectTabBest" data-view="best">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <span>Top Performing</span>
+              <button type="button" class="btn btn-secondary btn-sm active" id="dashSubjectTabBest" data-view="best">
+                <span style="display:inline-flex;align-items:center;gap:8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span>Top Performing</span>
+                </span>
                 <span id="dashBadgeSubjectTopCount" class="dash-tab-pill-badge dash-badge-pass">0</span>
               </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashSubjectTabBoth" data-view="both">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-                <span>View Both</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashSubjectTabNeedsSupport" data-view="needs_support">
+                <span style="display:inline-flex;align-items:center;gap:8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span>Needs Intervention</span>
+                </span>
+                <span id="dashBadgeSubjectFailCount" class="dash-tab-pill-badge dash-badge-fail">0</span>
               </button>
             </div>
             <div id="dashSubjectRankingList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:4px;">
@@ -808,37 +808,48 @@
 
         <!-- School-Wide Active Examination Term for Teacher CBT Uploads -->
         <div class="card" style="margin-bottom:20px;border-left:4px solid var(--accent)">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-            <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+            <div style="max-width:520px">
               <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Active Examination Term for
                 Teacher Uploads</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin:0">Set the active examination term. When teachers
+              <p style="font-size:12px;color:var(--text-muted);margin:0">Set the active examination term and assessment type. When teachers
                 prepare exams, their exam titles will automatically format with this term (e.g.
-                <code>YEAR 8 FRENCH MID TERM EXAMINATION</code>).</p>
+                <code>YEAR 8 FRENCH MID TERM EXAMINATION</code> or <code>MATHEMATICS FIRST TEST</code>).</p>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <div id="cbtAdminTermSelector" style="display:flex;gap:6px">
-                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
-                  data-cbt-term="FIRST TERM EXAMINATION">First Term</button>
-                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn active"
-                  data-cbt-term="MID TERM EXAMINATION">Mid Term</button>
-                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
-                  data-cbt-term="THIRD TERM EXAMINATION">Third Term</button>
-                <button type="button" class="btn btn-secondary btn-sm cbt-term-btn"
-                  data-cbt-term="__custom">Custom...</button>
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end" class="cbt-term-controls-wrap">
+              <!-- Academic Term Era (First Term | Second Term | Third Term) -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Term Era:</span>
+                <div id="cbtAdminEraSelector" style="display:inline-flex;gap:5px;background:var(--surface-alt);padding:3px;border-radius:6px;border:1px solid var(--border)">
+                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn active" data-era="First Term">First Term</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn" data-era="Second Term">Second Term</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-era-btn" data-era="Third Term">Third Term</button>
+                </div>
               </div>
-              <div id="cbtAdminCustomTermWrap" style="display:none;align-items:center;gap:6px">
+
+              <!-- Assessment Type (First Test | Mid Term Examination | Term Examination | Custom...) -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Assessment:</span>
+                <div id="cbtAdminAssessmentSelector" style="display:inline-flex;gap:6px;flex-wrap:wrap">
+                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="First Test">First Test</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn active" data-assess="Mid Term Examination">Mid Term Exam</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="Term Examination" id="cbtAssessTermExamBtn">First Term Exam</button>
+                  <button type="button" class="btn btn-secondary btn-sm cbt-assess-btn" data-assess="__custom">Custom...</button>
+                </div>
+              </div>
+
+              <div id="cbtAdminCustomTermWrap" style="display:none;align-items:center;gap:6px;justify-content:flex-end">
                 <input type="text" id="cbtAdminCustomTermInput" class="form-input"
-                  style="padding:4px 10px;font-size:12px;width:170px" placeholder="e.g. MOCK EXAMINATION">
+                  style="padding:4px 10px;font-size:12px;width:190px" placeholder="e.g. MOCK EXAMINATION">
                 <button type="button" class="btn btn-sm" id="cbtAdminSaveCustomTermBtn"
                   style="font-size:12px;padding:4px 10px">Set</button>
               </div>
             </div>
           </div>
           <div
-            style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px">
             <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay"
-                style="color:var(--accent);letter-spacing:0.5px">MID TERM EXAMINATION</strong></span>
+                style="color:var(--accent);letter-spacing:0.5px">FIRST TERM MID TERM EXAMINATION</strong></span>
             <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
               for all teachers!</span>
           </div>
@@ -1346,7 +1357,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=2.2"></script>
+  <script src="js/admin.js?v=2.3"></script>
 </body>
 
 </html>

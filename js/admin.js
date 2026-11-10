@@ -118,7 +118,7 @@ $("tabCBT").onclick = () => switchTab("cbt");
 // ══════════════════════════════════════════════════════════
 var _dashEventsBound = false;
 let dashActiveTabStudentView = "fail"; // "fail", "rewrite", or "honor"
-let dashSubjectView = "needs_support"; // "needs_support", "best", or "both"
+let dashSubjectView = "best"; // "best" or "needs_support"
 let dashAtRiskStudents = [];
 let dashHonorRollStudents = [];
 let dashRewriteStudents = [];
@@ -153,20 +153,16 @@ function initDashboardEvents() {
 
   const setSubjectViewTab = (view) => {
     dashSubjectView = view;
-    if ($("dashSubjectTabNeedsSupport")) $("dashSubjectTabNeedsSupport").classList.toggle("active", view === "needs_support");
     if ($("dashSubjectTabBest")) $("dashSubjectTabBest").classList.toggle("active", view === "best");
-    if ($("dashSubjectTabBoth")) $("dashSubjectTabBoth").classList.toggle("active", view === "both");
+    if ($("dashSubjectTabNeedsSupport")) $("dashSubjectTabNeedsSupport").classList.toggle("active", view === "needs_support");
     renderDashboardSubjectRadar();
   };
 
-  if ($("dashSubjectTabNeedsSupport")) {
-    $("dashSubjectTabNeedsSupport").onclick = () => setSubjectViewTab("needs_support");
-  }
   if ($("dashSubjectTabBest")) {
     $("dashSubjectTabBest").onclick = () => setSubjectViewTab("best");
   }
-  if ($("dashSubjectTabBoth")) {
-    $("dashSubjectTabBoth").onclick = () => setSubjectViewTab("both");
+  if ($("dashSubjectTabNeedsSupport")) {
+    $("dashSubjectTabNeedsSupport").onclick = () => setSubjectViewTab("needs_support");
   }
 
   const setStudentViewTab = (tab) => {
@@ -656,39 +652,6 @@ function renderDashboardSubjectRadar() {
     const bestList = getBestList();
     container.innerHTML = bestList.slice(0, 10).map(s => renderSubjectRow(s, false)).join("");
     return;
-  }
-
-  if (dashSubjectView === "both") {
-    const interventionList = getInterventionList();
-    const bestList = getBestList().slice(0, 5);
-
-    let html = `
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#ef4444;display:flex;align-items:center;gap:6px;margin:2px 0 6px;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span>Subjects Requiring Intervention (${interventionList.length})</span>
-      </div>
-    `;
-
-    if (!interventionList.length) {
-      html += `
-        <div style="padding:10px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.25);font-size:11px;color:#10b981;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>All subjects meeting academic benchmarks. Zero interventions required.</span>
-        </div>
-      `;
-    } else {
-      html += interventionList.slice(0, 5).map(s => renderSubjectRow(s, true)).join("");
-    }
-
-    html += `
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#10b981;display:flex;align-items:center;gap:6px;margin:12px 0 6px;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>Top Performing Subjects (${bestList.length})</span>
-      </div>
-    `;
-    html += bestList.map(s => renderSubjectRow(s, false)).join("");
-
-    container.innerHTML = html;
   }
 }
 
@@ -1889,41 +1852,132 @@ async function saveAdminCbtDefaults() {
   }
 }
 
+// ── Era & Assessment Dual Controls for CBT Active Term ──
+let currentCbtEra = "First Term";
+let currentCbtAssessment = "Mid Term Examination";
+
+function detectCbtEraAndAssessment(termStr) {
+  const upper = (termStr || "").toUpperCase().trim();
+  let era = "First Term";
+  if (upper.includes("SECOND TERM") || upper.includes("2ND TERM")) {
+    era = "Second Term";
+  } else if (upper.includes("THIRD TERM") || upper.includes("3RD TERM")) {
+    era = "Third Term";
+  } else {
+    era = "First Term";
+  }
+
+  let assess = "Mid Term Examination";
+  if (upper.includes("FIRST TEST") || upper.includes("1ST TEST")) {
+    assess = "First Test";
+  } else if (upper.includes("MID TERM") || upper.includes("MID-TERM") || upper.includes("MIDTERM")) {
+    assess = "Mid Term Examination";
+  } else if (upper.includes("EXAMINATION") || upper.includes("EXAM")) {
+    assess = "Term Examination";
+  } else {
+    assess = "__custom";
+  }
+
+  return { era, assess };
+}
+
+function buildCbtTermString(era, assess) {
+  if (assess === "__custom") {
+    return $("cbtAdminCustomTermInput")?.value.trim().toUpperCase() || activeCbtExamTerm;
+  }
+  const eUpper = (era || "First Term").toUpperCase();
+  if (assess === "First Test") {
+    return `${eUpper} FIRST TEST`;
+  }
+  if (assess === "Mid Term Examination") {
+    return `${eUpper} MID TERM EXAMINATION`;
+  }
+  if (assess === "Term Examination") {
+    return `${eUpper} EXAMINATION`;
+  }
+  return activeCbtExamTerm;
+}
+
 function updateAdminCbtTermUI() {
   if ($("cbtAdminActiveTermDisplay")) {
     $("cbtAdminActiveTermDisplay").textContent = activeCbtExamTerm;
   }
-  document.querySelectorAll(".cbt-term-btn").forEach(btn => {
-    const t = btn.dataset.cbtTerm;
-    if (t === "__custom") {
-      const isKnown = ["FIRST TERM EXAMINATION", "MID TERM EXAMINATION", "THIRD TERM EXAMINATION"].includes(activeCbtExamTerm);
-      btn.classList.toggle("active", !isKnown);
-      if ($("cbtAdminCustomTermWrap")) {
-        $("cbtAdminCustomTermWrap").style.display = !isKnown ? "inline-flex" : "none";
-      }
-    } else {
-      btn.classList.toggle("active", t === activeCbtExamTerm);
-    }
+
+  const detected = detectCbtEraAndAssessment(activeCbtExamTerm);
+  currentCbtEra = detected.era;
+  currentCbtAssessment = detected.assess;
+
+  // Update Era Buttons (First Term, Second Term, Third Term)
+  document.querySelectorAll(".cbt-era-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.era === currentCbtEra);
   });
+
+  // Update Term Exam Button Label (e.g. "First Term Exam", "Second Term Exam", "Third Term Exam")
+  if ($("cbtAssessTermExamBtn")) {
+    $("cbtAssessTermExamBtn").textContent = `${currentCbtEra} Exam`;
+  }
+
+  // Update Assessment Buttons (First Test, Mid Term, Term Exam, Custom)
+  document.querySelectorAll(".cbt-assess-btn").forEach(btn => {
+    const a = btn.dataset.assess;
+    btn.classList.toggle("active", a === currentCbtAssessment);
+  });
+
+  // Show/hide custom input
+  if ($("cbtAdminCustomTermWrap")) {
+    const isCustom = currentCbtAssessment === "__custom";
+    $("cbtAdminCustomTermWrap").style.display = isCustom ? "inline-flex" : "none";
+    if (isCustom && $("cbtAdminCustomTermInput")) {
+      $("cbtAdminCustomTermInput").value = activeCbtExamTerm;
+    }
+  }
 }
 
-document.querySelectorAll(".cbt-term-btn").forEach(btn => {
+// Attach Era button handlers
+document.querySelectorAll(".cbt-era-btn").forEach(btn => {
   btn.onclick = () => {
-    const t = btn.dataset.cbtTerm;
-    if (t === "__custom") {
-      $("cbtAdminCustomTermWrap").style.display = "inline-flex";
+    currentCbtEra = btn.dataset.era;
+    if (currentCbtAssessment === "__custom") {
+      currentCbtAssessment = "Mid Term Examination";
+    }
+    const newTerm = buildCbtTermString(currentCbtEra, currentCbtAssessment);
+    setAdminCbtActiveTerm(newTerm);
+  };
+});
+
+// Attach Assessment button handlers
+document.querySelectorAll(".cbt-assess-btn").forEach(btn => {
+  btn.onclick = () => {
+    const a = btn.dataset.assess;
+    currentCbtAssessment = a;
+    if (a === "__custom") {
+      if ($("cbtAdminCustomTermWrap")) {
+        $("cbtAdminCustomTermWrap").style.display = "inline-flex";
+      }
       $("cbtAdminCustomTermInput")?.focus();
+      document.querySelectorAll(".cbt-assess-btn").forEach(b => b.classList.toggle("active", b === btn));
     } else {
       if ($("cbtAdminCustomTermWrap")) $("cbtAdminCustomTermWrap").style.display = "none";
-      setAdminCbtActiveTerm(t);
+      const newTerm = buildCbtTermString(currentCbtEra, a);
+      setAdminCbtActiveTerm(newTerm);
     }
   };
 });
+
 if ($("cbtAdminSaveCustomTermBtn")) {
   $("cbtAdminSaveCustomTermBtn").onclick = () => {
     const customVal = $("cbtAdminCustomTermInput")?.value.trim();
     if (customVal) {
+      currentCbtAssessment = "__custom";
       setAdminCbtActiveTerm(customVal);
+    }
+  };
+}
+if ($("cbtAdminCustomTermInput")) {
+  $("cbtAdminCustomTermInput").onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("cbtAdminSaveCustomTermBtn")?.click();
     }
   };
 }
