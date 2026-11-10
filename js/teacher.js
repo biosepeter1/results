@@ -618,6 +618,25 @@ document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(btn => {
 if ($("btnTeacherNavScores")) $("btnTeacherNavScores").addEventListener("click", () => switchTeacherPortalTab("scores"));
 if ($("btnTeacherNavCbt")) $("btnTeacherNavCbt").addEventListener("click", () => switchTeacherPortalTab("cbt"));
 
+function updateTeacherViewTabs() {
+  const isAll = (teacherActiveViewTab === "all");
+  const tabAll = $("tabTeacherViewAll");
+  const tabRewrite = $("tabTeacherViewRewrite");
+  const toolbar = $("teacherRewriteToolbar");
+  const standardToolbar = $("teacherTableStandardActions");
+  const headingText = $("tableHeadingText");
+
+  if (tabAll) tabAll.classList.toggle("active", isAll);
+  if (tabRewrite) tabRewrite.classList.toggle("active", !isAll);
+  if (toolbar) toolbar.style.display = isAll ? "none" : "flex";
+  if (standardToolbar) standardToolbar.style.display = isAll ? "flex" : "none";
+  if (headingText) {
+    headingText.textContent = isAll
+      ? "Student Examination Scores"
+      : `Students That Need to Rewrite Examination (≤${teacherRewriteCutoffPct}%)`;
+  }
+}
+
 if ($("tabTeacherViewAll")) {
   $("tabTeacherViewAll").addEventListener("click", () => {
     teacherActiveViewTab = "all";
