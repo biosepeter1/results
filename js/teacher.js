@@ -890,26 +890,7 @@ $("exportBtn").addEventListener("click", async () => {
 
 // ── Teacher CBT Exam Upload Functions ──
 function populateCbtClassArms(className) {
-  const classInfo = resolveCbtClass(className);
-  const armsList = classInfo.armsDetail || [];
-  const armsSelect = $("tCbtArmsSelect");
-  if (!armsSelect) return;
-
-  if (!armsList.length) {
-    const rawArms = classInfo.arms || [];
-    armsSelect.innerHTML = rawArms.map((id, idx) => `<option value="${id}" selected>Arm ${idx + 1}</option>`).join("");
-    return;
-  }
-
-  // Teacher-specific arms pre-selection if teacher has assigned cohort arms
-  const teacherArms = (teacher && Array.isArray(teacher.arms) && teacher.arms.length) 
-    ? teacher.arms.map(a => a.trim().toLowerCase()) 
-    : [];
-
-  armsSelect.innerHTML = armsList.map(a => {
-    const isSelected = (teacherArms.length === 0) || teacherArms.includes(a.name.trim().toLowerCase());
-    return `<option value="${a.id}" ${isSelected ? 'selected' : ''}>${esc(a.name)}</option>`;
-  }).join("");
+  // Arms are automatically all-inclusive for teacher exams; arms configuration is managed exclusively by Admin.
 }
 
 // ── School-Wide CBT Exam Defaults (Duration & Marks synchronized from Admin) ──
@@ -2097,15 +2078,9 @@ $("tCbtSubmitBtn").onclick = async () => {
     const gateClose = $("tCbtGateClose")?.value || "20:00";
     const shuffle = $("tCbtShuffleToggle") ? $("tCbtShuffleToggle").checked : true;
 
-    // Get selected arms
-    const armsSelect = $("tCbtArmsSelect");
-    let selectedArms = [];
-    if (armsSelect) {
-      selectedArms = Array.from(armsSelect.selectedOptions).map(o => o.value);
-    }
-    if (selectedArms.length === 0 && classInfo.arms) {
-      selectedArms = classInfo.arms;
-    }
+    // When teachers set an exam, all class arms are automatically assigned.
+    // Admin is the only one who can view and edit assigned arms.
+    const selectedArms = (classInfo && Array.isArray(classInfo.arms)) ? [...classInfo.arms] : [];
 
     const subPayload = {
       examId: examId,

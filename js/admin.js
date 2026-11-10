@@ -118,7 +118,7 @@ $("tabCBT").onclick = () => switchTab("cbt");
 // ══════════════════════════════════════════════════════════
 var _dashEventsBound = false;
 let dashActiveTabStudentView = "fail"; // "fail", "rewrite", or "honor"
-let dashSubjectView = "best"; // "best" or "needs_support"
+let dashSubjectView = "needs_support"; // "needs_support", "best", or "both"
 let dashAtRiskStudents = [];
 let dashHonorRollStudents = [];
 let dashRewriteStudents = [];
@@ -151,21 +151,22 @@ function initDashboardEvents() {
   if (sSel) sSel.addEventListener("change", () => renderExecutiveDashboard());
   if (qInput) qInput.addEventListener("input", () => renderDashboardStudentActionCenter());
 
-  if ($("dashSubjectTabBest")) {
-    $("dashSubjectTabBest").onclick = () => {
-      dashSubjectView = "best";
-      $("dashSubjectTabBest").classList.add("active");
-      $("dashSubjectTabNeedsSupport").classList.remove("active");
-      renderDashboardSubjectRadar();
-    };
-  }
+  const setSubjectViewTab = (view) => {
+    dashSubjectView = view;
+    if ($("dashSubjectTabNeedsSupport")) $("dashSubjectTabNeedsSupport").classList.toggle("active", view === "needs_support");
+    if ($("dashSubjectTabBest")) $("dashSubjectTabBest").classList.toggle("active", view === "best");
+    if ($("dashSubjectTabBoth")) $("dashSubjectTabBoth").classList.toggle("active", view === "both");
+    renderDashboardSubjectRadar();
+  };
+
   if ($("dashSubjectTabNeedsSupport")) {
-    $("dashSubjectTabNeedsSupport").onclick = () => {
-      dashSubjectView = "needs_support";
-      $("dashSubjectTabNeedsSupport").classList.add("active");
-      $("dashSubjectTabBest").classList.remove("active");
-      renderDashboardSubjectRadar();
-    };
+    $("dashSubjectTabNeedsSupport").onclick = () => setSubjectViewTab("needs_support");
+  }
+  if ($("dashSubjectTabBest")) {
+    $("dashSubjectTabBest").onclick = () => setSubjectViewTab("best");
+  }
+  if ($("dashSubjectTabBoth")) {
+    $("dashSubjectTabBoth").onclick = () => setSubjectViewTab("both");
   }
 
   const setStudentViewTab = (tab) => {
@@ -596,32 +597,9 @@ function renderDashboardSubjectRadar() {
     return;
   }
 
-  const list = [...dashSubjectStats];
-  const isNeedsSupport = dashSubjectView === "needs_support";
-  if (!isNeedsSupport) {
-    // Highest pass rate & avg score first
-    list.sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
-  } else {
-    // Most fails / lowest pass rate first
-    list.sort((a, b) => b.fails - a.fails || a.passRate - b.passRate);
-    const hasAnyFails = list.some(s => s.fails > 0);
-    if (!hasAnyFails) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:24px 14px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.3);width:100%;box-sizing:border-box;">
-          <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#10b981;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div style="font-weight:700;color:#10b981;font-size:13px;margin-bottom:2px;">No Curriculum Interventions Required</div>
-          <div style="font-size:11px;color:var(--text-muted);">All evaluated subjects currently meet academic benchmarks with zero failing outcomes.</div>
-        </div>
-      `;
-      return;
-    }
-  }
-
-  container.innerHTML = list.slice(0, 10).map(s => {
+  const renderSubjectRow = (s, isIntervention) => {
     const badgeColor = s.passRate >= 75 ? "#10b981" : (s.passRate >= 50 ? "#f59e0b" : "#ef4444");
-    const accentBorder = isNeedsSupport
+    const accentBorder = isIntervention
       ? (s.fails > 0 ? "border-left:4px solid #ef4444;" : "border-left:4px solid #f59e0b;")
       : "border-left:4px solid #10b981;";
 
@@ -641,7 +619,77 @@ function renderDashboardSubjectRadar() {
         </div>
       </div>
     `;
-  }).join("");
+  };
+
+  const getInterventionList = () => {
+    const failsList = dashSubjectStats.filter(s => s.fails > 0).sort((a, b) => b.fails - a.fails || a.passRate - b.passRate);
+    const lowPassList = dashSubjectStats.filter(s => s.fails === 0 && s.passRate < 75).sort((a, b) => a.passRate - b.passRate || a.avgScore - b.avgScore);
+    return [...failsList, ...lowPassList];
+  };
+
+  const getBestList = () => {
+    return [...dashSubjectStats].sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
+  };
+
+  if (dashSubjectView === "needs_support") {
+    const interventionList = getInterventionList();
+    if (!interventionList.length) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:24px 14px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.3);width:100%;box-sizing:border-box;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#10b981;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="font-weight:700;color:#10b981;font-size:13px;margin-bottom:2px;">No Curriculum Interventions Required</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">All evaluated subjects currently meet academic benchmarks with zero failing outcomes.</div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="if(document.getElementById('dashSubjectTabBest')) document.getElementById('dashSubjectTabBest').click();" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+            <span>View Top Performing Subjects</span> &rarr;
+          </button>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = interventionList.slice(0, 10).map(s => renderSubjectRow(s, true)).join("");
+    return;
+  }
+
+  if (dashSubjectView === "best") {
+    const bestList = getBestList();
+    container.innerHTML = bestList.slice(0, 10).map(s => renderSubjectRow(s, false)).join("");
+    return;
+  }
+
+  if (dashSubjectView === "both") {
+    const interventionList = getInterventionList();
+    const bestList = getBestList().slice(0, 5);
+
+    let html = `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#ef4444;display:flex;align-items:center;gap:6px;margin:2px 0 6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Subjects Requiring Intervention (${interventionList.length})</span>
+      </div>
+    `;
+
+    if (!interventionList.length) {
+      html += `
+        <div style="padding:10px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.25);font-size:11px;color:#10b981;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>All subjects meeting academic benchmarks. Zero interventions required.</span>
+        </div>
+      `;
+    } else {
+      html += interventionList.slice(0, 5).map(s => renderSubjectRow(s, true)).join("");
+    }
+
+    html += `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#10b981;display:flex;align-items:center;gap:6px;margin:12px 0 6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>Top Performing Subjects (${bestList.length})</span>
+      </div>
+    `;
+    html += bestList.map(s => renderSubjectRow(s, false)).join("");
+
+    container.innerHTML = html;
+  }
 }
 
 let dashStudentByIdMap = new Map();
@@ -2093,12 +2141,24 @@ function renderCBTSubmissions() {
     const qCount = (Array.isArray(sub.questions) && sub.questions.length > 0) ? sub.questions.length : (Number(sub.numberOfQuestions) || Number(sub.totalQuestions) || 0);
     const resolvedSubName = getSubSubject(sub);
     const resolvedClass = getSubClass(sub);
+    const classInfo = resolveCbtClass(sub.className || resolvedClass || "");
+    const totalArms = (classInfo.arms || []).length;
+    let subArmCount = totalArms;
+    if (Array.isArray(sub.selectedArms) && sub.selectedArms.length > 0) {
+      subArmCount = sub.selectedArms.length;
+    } else if (Array.isArray(sub.arm) && sub.arm.length > 0) {
+      subArmCount = sub.arm.length;
+    }
+    const armBadgeText = (totalArms > 0 && subArmCount >= totalArms) ? "All Arms" : `${subArmCount} Arm${subArmCount === 1 ? '' : 's'}`;
 
     return `
       <tr>
         <td style="font-weight:600;color:var(--text)">${esc(sub.title || "Untitled Exam")}</td>
         <td>${esc(sub.teacherName || sub.teacherUser || "Teacher")}</td>
-        <td>${esc(resolvedSubName)} <span style="color:var(--text-muted)">(${esc(resolvedClass)})</span></td>
+        <td>
+          <span style="font-weight:600">${esc(resolvedSubName)}</span> <span style="color:var(--text-muted)">(${esc(resolvedClass)})</span>
+          <div style="font-size:11px;color:var(--accent);margin-top:2px;font-weight:600">🎯 ${esc(armBadgeText)}</div>
+        </td>
         <td>${sub.duration || 30} mins</td>
         <td><span class="badge-pill badge-good">${qCount} questions</span></td>
         <td style="font-size:12px">
@@ -2581,8 +2641,43 @@ async function openCBTPreview(docId) {
   try {
     displayLaunch = new Date(launchDateVal + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   } catch (e) { }
+
+  // Populate Assigned Cohort Arms (Admin Only)
+  const classInfo = resolveCbtClass(sub.className || "");
+  const availableArms = classInfo.armsDetail || (classInfo.arms || []).map((id, idx) => ({ id, name: `Arm ${idx + 1}` }));
+
+  let currentSelectedArms = [];
+  if (Array.isArray(sub.selectedArms) && sub.selectedArms.length > 0) {
+    currentSelectedArms = sub.selectedArms.map(a => (typeof a === "object" && a.$oid) ? a.$oid : String(a));
+  } else if (Array.isArray(sub.arm) && sub.arm.length > 0) {
+    currentSelectedArms = sub.arm.map(a => (typeof a === "object" && a.$oid) ? a.$oid : String(a));
+  } else {
+    currentSelectedArms = (classInfo.arms || []).map(String);
+  }
+
+  const armsContainer = $("cbtPreviewArmsContainer");
+  if (armsContainer) {
+    if (!availableArms.length) {
+      armsContainer.innerHTML = `<span style="font-size:12px;color:var(--text-muted)">No specific arms configured for class "${esc(sub.className || 'Unknown')}".</span>`;
+    } else {
+      armsContainer.innerHTML = availableArms.map(a => {
+        const isChecked = currentSelectedArms.includes(String(a.id));
+        return `
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;background:var(--surface-alt);border:1px solid var(--border);padding:4px 10px;border-radius:4px;cursor:pointer;user-select:none">
+            <input type="checkbox" class="cbt-admin-arm-checkbox" value="${esc(a.id)}" ${isChecked ? 'checked' : ''} style="cursor:pointer;accent-color:var(--accent)">
+            <span>${esc(a.name)}</span>
+          </label>
+        `;
+      }).join("");
+    }
+  }
+
+  const totalArmsCount = (classInfo.arms || []).length;
+  const selArmsCount = currentSelectedArms.length;
+  const armsPill = (totalArmsCount > 0 && selArmsCount >= totalArmsCount) ? "All Arms" : `${selArmsCount} Arm${selArmsCount === 1 ? '' : 's'}`;
+
   if ($("cbtScheduleSummaryPill")) {
-    $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD}`;
+    $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD} · 🎯 ${armsPill}`;
   }
   if ($("cbtScheduleAccordion")) {
     $("cbtScheduleAccordion").open = false;
@@ -2943,7 +3038,7 @@ if ($("cbtPreviewAddQuestionBtn")) {
   };
 }
 
-// Save schedule changes from within the preview modal
+// Save schedule and assigned arms changes from within the preview modal (Admin Only)
 if ($("cbtPreviewSaveScheduleBtn")) {
   $("cbtPreviewSaveScheduleBtn").onclick = async () => {
     if (!activePreviewSubmission) return;
@@ -2952,6 +3047,18 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     const newGateClose = $("cbtPreviewGateClose")?.value || "20:00";
     const newShuffle = $("cbtPreviewShuffle") ? $("cbtPreviewShuffle").checked : true;
 
+    // Collect updated assigned arms (Admin exclusive)
+    const classInfo = resolveCbtClass(activePreviewSubmission.className || "");
+    const armCheckboxes = document.querySelectorAll(".cbt-admin-arm-checkbox");
+    let checkedArms = [];
+    if (armCheckboxes.length > 0) {
+      checkedArms = Array.from(armCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+    }
+    // If admin left all unchecked or no checkboxes, default to all class arms
+    if (checkedArms.length === 0 && classInfo && Array.isArray(classInfo.arms)) {
+      checkedArms = [...classInfo.arms];
+    }
+
     activePreviewSubmission.launchDate = newLaunch;
     activePreviewSubmission.examDate = newLaunch;
     activePreviewSubmission.startTime = newGateOpen;
@@ -2959,6 +3066,8 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     activePreviewSubmission.gateOpen = newGateOpen;
     activePreviewSubmission.gateClose = newGateClose;
     activePreviewSubmission.shuffle = newShuffle;
+    activePreviewSubmission.selectedArms = checkedArms;
+    activePreviewSubmission.arm = checkedArms.map(a => ({ "$oid": a }));
 
     const btn = $("cbtPreviewSaveScheduleBtn");
     btn.disabled = true;
@@ -2966,26 +3075,54 @@ if ($("cbtPreviewSaveScheduleBtn")) {
 
     try {
       await window.dbClient.saveSubmission(activePreviewSubmission.docId, activePreviewSubmission);
-      if (cbtScheduleSummaryPill) {
+
+      const subIdx = allCbtSubmissions.findIndex(s => s.docId === activePreviewSubmission.docId);
+      if (subIdx >= 0) {
+        allCbtSubmissions[subIdx].selectedArms = checkedArms;
+        allCbtSubmissions[subIdx].arm = activePreviewSubmission.arm;
+        allCbtSubmissions[subIdx].launchDate = newLaunch;
+        allCbtSubmissions[subIdx].examDate = newLaunch;
+        allCbtSubmissions[subIdx].startTime = newGateOpen;
+        allCbtSubmissions[subIdx].endTime = newGateClose;
+        allCbtSubmissions[subIdx].gateOpen = newGateOpen;
+        allCbtSubmissions[subIdx].gateClose = newGateClose;
+        allCbtSubmissions[subIdx].shuffle = newShuffle;
+      }
+
+      if ($("cbtScheduleSummaryPill")) {
         const timeD = `${newGateOpen} – ${newGateClose}`;
         const shufD = newShuffle ? "🔀 Shuffled" : "Sequential";
         let displayLaunch = newLaunch;
         try {
           displayLaunch = new Date(newLaunch + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
         } catch (e) { }
-        $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD}`;
+        const totalArmsCount = (classInfo.arms || []).length;
+        const selArmsCount = checkedArms.length;
+        const armsPill = (totalArmsCount > 0 && selArmsCount >= totalArmsCount) ? "All Arms" : `${selArmsCount} Arm${selArmsCount === 1 ? '' : 's'}`;
+        $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD} · 🎯 ${armsPill}`;
       }
       btn.textContent = "✓ Saved!";
       setTimeout(() => {
-        btn.textContent = "💾 Save Schedule";
+        btn.textContent = "💾 Save Schedule & Arms";
         btn.disabled = false;
       }, 1500);
       renderCBTSubmissions();
     } catch (err) {
-      alert("Could not update schedule in cloud: " + err.message);
-      btn.textContent = "💾 Save Schedule";
+      alert("Could not update schedule and arms in cloud: " + err.message);
+      btn.textContent = "💾 Save Schedule & Arms";
       btn.disabled = false;
     }
+  };
+}
+
+if ($("cbtPreviewSelectAllArmsBtn")) {
+  $("cbtPreviewSelectAllArmsBtn").onclick = () => {
+    document.querySelectorAll(".cbt-admin-arm-checkbox").forEach(cb => { cb.checked = true; });
+  };
+}
+if ($("cbtPreviewClearArmsBtn")) {
+  $("cbtPreviewClearArmsBtn").onclick = () => {
+    document.querySelectorAll(".cbt-admin-arm-checkbox").forEach(cb => { cb.checked = false; });
   };
 }
 
