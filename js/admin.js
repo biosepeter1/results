@@ -2009,7 +2009,7 @@ let cbtPageSize = 10;
 let activePreviewSubmission = null;
 
 // ── School-Wide Active CBT Examination Term (Dynamic & Editable Options) ──
-const DEFAULT_CBT_TERMS = [
+const DEFAULT_CBT_TERM_OPTIONS = [
   "FIRST TERM EXAMINATION",
   "MID TERM TEST",
   "FIRST TEST",
@@ -2019,7 +2019,7 @@ const DEFAULT_CBT_TERMS = [
   "THIRD TERM MID TERM TEST"
 ];
 
-let savedCbtTerms = [...DEFAULT_CBT_TERMS];
+let savedCbtTerms = [...DEFAULT_CBT_TERM_OPTIONS];
 let activeCbtExamTerm = "FIRST TERM EXAMINATION";
 
 function loadSavedCbtTerms() {
@@ -2136,7 +2136,7 @@ function renderCbtTermOptions() {
       const termToDel = btn.dataset.delCbtTerm;
       if (confirm(`Remove "${termToDel}" from active term options?`)) {
         savedCbtTerms = savedCbtTerms.filter(t => t !== termToDel);
-        if (savedCbtTerms.length === 0) savedCbtTerms = [...DEFAULT_CBT_TERMS];
+        if (savedCbtTerms.length === 0) savedCbtTerms = [...DEFAULT_CBT_TERM_OPTIONS];
         saveCbtTermsList();
         if (activeCbtExamTerm.toUpperCase() === termToDel.toUpperCase()) {
           setAdminCbtActiveTerm(savedCbtTerms[0]);
@@ -2258,7 +2258,7 @@ if ($("cbtAddCustomTermBtn")) {
 if ($("cbtResetTermsBtn")) {
   $("cbtResetTermsBtn").onclick = () => {
     if (confirm("Reset CBT active term options to defaults (First Term Examination, Mid Term Test, First Test, etc.)?")) {
-      savedCbtTerms = [...DEFAULT_CBT_TERMS];
+      savedCbtTerms = [...DEFAULT_CBT_TERM_OPTIONS];
       saveCbtTermsList();
       renderCbtTermOptions();
     }
