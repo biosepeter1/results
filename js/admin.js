@@ -398,10 +398,6 @@ function initDashboardEvents() {
     $("dashExportRewriteBtn").onclick = () => exportRewriteRosterCsv();
   }
 
-  if ($("dashPrintRewriteListBtn")) {
-    $("dashPrintRewriteListBtn").onclick = () => window.print();
-  }
-
   if ($("dashRefreshBtn")) {
     $("dashRefreshBtn").onclick = async () => {
       const btn = $("dashRefreshBtn");
@@ -565,9 +561,39 @@ async function renderExecutiveDashboard() {
   const subjectMap = new Map();
 
   rows.forEach(r => {
-    const rawScore = r.score !== undefined ? parseFloat(r.score) : NaN;
+    // Extract raw score and original max mark
+    let parsedRawScore = NaN;
+    let parsedOrigMax = null;
+
+    if (r.score !== undefined && r.score !== null && r.score !== "") {
+      const str = String(r.score).trim();
+      const m = str.match(/^([\d.]+)\s*(?:of|\/)\s*([\d.]+)$/i);
+      if (m) {
+        parsedRawScore = parseFloat(m[1]);
+        parsedOrigMax = parseFloat(m[2]);
+      } else {
+        parsedRawScore = parseFloat(str);
+      }
+    }
+
+    const rowTerm = r.term || adminCurrentTerm || "";
+    const convSetting = getConversionForTerm(rowTerm);
+    const origMax = parsedOrigMax || (convSetting ? convSetting.originalMax : 20);
+    const targetMax = convSetting ? convSetting.targetMax : origMax;
+
+    // Converted / scaled score
+    const scaledScore = (!isNaN(parsedRawScore) && convSetting)
+      ? applyScoreConversion(parsedRawScore, rowTerm)
+      : parsedRawScore;
+
+    // Percentage
     const rawPct = r.pct !== undefined ? parseFloat(r.pct) : NaN;
-    const pctVal = !isNaN(rawPct) ? rawPct : (!isNaN(rawScore) ? rawScore : 0);
+    const convPct = (!isNaN(parsedRawScore) && convSetting)
+      ? applyPctConversion(parsedRawScore, rowTerm)
+      : null;
+
+    const pctVal = convPct !== null ? convPct : (!isNaN(rawPct) ? rawPct : (!isNaN(parsedRawScore) ? Math.round((parsedRawScore / origMax) * 100 * 10) / 10 : 0));
+    const scoreVal = !isNaN(scaledScore) ? scaledScore : (!isNaN(parsedRawScore) ? parsedRawScore : pctVal);
 
     const isPass = pctVal >= 50;
     if (isPass) passedCount++; else failedCount++;
@@ -593,7 +619,7 @@ async function renderExecutiveDashboard() {
         reg: regNo,
         class: r.class || r.className || "-",
         arm: r.arm || "-",
-        term: r.term || adminCurrentTerm || "-",
+        term: rowTerm || "-",
         scores: [],
         totalPct: 0,
         failedSubjects: []
@@ -603,7 +629,13 @@ async function renderExecutiveDashboard() {
     sObj.scores.push({
       subject: r.subject || "General",
       pct: pctVal,
-      score: r.score !== undefined ? r.score : pctVal,
+      score: scoreVal,
+      scaledScore: scoreVal,
+      rawScore: parsedRawScore,
+      origScoreText: r.score,
+      maxMark: targetMax,
+      origMax: origMax,
+      term: rowTerm,
       date: r.date || r.dateTime || r.exam_date || "-"
     });
     sObj.totalPct += pctVal;
@@ -611,7 +643,13 @@ async function renderExecutiveDashboard() {
       sObj.failedSubjects.push({
         subject: r.subject || "Unknown",
         pct: pctVal,
-        score: r.score !== undefined ? r.score : pctVal
+        score: scoreVal,
+        scaledScore: scoreVal,
+        rawScore: parsedRawScore,
+        origScoreText: r.score,
+        maxMark: targetMax,
+        origMax: origMax,
+        term: rowTerm
       });
     }
 
@@ -944,7 +982,10 @@ window.openStudentScoreModal = function (studentId, isResit = false) {
             ${esc(sc.subject)}
             ${isRewrite ? `<span style="font-size:10px;padding:2px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;letter-spacing:0.02em;">REWRITE</span>` : ""}
           </td>
-          <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:600;">
+            ${sc.scaledScore !== undefined && !isNaN(sc.scaledScore) ? `${sc.scaledScore} / ${sc.maxMark || 20}` : esc(sc.score !== undefined ? sc.score : "-")}
+            ${(sc.origMax && sc.maxMark && sc.maxMark !== sc.origMax && !isNaN(sc.rawScore)) ? `<div style="font-size:10px;color:var(--text-muted);font-weight:normal;">(raw: ${sc.rawScore}/${sc.origMax})</div>` : ""}
+          </td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">${sc.pct}%</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;">${grade}</td>
           <td style="padding:10px 8px;text-align:center;">
@@ -974,41 +1015,175 @@ function exportRewriteRosterCsv() {
     return;
   }
 
-  const rows = [];
-  rows.push(["S/N", "Student Name", "Registration Number", "Class", "Arm", "Subject to Rewrite", "Raw Score", "Percentage (%)", "Resit Benchmark", "Status", "Academic Term"]);
+  const activeTerm = adminCurrentTerm || (dashRewriteStudents[0] && dashRewriteStudents[0].term) || "Current Academic Term";
+  const conv = getConversionForTerm(activeTerm);
+  const scalingDesc = conv ? `Scaled from /${conv.originalMax} to /${conv.targetMax} (Multiplier: ×${(conv.targetMax / conv.originalMax).toFixed(2).replace(/\.00$/, "")})` : "Raw Scores (No scaling configured)";
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const dateFile = now.toISOString().slice(0, 10);
+  const termSlug = activeTerm.replace(/[^a-zA-Z0-9]/g, "_");
+
+  let totalPapers = 0;
+  dashRewriteStudents.forEach(s => {
+    totalPapers += (s.rewriteSubjects || []).length;
+  });
 
   let sn = 1;
+  const rowsHtml = [];
+
   dashRewriteStudents.forEach(s => {
     (s.rewriteSubjects || []).forEach(rSub => {
-      rows.push([
-        sn++,
-        `"${(s.name || '').replace(/"/g, '""')}"`,
-        `"${(s.reg || '').replace(/"/g, '""')}"`,
-        `"${(s.class || '').replace(/"/g, '""')}"`,
-        `"${(s.arm || '').replace(/"/g, '""')}"`,
-        `"${(rSub.subject || '').replace(/"/g, '""')}"`,
-        rSub.score !== undefined ? rSub.score : "-",
-        `${rSub.pct}%`,
-        `≤ ${dashRewriteCutoffPct}%`,
-        "MANDATORY REWRITE REQUIRED",
-        `"${(s.term || adminCurrentTerm || '').replace(/"/g, '""')}"`
-      ]);
+      const maxMark = rSub.maxMark || getAdminSubjectMaxMark(rSub, s.term || activeTerm) || 20;
+      const scaledVal = (rSub.scaledScore !== undefined && !isNaN(rSub.scaledScore))
+        ? rSub.scaledScore
+        : (rSub.score !== undefined ? rSub.score : rSub.pct);
+      const rawVal = (rSub.rawScore !== undefined && !isNaN(rSub.rawScore))
+        ? rSub.rawScore
+        : scaledVal;
+      const rawMax = rSub.origMax || (conv ? conv.originalMax : 20);
+
+      const altClass = (sn % 2 === 0) ? "row-alt" : "";
+
+      rowsHtml.push(`
+        <tr class="${altClass}">
+          <td class="data-cell cell-center">${sn++}</td>
+          <td class="data-cell cell-left cell-bold">${esc(s.name || "")}</td>
+          <td class="data-cell cell-center" style="font-family:Consolas,monospace;">${esc(s.reg || "N/A")}</td>
+          <td class="data-cell cell-center">${esc(s.class || "-")}</td>
+          <td class="data-cell cell-center">${esc(s.arm || "-")}</td>
+          <td class="data-cell cell-left cell-bold">${esc(rSub.subject || "")}</td>
+          <td class="data-cell cell-center cell-bold" style="color:#b45309;background:#fef3c7;">${scaledVal} / ${maxMark}</td>
+          <td class="data-cell cell-center" style="color:#64748b;">${rawVal} / ${rawMax}</td>
+          <td class="data-cell cell-center cell-bold cell-fail">${rSub.pct}%</td>
+          <td class="data-cell cell-center">≤ ${dashRewriteCutoffPct}%</td>
+          <td class="data-cell cell-center" style="color:#dc2626;font-weight:bold;background:#fee2e2;">MANDATORY REWRITE</td>
+          <td class="data-cell cell-left">Remedial Instruction &amp; Retake Examination Scheduled</td>
+        </tr>
+      `);
     });
   });
 
-  const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-  const encodedUri = encodeURI(csvContent);
+  const excelHtml = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>Resit & Intervention Roster</x:Name>
+          <x:WorksheetOptions>
+            <x:DisplayGridlines/>
+          </x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #1e293b; }
+    .school-title { font-size: 16pt; font-weight: bold; color: #0f172a; text-align: center; height: 35px; }
+    .report-title { font-size: 13pt; font-weight: bold; color: #b45309; text-align: center; height: 28px; }
+    .meta-label { font-weight: bold; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 10pt; }
+    .meta-val { background-color: #ffffff; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 10pt; }
+    .tbl-header th { background-color: #1e293b; color: #ffffff; font-weight: bold; font-size: 10.5pt; text-align: center; border: 1px solid #475569; padding: 10px 8px; vertical-align: middle; }
+    .data-cell { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10.5pt; vertical-align: middle; }
+    .cell-center { text-align: center; }
+    .cell-left { text-align: left; }
+    .cell-bold { font-weight: bold; }
+    .cell-fail { color: #dc2626; font-weight: bold; }
+    .row-alt { background-color: #f8fafc; }
+  </style>
+</head>
+<body>
+  <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;">
+    <tr><td colspan="12" class="school-title">HONEYLAND ACADEMIC PORTAL — EXECUTIVE EXAMINATION SYSTEM</td></tr>
+    <tr><td colspan="12" class="report-title">OFFICIAL STUDENT EXAMINATION RESIT &amp; ACADEMIC INTERVENTION ROSTER</td></tr>
+    <tr><td colspan="12" style="text-align:center;color:#64748b;font-size:10pt;padding-bottom:12px;">Confidential Academic Record for Class Teachers, Subject HODs &amp; Examination Board</td></tr>
+    <tr><td colspan="12">&nbsp;</td></tr>
+    <!-- Metadata Block -->
+    <tr>
+      <td colspan="2" class="meta-label">ACADEMIC TERM:</td>
+      <td colspan="4" class="meta-val"><b>${esc(activeTerm)}</b></td>
+      <td colspan="2" class="meta-label">DATE GENERATED:</td>
+      <td colspan="4" class="meta-val">${esc(dateStr)}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="meta-label">RESIT BENCHMARK:</td>
+      <td colspan="4" class="meta-val"><b>Score ≤ ${dashRewriteCutoffPct}% (Mandatory Retake)</b></td>
+      <td colspan="2" class="meta-label">SCORE CONVERSION:</td>
+      <td colspan="4" class="meta-val">${esc(scalingDesc)}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="meta-label">FLAGGED STUDENTS:</td>
+      <td colspan="4" class="meta-val"><b>${dashRewriteStudents.length} Students</b></td>
+      <td colspan="2" class="meta-label">TOTAL RESIT PAPERS:</td>
+      <td colspan="4" class="meta-val"><b>${totalPapers} Papers Scheduled</b></td>
+    </tr>
+    <tr><td colspan="12">&nbsp;</td></tr>
+    <!-- Data Table -->
+    <tr class="tbl-header">
+      <th style="width:50px;">S/N</th>
+      <th style="width:240px;">Student Full Name</th>
+      <th style="width:140px;">Registration Number</th>
+      <th style="width:100px;">Class</th>
+      <th style="width:100px;">Arm</th>
+      <th style="width:220px;">Subject Scheduled for Resit</th>
+      <th style="width:130px;">Exact Mark (Scaled)</th>
+      <th style="width:130px;">Original Raw Score</th>
+      <th style="width:110px;">Percentage</th>
+      <th style="width:120px;">Resit Cutoff</th>
+      <th style="width:160px;">Academic Status</th>
+      <th style="width:260px;">Recommended Action Plan</th>
+    </tr>
+    ${rowsHtml.join("")}
+    <tr><td colspan="12">&nbsp;</td></tr>
+    <tr>
+      <td colspan="12" style="border-top:2px solid #1e293b;padding-top:16px;font-size:10pt;color:#475569;">
+        <b>Institutional Compliance Note:</b> Students flagged in this roster scored at or below the institutional resit threshold of <b>${dashRewriteCutoffPct}%</b>. Teachers are instructed to administer targeted remedial instruction prior to the scheduled examination resit.
+      </td>
+    </tr>
+    <tr><td colspan="12">&nbsp;</td></tr>
+    <tr>
+      <td colspan="4" style="text-align:center;font-size:10pt;">
+        <br/><br/>
+        __________________________________________<br/>
+        <b>Subject Department / Head of Academics</b><br/>
+        Date: ________________________
+      </td>
+      <td colspan="4" style="text-align:center;font-size:10pt;">
+        <br/><br/>
+        __________________________________________<br/>
+        <b>Vice Principal (Academics)</b><br/>
+        Date: ________________________
+      </td>
+      <td colspan="4" style="text-align:center;font-size:10pt;">
+        <br/><br/>
+        __________________________________________<br/>
+        <b>Principal / Head of School</b><br/>
+        Date: ________________________
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  const termSlug = (adminCurrentTerm || "Term").replace(/[^a-zA-Z0-9]/g, "_");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Exam_Rewrite_Roster_${termSlug}_cutoff${dashRewriteCutoffPct}pct.csv`);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Honeyland_Resit_Report_${termSlug}_cutoff${dashRewriteCutoffPct}pct_${dateFile}.xls`);
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 300);
+
   showToast({
     type: "success",
-    title: "Rewrite Roster Downloaded",
-    message: `Exported roster with ${dashRewriteStudents.length} students requiring resit.`
+    title: "Resit Report Downloaded",
+    message: `Exported professional Excel report with ${dashRewriteStudents.length} students (${totalPapers} papers).`
   });
 }
 
@@ -1082,12 +1257,19 @@ function renderDashboardStudentActionCenter() {
   filteredList.slice(0, 60).forEach((s, idx) => {
     if (isRewriteTab) {
       const rewriteBadges = s.rewriteSubjects.map(rSub => {
-        const scoreDisplay = (rSub.score !== undefined && rSub.score !== null && String(rSub.score) !== String(rSub.pct))
-          ? `${rSub.score} (${rSub.pct}%)`
-          : `${rSub.pct}%`;
+        const maxMark = rSub.maxMark || getAdminSubjectMaxMark(rSub, s.term || adminCurrentTerm) || 20;
+        const curScore = (rSub.scaledScore !== undefined && !isNaN(rSub.scaledScore))
+          ? rSub.scaledScore
+          : (rSub.score !== undefined ? rSub.score : rSub.pct);
+        const scoreDisplay = `${curScore} of ${maxMark} (${rSub.pct}%)`;
+        const hasConversion = rSub.origMax && maxMark !== rSub.origMax;
+        const titleTip = hasConversion
+          ? `Scaled: ${curScore}/${maxMark} (Original raw: ${rSub.rawScore}/${rSub.origMax})`
+          : `Score: ${curScore}/${maxMark}`;
+
         return `
           <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(rSub.subject)}');" 
-            title="Click to reveal exact marks for ${esc(rSub.subject)}" 
+            title="${esc(titleTip)} — Click to reveal exact marks for ${esc(rSub.subject)}" 
             style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:4px; background:rgba(245,158,11,0.18); color:#d97706; font-size:11px; font-weight:700; border:1px solid rgba(245,158,11,0.45); transition:transform 0.15s, background 0.15s;">
             <span>${esc(rSub.subject)}</span>
             <strong style="background:rgba(245,158,11,0.3); padding:1px 6px; border-radius:3px; color:#b45309;">${scoreDisplay}</strong>
@@ -1154,7 +1336,7 @@ function renderDashboardStudentActionCenter() {
                       </span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${sc.scaledScore !== undefined && !isNaN(sc.scaledScore) ? `${sc.scaledScore} / ${sc.maxMark || 20}` : esc(sc.score !== undefined ? sc.score : sc.pct)}</strong>${(sc.origMax && sc.maxMark && sc.maxMark !== sc.origMax && !isNaN(sc.rawScore)) ? ` <span style="font-size:10px;color:var(--text-muted);">(raw: ${sc.rawScore}/${sc.origMax})</span>` : ""}</span>
                       <span style="font-size:13px; font-weight:700; color:${badgeColor};">${sc.pct}%</span>
                     </div>
                     <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
@@ -1169,14 +1351,20 @@ function renderDashboardStudentActionCenter() {
       `);
     } else if (isFailTab) {
       const failBadges = s.failedSubjects.map(f => {
-        const maxMark = getAdminSubjectMaxMark(f, s.term || adminCurrentTerm);
-        const scoreDisplay = (f.score !== undefined && f.score !== null)
-          ? (maxMark ? `${f.score}/${maxMark}` : `${f.score}`)
-          : (maxMark ? `${f.pct}/${maxMark}` : `${f.pct}`);
+        const maxMark = f.maxMark || getAdminSubjectMaxMark(f, s.term || adminCurrentTerm) || 20;
+        const curScore = (f.scaledScore !== undefined && !isNaN(f.scaledScore))
+          ? f.scaledScore
+          : (f.score !== undefined ? f.score : f.pct);
+        const scoreDisplay = `${curScore} of ${maxMark} (${f.pct}%)`;
         const isRewrite = f.pct <= dashRewriteCutoffPct;
+        const hasConversion = f.origMax && maxMark !== f.origMax;
+        const titleTip = hasConversion
+          ? `Scaled: ${curScore}/${maxMark} (Original raw: ${f.rawScore}/${f.origMax})`
+          : `Score: ${curScore}/${maxMark}`;
+
         return `
           <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
-            title="Click to reveal exact marks for ${esc(f.subject)}" 
+            title="${esc(titleTip)} — Click to reveal exact marks for ${esc(f.subject)}" 
             style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:3px 8px; border-radius:4px; background:${isRewrite ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)'}; color:${isRewrite ? '#d97706' : '#ef4444'}; font-size:11px; font-weight:600; border:1px solid ${isRewrite ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.25)'}; transition:transform 0.15s, background 0.15s;">
             <span>${esc(f.subject)}</span>
             <strong style="background:${isRewrite ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.22)'}; padding:1px 5px; border-radius:3px;">${scoreDisplay}</strong>
@@ -4223,13 +4411,54 @@ function getConversionConfig() {
   }
 }
 
+function normalizeAdminTermKey(str) {
+  return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 function getConversionForTerm(term) {
   const config = getConversionConfig();
   if (!config || !config.terms) return null;
+
+  // 1. Direct exact match
   if (term && config.terms[term]) {
     const c = config.terms[term];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
+
+  // 2. Normalized case-insensitive and punctuation-insensitive match
+  const tNorm = normalizeAdminTermKey(term || adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : ""));
+  if (tNorm) {
+    for (const [k, c] of Object.entries(config.terms)) {
+      if (k === "__ALL__" || !c) continue;
+      const kNorm = normalizeAdminTermKey(k);
+      if (kNorm && (kNorm === tNorm || kNorm.includes(tNorm) || tNorm.includes(kNorm))) {
+        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      }
+    }
+  }
+
+  // 3. Fallback to active system term if row term differed
+  const curNorm = normalizeAdminTermKey(adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : ""));
+  if (curNorm && curNorm !== tNorm) {
+    for (const [k, c] of Object.entries(config.terms)) {
+      if (k === "__ALL__" || !c) continue;
+      const kNorm = normalizeAdminTermKey(k);
+      if (kNorm && (kNorm === curNorm || kNorm.includes(curNorm) || curNorm.includes(kNorm))) {
+        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      }
+    }
+  }
+
+  // 4. Fallback: If only ONE term conversion is configured, apply it school-wide
+  const termKeys = Object.keys(config.terms).filter(k => k !== "__ALL__");
+  if (termKeys.length === 1) {
+    const single = config.terms[termKeys[0]];
+    if (single && single.originalMax && single.targetMax && single.originalMax !== single.targetMax) {
+      return single;
+    }
+  }
+
+  // 5. Global "__ALL__" rule
   if (config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
@@ -4249,30 +4478,52 @@ function setScoreConversion(config) {
   }
 }
 
+function parseAdminRawScoreNum(val) {
+  if (val === undefined || val === null || val === "") return NaN;
+  if (typeof val === "number") return val;
+  const str = String(val).trim();
+  const m = str.match(/^([\d.]+)\s*(?:of|\/)/i);
+  return m ? parseFloat(m[1]) : parseFloat(str);
+}
+
 function applyScoreConversion(rawScore, term) {
+  const num = parseAdminRawScoreNum(rawScore);
+  if (isNaN(num)) return rawScore;
   const c = getConversionForTerm(term);
-  if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return rawScore;
+  if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return num;
   const factor = c.targetMax / c.originalMax;
-  return Math.round(rawScore * factor * 100) / 100;
+  return Math.round(num * factor * 100) / 100;
 }
 
 function applyPctConversion(rawScore, term) {
+  const num = parseAdminRawScoreNum(rawScore);
+  if (isNaN(num)) return null;
   const c = getConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax) return null; // null = use stored pct
-  const converted = applyScoreConversion(rawScore, term);
+  const converted = applyScoreConversion(num, term);
   return Math.round((converted / c.targetMax) * 100 * 10) / 10;
 }
 
 function getAdminSubjectMaxMark(subObj, termName) {
-  const t = termName || adminCurrentTerm;
+  const t = termName || (subObj && subObj.term) || adminCurrentTerm;
   const c = getConversionForTerm(t);
   if (c && c.targetMax) return Number(c.targetMax);
 
   if (subObj) {
+    if (subObj.maxMark) return Number(subObj.maxMark);
     if (subObj.max) return Number(subObj.max);
     if (subObj.maxScore) return Number(subObj.maxScore);
 
-    const s = parseFloat(subObj.score !== undefined ? subObj.score : subObj.rawScore);
+    if (typeof subObj.origScoreText === "string") {
+      const m = subObj.origScoreText.match(/(?:of|\/)\s*([\d.]+)/i);
+      if (m) return parseFloat(m[1]);
+    }
+    if (typeof subObj.score === "string") {
+      const m = subObj.score.match(/(?:of|\/)\s*([\d.]+)/i);
+      if (m) return parseFloat(m[1]);
+    }
+
+    const s = parseFloat(subObj.rawScore !== undefined ? subObj.rawScore : subObj.score);
     const p = parseFloat(subObj.pct);
     if (s > 0 && p > 0) {
       const derived = Math.round(s / (p / 100));
@@ -4285,7 +4536,7 @@ function getAdminSubjectMaxMark(subObj, termName) {
     if (detected && detected > 0) return detected;
   }
 
-  return null;
+  return 20;
 }
 
 function populateConversionTermSelect(terms) {
@@ -5352,6 +5603,8 @@ function initConversionPanel() {
     setScoreConversion(config);
     refreshConversionUI();
     renderScoresTableOnly();
+    if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
+    if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
 
     try {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
@@ -5393,6 +5646,7 @@ function initConversionPanel() {
     tgtEl.value = "";
     refreshConversionUI();
     renderScoresTableOnly();
+    if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
 
     try {
       if (window.dbClient && window.dbClient.saveScoreConversion) {
@@ -5420,6 +5674,7 @@ function initConversionPanel() {
         setScoreConversion(cloudConv);
         refreshConversionUI();
         renderScoresTableOnly();
+        if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
       }
     }).catch(e => console.warn("Admin cloud score conversion sync error:", e));
   }

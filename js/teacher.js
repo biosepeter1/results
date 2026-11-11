@@ -172,13 +172,54 @@ function getTeacherConversionConfig() {
   }
 }
 
+function normalizeTeacherTermKey(str) {
+  return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 function getTeacherConversionForTerm(term) {
   const config = getTeacherConversionConfig();
   if (!config || !config.terms) return null;
+
+  // 1. Direct exact match
   if (term && config.terms[term]) {
     const c = config.terms[term];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
+
+  // 2. Normalized case-insensitive and punctuation-insensitive match
+  const tNorm = normalizeTeacherTermKey(term || (typeof currentTerm !== "undefined" ? currentTerm : ""));
+  if (tNorm) {
+    for (const [k, c] of Object.entries(config.terms)) {
+      if (k === "__ALL__" || !c) continue;
+      const kNorm = normalizeTeacherTermKey(k);
+      if (kNorm && (kNorm === tNorm || kNorm.includes(tNorm) || tNorm.includes(kNorm))) {
+        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      }
+    }
+  }
+
+  // 3. Fallback to active system term if row term differed
+  const curNorm = normalizeTeacherTermKey(typeof currentTerm !== "undefined" ? currentTerm : "");
+  if (curNorm && curNorm !== tNorm) {
+    for (const [k, c] of Object.entries(config.terms)) {
+      if (k === "__ALL__" || !c) continue;
+      const kNorm = normalizeTeacherTermKey(k);
+      if (kNorm && (kNorm === curNorm || kNorm.includes(curNorm) || curNorm.includes(kNorm))) {
+        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      }
+    }
+  }
+
+  // 4. Fallback: If only ONE term conversion is configured, apply it
+  const termKeys = Object.keys(config.terms).filter(k => k !== "__ALL__");
+  if (termKeys.length === 1) {
+    const single = config.terms[termKeys[0]];
+    if (single && single.originalMax && single.targetMax && single.originalMax !== single.targetMax) {
+      return single;
+    }
+  }
+
+  // 5. Global "__ALL__" rule
   if (config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
@@ -194,17 +235,29 @@ function setTeacherScoreConversion(obj) {
   }
 }
 
+function parseTeacherRawScoreNum(val) {
+  if (val === undefined || val === null || val === "") return NaN;
+  if (typeof val === "number") return val;
+  const str = String(val).trim();
+  const m = str.match(/^([\d.]+)\s*(?:of|\/)/i);
+  return m ? parseFloat(m[1]) : parseFloat(str);
+}
+
 function applyTeacherScoreConversion(rawScore, term) {
+  const num = parseTeacherRawScoreNum(rawScore);
+  if (isNaN(num)) return rawScore;
   const c = getTeacherConversionForTerm(term);
-  if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return rawScore;
+  if (!c || !c.originalMax || !c.targetMax || c.originalMax === c.targetMax) return num;
   const factor = c.targetMax / c.originalMax;
-  return Math.round(rawScore * factor * 100) / 100;
+  return Math.round(num * factor * 100) / 100;
 }
 
 function applyTeacherPctConversion(rawScore, term) {
+  const num = parseTeacherRawScoreNum(rawScore);
+  if (isNaN(num)) return null;
   const c = getTeacherConversionForTerm(term);
   if (!c || !c.originalMax || !c.targetMax) return null;
-  const converted = applyTeacherScoreConversion(rawScore, term);
+  const converted = applyTeacherScoreConversion(num, term);
   return Math.round((converted / c.targetMax) * 100 * 10) / 10;
 }
 
