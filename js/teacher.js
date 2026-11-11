@@ -216,17 +216,7 @@ function getRowEffectivePct(r) {
 
 function updateTeacherConvNotice() {
   const notice = $("teacherConvNotice");
-  if (!notice) return;
-  const currentActiveTerm = currentTerm || (allRows && allRows[0] ? allRows[0].term : null);
-  const c = getTeacherConversionForTerm(currentActiveTerm);
-  if (c && c.originalMax && c.targetMax && c.originalMax !== c.targetMax) {
-    const f = (c.targetMax / c.originalMax).toFixed(3).replace(/\.?0+$/, "");
-    notice.style.display = "flex";
-    const termLabel = currentActiveTerm ? `for <strong>${esc(currentActiveTerm)}</strong>` : "";
-    notice.innerHTML = `<span>⚖️</span> <span><strong>Score Scaling Active ${termLabel}:</strong> Scaled from <strong>/${c.originalMax}</strong> to <strong>/${c.targetMax}</strong> (multiplier ×${f}). Scores and percentages below reflect this scaling.</span>`;
-  } else {
-    notice.style.display = "none";
-  }
+  if (notice) notice.style.display = "none";
 }
 
 async function syncTeacherScoreConversion(triggerRender = false) {
