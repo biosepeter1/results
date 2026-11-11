@@ -1337,48 +1337,69 @@
           </footer>
         </div>
 
-        <!-- CBT Subjects & MongoDB Catalog Manager -->
+        <!-- CBT Subjects & MongoDB Catalog Manager (Collapsible Dropdown Accordion) -->
         <div class="card" style="margin-top:24px" id="cbtSubjectsManagerCard">
-          <div class="card-header" style="flex-wrap:wrap;gap:12px">
-            <div>
-              <h2 class="card-title">CBT Subjects &amp; MongoDB Catalog</h2>
-              <p class="card-sub">Create, edit, or add new subjects and their exact MongoDB ObjectIds for offline CBT
-                exports</p>
+          <div class="card-header" id="cbtSubjectsHeader"
+            style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"
+            title="Click to expand or collapse CBT subjects catalog">
+            <div style="flex:1;min-width:240px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <h2 class="card-title" style="margin:0">CBT Subjects &amp; MongoDB Catalog</h2>
+                <span class="badge" id="cbtSubjectsHeaderCount"
+                  style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text-muted)">
+                  46 subjects
+                </span>
+              </div>
+              <p class="card-sub" style="margin:4px 0 0 0">Create, edit, or add new subjects and their exact MongoDB ObjectIds for offline CBT exports</p>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input type="search" class="search-input" id="cbtSubjectSearchInput"
-                placeholder="Filter subjects or IDs..." style="width:200px">
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn"
-                title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn"
-                title="Reset catalog to standard 45 subjects">Reset Defaults</button>
-              <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleSubjectsBtn"
+                style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span id="cbtSubjectsToggleIcon" style="display:inline-block;transition:transform 0.2s">▼</span>
+                <span id="cbtSubjectsToggleText">Expand Catalog</span>
+              </button>
             </div>
           </div>
 
-          <div
-            style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted)">
-            <span id="cbtSubjectCountLabel">Loading subjects…</span>
-            <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
-          </div>
+          <!-- Collapsible Body -->
+          <div id="cbtSubjectsCollapsibleBody"
+            style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+            <div
+              style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+              <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:10px">
+                <span id="cbtSubjectCountLabel">Loading subjects…</span>
+                <span>•</span>
+                <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="search" class="search-input" id="cbtSubjectSearchInput"
+                  placeholder="Filter subjects or IDs..." style="width:200px">
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn"
+                  title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn"
+                  title="Reset catalog to standard 45 subjects">Reset Defaults</button>
+                <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
+              </div>
+            </div>
 
-          <div class="table-wrap" style="max-height:360px;overflow-y:auto">
-            <table class="inst-table">
-              <thead>
-                <tr>
-                  <th style="width:40px">#</th>
-                  <th>Subject Name</th>
-                  <th>MongoDB ObjectId (24-hex)</th>
-                  <th>Catalog Type</th>
-                  <th style="text-align:right">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="cbtSubjectsTbody">
-                <tr>
-                  <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-wrap" style="max-height:360px;overflow-y:auto">
+              <table class="inst-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">#</th>
+                    <th>Subject Name</th>
+                    <th>MongoDB ObjectId (24-hex)</th>
+                    <th>Catalog Type</th>
+                    <th style="text-align:right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cbtSubjectsTbody">
+                  <tr>
+                    <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -1876,7 +1897,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=3.3"></script>
+  <script src="js/admin.js?v=3.4"></script>
 </body>
 
 </html>

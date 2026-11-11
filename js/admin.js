@@ -2892,6 +2892,9 @@ function renderCbtSubjectsTable() {
   if ($("cbtSubjectCountLabel")) {
     $("cbtSubjectCountLabel").textContent = `${total} subject${total !== 1 ? 's' : ''} configured${q ? ` (${filtered.length} matching)` : ''}`;
   }
+  if ($("cbtSubjectsHeaderCount")) {
+    $("cbtSubjectsHeaderCount").textContent = `${total} subjects`;
+  }
 
   if (!filtered.length) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">No subjects match "${esc(q)}". <button type="button" class="btn btn-secondary btn-sm" id="cbtClearSearchBtn">Clear search</button></td></tr>`;
@@ -2956,6 +2959,7 @@ function renderCbtSubjectsTable() {
 }
 
 function openAddCbtSubjectModal() {
+  toggleCbtSubjectsAccordion(true);
   $("cbtSubjectModalTitle").textContent = "Add New CBT Subject";
   $("cbtSubjectOrigKey").value = "";
   $("cbtSubjectNameInput").value = "";
@@ -3041,6 +3045,35 @@ function exportCbtSubjectsJson() {
   }));
 
   triggerJsonDownload("cbtApp_v2.subjects.json", mongoSubjects);
+}
+
+// Collapsible Dropdown Accordion for CBT Subjects Catalog
+function toggleCbtSubjectsAccordion(forceOpen) {
+  const body = $("cbtSubjectsCollapsibleBody");
+  const icon = $("cbtSubjectsToggleIcon");
+  const text = $("cbtSubjectsToggleText");
+  if (!body) return;
+
+  const isCurrentlyOpen = body.style.display !== "none";
+  const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+  body.style.display = willOpen ? "block" : "none";
+  if (icon) icon.textContent = willOpen ? "▲" : "▼";
+  if (text) text.textContent = willOpen ? "Collapse Catalog" : "Expand Catalog";
+}
+
+if ($("cbtToggleSubjectsBtn")) {
+  $("cbtToggleSubjectsBtn").onclick = (e) => {
+    e.stopPropagation();
+    toggleCbtSubjectsAccordion();
+  };
+}
+
+if ($("cbtSubjectsHeader")) {
+  $("cbtSubjectsHeader").onclick = (e) => {
+    if (e.target.closest("button") || e.target.closest("input")) return;
+    toggleCbtSubjectsAccordion();
+  };
 }
 
 // Attach CBT Subjects Manager Event Listeners
