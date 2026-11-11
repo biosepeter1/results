@@ -2266,99 +2266,84 @@ async function saveCbtTermsList() {
 }
 
 function renderCbtTermOptions() {
-  const container = $("cbtAdminTermsContainer");
-  if (!container) return;
+  const select = $("cbtAdminTermSelect");
 
   // Ensure activeCbtExamTerm is in savedCbtTerms
   if (activeCbtExamTerm && !savedCbtTerms.some(t => t.toUpperCase() === activeCbtExamTerm.toUpperCase())) {
     savedCbtTerms.push(activeCbtExamTerm);
   }
 
-  let html = "";
-  savedCbtTerms.forEach(term => {
-    const isSelected = (activeCbtExamTerm && activeCbtExamTerm.trim().toUpperCase() === term.trim().toUpperCase());
-    html += `
-      <div class="cbt-term-option-btn ${isSelected ? 'active' : ''}" data-cbt-term="${esc(term)}" title="Click to set as active examination term">
-        <span class="cbt-term-label">${isSelected ? '✓ ' : ''}${esc(term)}</span>
-        <span class="cbt-term-action" data-edit-cbt-term="${esc(term)}" title="Rename / edit this option">✏️</span>
-        <span class="cbt-term-action" data-del-cbt-term="${esc(term)}" title="Delete this option" style="color:rgba(255,100,100,0.85)">&times;</span>
-      </div>
-    `;
-  });
+  if (select) {
+    let opts = savedCbtTerms.map(term => {
+      const isSelected = (activeCbtExamTerm && activeCbtExamTerm.trim().toUpperCase() === term.trim().toUpperCase());
+      return `<option value="${esc(term)}"${isSelected ? ' selected' : ''}>${esc(term)}</option>`;
+    }).join("");
 
-  // + Custom button directly inline
-  html += `
-    <button type="button" class="btn btn-secondary btn-sm" id="cbtOpenCustomTermBtn" style="font-size:12px;padding:6px 12px;border-style:dashed;color:var(--accent);font-weight:600">
-      + Custom...
-    </button>
-  `;
+    // Option to quickly add custom term from dropdown
+    opts += `<option value="__ADD_NEW_TERM__">➕ Add Custom Term...</option>`;
 
-  container.innerHTML = html;
+    select.innerHTML = opts;
+    if (activeCbtExamTerm) {
+      select.value = activeCbtExamTerm;
+    }
 
-  // Click on term button -> set as active
-  container.querySelectorAll(".cbt-term-option-btn").forEach(btn => {
-    btn.onclick = (e) => {
-      if (e.target.closest("[data-edit-cbt-term]") || e.target.closest("[data-del-cbt-term]")) return;
-      const term = btn.dataset.cbtTerm;
-      if (term) {
-        setAdminCbtActiveTerm(term);
+    select.onchange = () => {
+      const chosen = select.value;
+      if (chosen === "__ADD_NEW_TERM__") {
+        select.value = activeCbtExamTerm;
+        const drawer = $("cbtAdminCustomTermDrawer");
+        if (drawer) {
+          drawer.style.display = "block";
+          const input = $("cbtAdminCustomTermInput");
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+        }
+        return;
+      }
+      if (chosen && chosen !== activeCbtExamTerm) {
+        setAdminCbtActiveTerm(chosen);
       }
     };
-  });
+  }
 
-  // Rename term option
-  container.querySelectorAll("[data-edit-cbt-term]").forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const oldTerm = btn.dataset.editCbtTerm;
-      const newTerm = prompt("Rename exam term option:", oldTerm);
-      if (newTerm && newTerm.trim() && newTerm.trim().toUpperCase() !== oldTerm.toUpperCase()) {
+  // Wire Rename & Delete buttons
+  const renameBtn = $("cbtRenameTermBtn");
+  if (renameBtn) {
+    renameBtn.onclick = () => {
+      const currentTerm = (select ? select.value : activeCbtExamTerm) || activeCbtExamTerm;
+      if (!currentTerm || currentTerm === "__ADD_NEW_TERM__") return;
+      const newTerm = prompt("Rename exam term option:", currentTerm);
+      if (newTerm && newTerm.trim() && newTerm.trim().toUpperCase() !== currentTerm.toUpperCase()) {
         const cleaned = newTerm.trim().toUpperCase();
-        const idx = savedCbtTerms.indexOf(oldTerm);
+        const idx = savedCbtTerms.indexOf(currentTerm);
         if (idx !== -1) savedCbtTerms[idx] = cleaned;
         else savedCbtTerms.push(cleaned);
 
         saveCbtTermsList();
-        if (activeCbtExamTerm.toUpperCase() === oldTerm.toUpperCase()) {
+        if (activeCbtExamTerm.toUpperCase() === currentTerm.toUpperCase()) {
           setAdminCbtActiveTerm(cleaned);
         } else {
           renderCbtTermOptions();
         }
       }
     };
-  });
+  }
 
-  // Delete term option
-  container.querySelectorAll("[data-del-cbt-term]").forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const termToDel = btn.dataset.delCbtTerm;
-      if (confirm(`Remove "${termToDel}" from active term options?`)) {
-        savedCbtTerms = savedCbtTerms.filter(t => t !== termToDel);
+  const deleteBtn = $("cbtDeleteTermBtn");
+  if (deleteBtn) {
+    deleteBtn.onclick = () => {
+      const currentTerm = (select ? select.value : activeCbtExamTerm) || activeCbtExamTerm;
+      if (!currentTerm || currentTerm === "__ADD_NEW_TERM__") return;
+      if (confirm(`Remove "${currentTerm}" from active term options?`)) {
+        savedCbtTerms = savedCbtTerms.filter(t => t.toUpperCase() !== currentTerm.toUpperCase());
         if (savedCbtTerms.length === 0) savedCbtTerms = [...DEFAULT_CBT_TERM_OPTIONS];
         saveCbtTermsList();
-        if (activeCbtExamTerm.toUpperCase() === termToDel.toUpperCase()) {
+        if (activeCbtExamTerm.toUpperCase() === currentTerm.toUpperCase()) {
           setAdminCbtActiveTerm(savedCbtTerms[0]);
         } else {
           renderCbtTermOptions();
-        }
-      }
-    };
-  });
-
-  // Wire + Custom... button
-  const openCustomBtn = $("cbtOpenCustomTermBtn");
-  if (openCustomBtn) {
-    openCustomBtn.onclick = () => {
-      const drawer = $("cbtAdminCustomTermDrawer");
-      if (drawer) {
-        drawer.style.display = (drawer.style.display === "none" || !drawer.style.display) ? "block" : "none";
-        if (drawer.style.display === "block") {
-          const input = $("cbtAdminCustomTermInput");
-          if (input) {
-            input.value = "";
-            input.focus();
-          }
         }
       }
     };
@@ -2463,7 +2448,7 @@ if ($("cbtResetTermsBtn")) {
     if (confirm("Reset CBT active term options to defaults (First Term Examination, Mid Term Test, First Test, etc.)?")) {
       savedCbtTerms = [...DEFAULT_CBT_TERM_OPTIONS];
       saveCbtTermsList();
-      renderCbtTermOptions();
+      setAdminCbtActiveTerm(savedCbtTerms[0]);
     }
   };
 }

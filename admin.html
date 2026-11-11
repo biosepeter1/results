@@ -1164,18 +1164,26 @@
             </div>
           </div>
 
-          <!-- Dynamic Active Term Options (Editable & Clickable) -->
+          <!-- Dynamic Active Term Options (Dropdown) -->
           <div style="margin-top:14px">
-            <div
-              style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">
-              Select Active Term (Click to set active, ✏️ to rename, ✕ to delete):
+            <label for="cbtAdminTermSelect"
+              style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+              Select Active Term:
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="cbtAdminTermSelect" class="form-input"
+                style="min-width:280px;max-width:440px;flex:1;padding:8px 12px;font-size:13px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer">
+                <!-- Dynamically populated from saved CBT term options -->
+              </select>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtRenameTermBtn"
+                style="font-size:12px;padding:7px 12px" title="Rename the selected examination term">✏️ Rename</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtDeleteTermBtn"
+                style="font-size:12px;padding:7px 12px;color:rgba(255,100,100,0.85)" title="Delete the selected examination term">✕ Delete</button>
             </div>
-            <div id="cbtAdminTermsContainer" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-              <!-- Dynamically populated from saved CBT term options -->
-            </div>
+            <div id="cbtAdminTermsContainer" style="display:none"></div>
           </div>
 
-          <!-- Custom Term Input Drawer (Automatically saves as an option button) -->
+          <!-- Custom Term Input Drawer (Automatically saves as an option) -->
           <div id="cbtAdminCustomTermDrawer"
             style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
@@ -1195,7 +1203,7 @@
               </button>
             </div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
-              💡 <em>Whatever custom term you enter automatically saves permanently as a selectable button option and
+              💡 <em>Whatever custom term you enter automatically saves permanently as a selectable option and
                 becomes the active term for all teachers!</em>
             </div>
           </div>
@@ -1868,7 +1876,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=3.2"></script>
+  <script src="js/admin.js?v=3.3"></script>
 </body>
 
 </html>
