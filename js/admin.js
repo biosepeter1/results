@@ -4838,7 +4838,9 @@ $("scoresSearchInput").oninput = () => {
 };
 
 // Refresh Cloud Buttons
-$("scoresRefreshBtn").onclick = () => loadStudentScores(true);
+if ($("scoresRefreshBtn")) {
+  $("scoresRefreshBtn").onclick = () => loadStudentScores(true);
+}
 
 // Push cached scores to Supabase cloud
 if ($("scoresPushCloudBtn")) {
@@ -4898,7 +4900,9 @@ if ($("uploadDeduplicateBtn")) {
 }
 
 // Print Report
-$("scoresPrintBtn").onclick = () => window.print();
+if ($("scoresPrintBtn")) {
+  $("scoresPrintBtn").onclick = () => window.print();
+}
 
 // Score Conversion Controls — wired lazily when scores pane opens
 let _convPanelWired = false;
