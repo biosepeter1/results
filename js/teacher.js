@@ -1573,7 +1573,6 @@ function exportTeacherRewriteCSV() {
           <span class="sub-item-metrics">
             <span class="mark-badge">${scaledVal} of ${maxMark}</span>
             ${hasConv ? `<span class="raw-label">(raw: ${rawVal} of ${rawMax})</span>` : ""}
-            <span class="pct-badge">${rSub.pct}%</span>
           </span>
         </div>
       `;
@@ -1587,7 +1586,7 @@ function exportTeacherRewriteCSV() {
       const rawVal = !isNaN(rawNum) ? rawNum : scaledVal;
       const rawMax = conv ? conv.originalMax : maxMark;
       const convNote = (rawMax !== maxMark || rawVal !== scaledVal) ? ` (raw: ${rawVal} of ${rawMax})` : "";
-      return `• ${esc(rSub.subject || "")}: ${scaledVal} of ${maxMark}${convNote} [${rSub.pct}%]`;
+      return `• ${esc(rSub.subject || "")}: ${scaledVal} of ${maxMark}${convNote}`;
     }).join('<br style="mso-data-placement:same-cell;"/>');
 
     const altClass = (sn % 2 === 0) ? "row-alt" : "";
@@ -1600,15 +1599,12 @@ function exportTeacherRewriteCSV() {
         <td class="cell-center" style="font-weight:600;">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
         <td class="cell-center" style="font-weight:600;">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
         <td class="cell-center"><span class="paper-badge">${paperCountLabel}</span></td>
-        <td class="cell-left" style="padding:6px 8px;">
+        <td class="cell-left" style="padding:6px 10px;">
           <div class="sub-group-container">
             ${pdfSubjectListHtml}
           </div>
         </td>
-        <td class="cell-center cell-bold cell-fail" style="font-size:11.5px;">${s.avgScore}%</td>
-        <td class="cell-center" style="color:#64748b;">≤ ${teacherRewriteCutoffPct}%</td>
         <td class="cell-center"><span class="status-badge">MANDATORY REWRITE</span></td>
-        <td class="cell-left" style="font-size:10px;color:#334155;">Remedial Tutoring &amp; Re-examination Scheduled</td>
       </tr>
     `);
 
@@ -1621,10 +1617,7 @@ function exportTeacherRewriteCSV() {
         <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
         <td style="text-align:center;font-weight:bold;color:#b45309;background:#fef3c7;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${paperCountLabel}</td>
         <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${excelSubjectList}</td>
-        <td style="text-align:center;font-weight:bold;color:#dc2626;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${s.avgScore}%</td>
-        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">≤ ${teacherRewriteCutoffPct}%</td>
         <td style="text-align:center;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">MANDATORY REWRITE</td>
-        <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">Remedial Tutoring &amp; Re-examination Scheduled</td>
       </tr>
     `);
   });
@@ -1973,17 +1966,14 @@ function exportTeacherRewriteCSV() {
     <table class="roster-table">
       <thead>
         <tr>
-          <th style="width:36px;">S/N</th>
-          <th style="width:210px;">Student Full Name</th>
-          <th style="width:120px;">Registration No</th>
-          <th style="width:75px;">Class</th>
-          <th style="width:75px;">Arm</th>
+          <th style="width:38px;">S/N</th>
+          <th style="width:240px;">Student Full Name</th>
+          <th style="width:130px;">Registration No</th>
+          <th style="width:80px;">Class</th>
+          <th style="width:80px;">Arm</th>
           <th style="width:90px;">Papers</th>
-          <th style="width:340px;">Subjects Scheduled for Resit (Exact Mark &amp; %)</th>
-          <th style="width:65px;">Avg %</th>
-          <th style="width:65px;">Cutoff</th>
-          <th style="width:110px;">Status</th>
-          <th style="width:180px;">Action Plan</th>
+          <th style="width:420px;">Subjects Scheduled for Resit (Exact Mark)</th>
+          <th style="width:130px;">Academic Status</th>
         </tr>
       </thead>
       <tbody>
@@ -2018,13 +2008,13 @@ function exportTeacherRewriteCSV() {
 
   <script>
     document.getElementById('btnDownloadExcel').onclick = function() {
-      var excelHeader = '<tr style="height:32px;"><th colspan="11" style="background:#0f172a;color:#ffffff;font-size:15px;text-align:center;font-weight:bold;padding:10px;">HONEYLAND ACADEMIC PORTAL — OFFICIAL STUDENT EXAMINATION RESIT ROSTER</th></tr>' +
-        '<tr><td colspan="11" style="text-align:center;font-size:11px;color:#64748b;padding:4px;">Teacher Classroom Record for Remedial Instruction & Examination Board</td></tr>' +
-        '<tr><td colspan="11"></td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Academic Term:</td><td colspan="3">${esc(activeTerm)}</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Date Generated:</td><td colspan="4">${esc(dateStr)}</td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Resit Benchmark:</td><td colspan="3">Score ≤ ${teacherRewriteCutoffPct}% (Mandatory Retake)</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Score Conversion:</td><td colspan="4">${esc(scalingDesc)}</td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Identified Students:</td><td colspan="3">${teacherRewriteStudents.length} Students Flagged</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Total Resit Papers:</td><td colspan="4">${totalPapers} Papers Scheduled</td></tr>' +
-        '<tr><td colspan="11"></td></tr>' +
+      var excelHeader = '<tr style="height:32px;"><th colspan="8" style="background:#0f172a;color:#ffffff;font-size:15px;text-align:center;font-weight:bold;padding:10px;">HONEYLAND ACADEMIC PORTAL — OFFICIAL STUDENT EXAMINATION RESIT ROSTER</th></tr>' +
+        '<tr><td colspan="8" style="text-align:center;font-size:11px;color:#64748b;padding:4px;">Teacher Classroom Record for Remedial Instruction & Examination Board</td></tr>' +
+        '<tr><td colspan="8"></td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Academic Term:</td><td colspan="2">${esc(activeTerm)}</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Date Generated:</td><td colspan="2">${esc(dateStr)}</td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Resit Benchmark:</td><td colspan="2">Score ≤ ${teacherRewriteCutoffPct}% (Mandatory Retake)</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Score Conversion:</td><td colspan="2">${esc(scalingDesc)}</td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Identified Students:</td><td colspan="2">${teacherRewriteStudents.length} Students Flagged</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Total Resit Papers:</td><td colspan="2">${totalPapers} Papers Scheduled</td></tr>' +
+        '<tr><td colspan="8"></td></tr>' +
         '<tr style="background:#0f172a;color:#ffffff;font-weight:bold;text-align:center;">' +
         '<th style="background:#0f172a;color:#ffffff;padding:8px;">S/N</th>' +
         '<th style="background:#0f172a;color:#ffffff;padding:8px;">Student Full Name</th>' +
@@ -2032,11 +2022,8 @@ function exportTeacherRewriteCSV() {
         '<th style="background:#0f172a;color:#ffffff;padding:8px;">Class</th>' +
         '<th style="background:#0f172a;color:#ffffff;padding:8px;">Arm</th>' +
         '<th style="background:#0f172a;color:#ffffff;padding:8px;">Resit Papers</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;text-align:left;">Subjects Scheduled for Resit (Exact Mark & %)</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Average %</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Benchmark</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Status</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Recommended Action Plan</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;text-align:left;">Subjects Scheduled for Resit (Exact Mark)</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Academic Status</th>' +
         '</tr>';
 
       var excelHtml = '\\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
