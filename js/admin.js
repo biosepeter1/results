@@ -3228,6 +3228,35 @@ function initCbtTermsManager() {
   loadCbtTermsMappings();
   if ($("cbtSaveTermsMappingsBtn")) $("cbtSaveTermsMappingsBtn").onclick = saveCbtTermsMappings;
   if ($("cbtExportTermsJsonBtn")) $("cbtExportTermsJsonBtn").onclick = exportCbtTermsJson;
+
+  const toggleBtn = $("cbtToggleTermsBtn");
+  const header = $("cbtTermsHeader");
+  const body = $("cbtTermsCollapsibleBody");
+  const icon = $("cbtTermsToggleIcon");
+  const text = $("cbtTermsToggleText");
+
+  function toggleTermsAccordion(forceOpen) {
+    if (!body) return;
+    const isCurrentlyOpen = body.style.display !== "none";
+    const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+    body.style.display = willOpen ? "block" : "none";
+    if (icon) icon.textContent = willOpen ? "▲" : "▼";
+    if (text) text.textContent = willOpen ? "Collapse Mappings" : "Expand Mappings";
+  }
+
+  if (toggleBtn) {
+    toggleBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleTermsAccordion();
+    };
+  }
+
+  if (header) {
+    header.onclick = (e) => {
+      if (e.target.closest("button") || e.target.closest("input")) return;
+      toggleTermsAccordion();
+    };
+  }
 }
 
 function getSanitizedSlug(title) {

@@ -1178,7 +1178,8 @@
               <button type="button" class="btn btn-secondary btn-sm" id="cbtRenameTermBtn"
                 style="font-size:12px;padding:7px 12px" title="Rename the selected examination term">✏️ Rename</button>
               <button type="button" class="btn btn-secondary btn-sm" id="cbtDeleteTermBtn"
-                style="font-size:12px;padding:7px 12px;color:rgba(255,100,100,0.85)" title="Delete the selected examination term">✕ Delete</button>
+                style="font-size:12px;padding:7px 12px;color:rgba(255,100,100,0.85)"
+                title="Delete the selected examination term">✕ Delete</button>
             </div>
             <div id="cbtAdminTermsContainer" style="display:none"></div>
           </div>
@@ -1350,7 +1351,8 @@
                   46 subjects
                 </span>
               </div>
-              <p class="card-sub" style="margin:4px 0 0 0">Create, edit, or add new subjects and their exact MongoDB ObjectIds for offline CBT exports</p>
+              <p class="card-sub" style="margin:4px 0 0 0">Create, edit, or add new subjects and their exact MongoDB
+                ObjectIds for offline CBT exports</p>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleSubjectsBtn"
@@ -1395,7 +1397,8 @@
                 </thead>
                 <tbody id="cbtSubjectsTbody">
                   <tr>
-                    <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…</td>
+                    <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1403,30 +1406,43 @@
           </div>
         </div>
 
-        <!-- CBT Terms & Sessions MongoDB Catalog Manager -->
+        <!-- CBT Terms & Sessions MongoDB Catalog Manager (Collapsible Dropdown Accordion) -->
         <div class="card" style="margin-top:24px" id="cbtTermsManagerCard">
-          <div class="card-header" style="flex-wrap:wrap;gap:12px">
-            <div>
-              <h2 class="card-title">CBT Terms &amp; Academic Sessions (MongoDB Compass Mapping)</h2>
-              <p class="card-sub">Map each Term and Academic Session to its exact MongoDB ObjectId so the offline CBT
+          <div class="card-header" id="cbtTermsHeader"
+            style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"
+            title="Click to expand or collapse CBT terms &amp; sessions mappings">
+            <div style="flex:1;min-width:240px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <h2 class="card-title" style="margin:0">CBT Terms &amp; Academic Sessions (MongoDB Compass Mapping)</h2>
+              </div>
+              <p class="card-sub" style="margin:4px 0 0 0">Map each Term and Academic Session to its exact MongoDB ObjectId so the offline CBT
                 app displays exams and questions in every term</p>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export
-                terms.json</button>
-              <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session
-                IDs</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleTermsBtn"
+                style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span id="cbtTermsToggleIcon" style="display:inline-block;transition:transform 0.2s">▼</span>
+                <span id="cbtTermsToggleText">Expand Mappings</span>
+              </button>
             </div>
           </div>
 
-          <div
-            style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted)">
-            <span>Compass Collections: <code>cbtApp_v2.terms</code> &amp; <code>cbtApp_v2.sessions</code></span>
-            <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term
-              mappings saved!</span>
-          </div>
+          <!-- Collapsible Body -->
+          <div id="cbtTermsCollapsibleBody"
+            style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+            <div
+              style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span>Compass Collections: <code>cbtApp_v2.terms</code> &amp; <code>cbtApp_v2.sessions</code></span>
+                <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term mappings saved!</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export terms.json</button>
+                <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session IDs</button>
+              </div>
+            </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
             <!-- First Term Era -->
             <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
               <div
@@ -1526,6 +1542,7 @@
             💡 <strong>Why this matters:</strong> The offline CBT app filters exams by the active term's MongoDB
             <code>_id</code>. By saving your term IDs here from MongoDB Compass, any exams downloaded as
             <code>exams.json</code> will immediately show their questions in the offline app when that term is active!
+          </div>
           </div>
         </div>
       </section>
@@ -1897,7 +1914,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=3.4"></script>
+  <script src="js/admin.js?v=3.5"></script>
 </body>
 
 </html>
