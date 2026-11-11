@@ -176,6 +176,20 @@ function normalizeTeacherTermKey(str) {
   return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function getCanonicalTeacherTermCategory(str) {
+  const s = normalizeTeacherTermKey(str);
+  if (!s) return "";
+  const isSecond = s.includes("second") || s.includes("2nd");
+  const isThird = s.includes("third") || s.includes("3rd");
+  const prefix = isThird ? "t3_" : (isSecond ? "t2_" : "t1_");
+
+  if (s.includes("midterm") || (s.includes("mid") && s.includes("term"))) return prefix + "midterm";
+  if (s.includes("firsttest") || s.includes("1sttest") || s.includes("ca1") || s.includes("test1")) return prefix + "firsttest";
+  if (s.includes("secondtest") || s.includes("2ndtest") || s.includes("ca2") || s.includes("test2")) return prefix + "secondtest";
+  if (s.includes("exam") || s.includes("terminal") || s.includes("final")) return prefix + "exam";
+  return prefix + s;
+}
+
 function getTeacherConversionForTerm(term) {
   const config = getTeacherConversionConfig();
   if (!config || !config.terms) return null;
@@ -198,7 +212,19 @@ function getTeacherConversionForTerm(term) {
     }
   }
 
-  // 3. Fallback to active system term if row term differed
+  // 3. Semantic / canonical assessment matching (e.g. "Mid Term Test" matches "Mid Term Examination", "Mid Term", "midterm")
+  const tCat = getCanonicalTeacherTermCategory(term || (typeof currentTerm !== "undefined" ? currentTerm : ""));
+  if (tCat) {
+    for (const [k, c] of Object.entries(config.terms)) {
+      if (k === "__ALL__" || !c) continue;
+      const kCat = getCanonicalTeacherTermCategory(k);
+      if (kCat && (kCat === tCat || (kCat.endsWith("midterm") && tCat.endsWith("midterm")) || (kCat.endsWith("firsttest") && tCat.endsWith("firsttest")) || (kCat.endsWith("exam") && tCat.endsWith("exam")))) {
+        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      }
+    }
+  }
+
+  // 4. Fallback to active system term if row term differed
   const curNorm = normalizeTeacherTermKey(typeof currentTerm !== "undefined" ? currentTerm : "");
   if (curNorm && curNorm !== tNorm) {
     for (const [k, c] of Object.entries(config.terms)) {
@@ -210,7 +236,7 @@ function getTeacherConversionForTerm(term) {
     }
   }
 
-  // 4. Fallback: If only ONE term conversion is configured, apply it
+  // 5. Fallback: If only ONE term conversion is configured, apply it
   const termKeys = Object.keys(config.terms).filter(k => k !== "__ALL__");
   if (termKeys.length === 1) {
     const single = config.terms[termKeys[0]];
@@ -219,7 +245,7 @@ function getTeacherConversionForTerm(term) {
     }
   }
 
-  // 5. Global "__ALL__" rule
+  // 6. Global "__ALL__" rule
   if (config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
@@ -229,6 +255,18 @@ function getTeacherConversionForTerm(term) {
 
 function setTeacherScoreConversion(obj) {
   if (obj && !obj.disabled && (obj.terms || (obj.originalMax && obj.targetMax))) {
+    // Also register aliases if a term is provided
+    if (obj.terms) {
+      for (const [k, val] of Object.entries(obj.terms)) {
+        const norm = normalizeTeacherTermKey(k);
+        if (norm.includes("midterm") || (norm.includes("mid") && norm.includes("term"))) {
+          obj.terms["Mid Term Test"] = val;
+          obj.terms["Mid Term Examination"] = val;
+          obj.terms["Mid Term"] = val;
+          obj.terms["MID TERM EXAMINATION"] = val;
+        }
+      }
+    }
     localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
   } else {
     localStorage.removeItem(SCORE_CONVERSION_KEY);
@@ -1511,56 +1549,84 @@ function exportTeacherRewriteCSV() {
     totalPapers += (s.rewriteSubjects || []).length;
   });
 
-  let sn = 1;
   const rowsPdf = [];
   const rowsExcel = [];
 
-  teacherRewriteStudents.forEach(s => {
-    (s.rewriteSubjects || []).forEach(rSub => {
+  teacherRewriteStudents.forEach((s, idx) => {
+    const sn = idx + 1;
+    const rewriteList = s.rewriteSubjects || [];
+    const paperCount = rewriteList.length;
+    const paperCountLabel = `${paperCount} Paper${paperCount === 1 ? '' : 's'}`;
+
+    // PDF Grouped Subject List (Clean responsive items)
+    const pdfSubjectListHtml = rewriteList.map(rSub => {
       const maxMark = getTeacherSubjectMaxMark(rSub, s.term || activeTerm) || 20;
       const rawNum = parseTeacherRawScoreNum(rSub.score !== undefined ? rSub.score : rSub.pct);
       const scaledVal = conv ? applyTeacherScoreConversion(rawNum, activeTerm) : rawNum;
       const rawVal = !isNaN(rawNum) ? rawNum : scaledVal;
       const rawMax = conv ? conv.originalMax : maxMark;
+      const hasConv = (rawMax !== maxMark || rawVal !== scaledVal);
 
-      const altClass = (sn % 2 === 0) ? "row-alt" : "";
+      return `
+        <div class="sub-item-row">
+          <span class="sub-item-name">${esc(rSub.subject || "General")}</span>
+          <span class="sub-item-metrics">
+            <span class="mark-badge">${scaledVal} of ${maxMark}</span>
+            ${hasConv ? `<span class="raw-label">(raw: ${rawVal} of ${rawMax})</span>` : ""}
+            <span class="pct-badge">${rSub.pct}%</span>
+          </span>
+        </div>
+      `;
+    }).join("");
 
-      rowsPdf.push(`
-        <tr class="${altClass}">
-          <td class="cell-center" style="font-weight:700;color:#64748b;">${sn}</td>
-          <td class="cell-left cell-bold">${esc(s.name || "")}</td>
-          <td class="cell-center" style="font-family:Consolas,monospace;color:#475569;">${esc(s.reg || "N/A")}</td>
-          <td class="cell-center">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
-          <td class="cell-center">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
-          <td class="cell-left cell-bold">${esc(rSub.subject || "")}</td>
-          <td class="cell-center"><span class="mark-badge">${scaledVal} / ${maxMark}</span></td>
-          <td class="cell-center" style="color:#64748b;">${rawVal} / ${rawMax}</td>
-          <td class="cell-center cell-bold cell-fail">${rSub.pct}%</td>
-          <td class="cell-center" style="color:#64748b;">≤ ${teacherRewriteCutoffPct}%</td>
-          <td class="cell-center"><span class="status-badge">REWRITE</span></td>
-          <td class="cell-left" style="font-size:10px;color:#334155;">Remedial Tutoring &amp; Re-examination</td>
-        </tr>
-      `);
+    // Excel Grouped Subject List: newline in same cell with mso-data-placement
+    const excelSubjectList = rewriteList.map(rSub => {
+      const maxMark = getTeacherSubjectMaxMark(rSub, s.term || activeTerm) || 20;
+      const rawNum = parseTeacherRawScoreNum(rSub.score !== undefined ? rSub.score : rSub.pct);
+      const scaledVal = conv ? applyTeacherScoreConversion(rawNum, activeTerm) : rawNum;
+      const rawVal = !isNaN(rawNum) ? rawNum : scaledVal;
+      const rawMax = conv ? conv.originalMax : maxMark;
+      const convNote = (rawMax !== maxMark || rawVal !== scaledVal) ? ` (raw: ${rawVal} of ${rawMax})` : "";
+      return `• ${esc(rSub.subject || "")}: ${scaledVal} of ${maxMark}${convNote} [${rSub.pct}%]`;
+    }).join('<br style="mso-data-placement:same-cell;"/>');
 
-      rowsExcel.push(`
-        <tr class="${altClass}">
-          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${sn}</td>
-          <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;">${esc(s.name || "")}</td>
-          <td style="text-align:center;font-family:monospace;border:1px solid #cbd5e1;padding:6px;">${esc(s.reg || "N/A")}</td>
-          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
-          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
-          <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;">${esc(rSub.subject || "")}</td>
-          <td style="text-align:center;font-weight:bold;color:#b45309;background:#fef3c7;border:1px solid #cbd5e1;padding:6px;">${scaledVal} / ${maxMark}</td>
-          <td style="text-align:center;color:#64748b;border:1px solid #cbd5e1;padding:6px;">${rawVal} / ${rawMax}</td>
-          <td style="text-align:center;font-weight:bold;color:#dc2626;border:1px solid #cbd5e1;padding:6px;">${rSub.pct}%</td>
-          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">≤ ${teacherRewriteCutoffPct}%</td>
-          <td style="text-align:center;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #cbd5e1;padding:6px;">MANDATORY REWRITE</td>
-          <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;">Remedial Tutoring &amp; Re-examination</td>
-        </tr>
-      `);
+    const altClass = (sn % 2 === 0) ? "row-alt" : "";
 
-      sn++;
-    });
+    rowsPdf.push(`
+      <tr class="${altClass}">
+        <td class="cell-center" style="font-weight:700;color:#64748b;">${sn}</td>
+        <td class="cell-left cell-bold" style="font-size:11.5px;color:#0f172a;">${esc(s.name || "")}</td>
+        <td class="cell-center" style="font-family:Consolas,monospace;color:#475569;font-size:10.5px;">${esc(s.reg || "N/A")}</td>
+        <td class="cell-center" style="font-weight:600;">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
+        <td class="cell-center" style="font-weight:600;">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
+        <td class="cell-center"><span class="paper-badge">${paperCountLabel}</span></td>
+        <td class="cell-left" style="padding:6px 8px;">
+          <div class="sub-group-container">
+            ${pdfSubjectListHtml}
+          </div>
+        </td>
+        <td class="cell-center cell-bold cell-fail" style="font-size:11.5px;">${s.avgScore}%</td>
+        <td class="cell-center" style="color:#64748b;">≤ ${teacherRewriteCutoffPct}%</td>
+        <td class="cell-center"><span class="status-badge">MANDATORY REWRITE</span></td>
+        <td class="cell-left" style="font-size:10px;color:#334155;">Remedial Tutoring &amp; Re-examination Scheduled</td>
+      </tr>
+    `);
+
+    rowsExcel.push(`
+      <tr class="${altClass}">
+        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${sn}</td>
+        <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(s.name || "")}</td>
+        <td style="text-align:center;font-family:monospace;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(s.reg || "N/A")}</td>
+        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
+        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
+        <td style="text-align:center;font-weight:bold;color:#b45309;background:#fef3c7;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${paperCountLabel}</td>
+        <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${excelSubjectList}</td>
+        <td style="text-align:center;font-weight:bold;color:#dc2626;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${s.avgScore}%</td>
+        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">≤ ${teacherRewriteCutoffPct}%</td>
+        <td style="text-align:center;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">MANDATORY REWRITE</td>
+        <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">Remedial Tutoring &amp; Re-examination Scheduled</td>
+      </tr>
+    `);
   });
 
   const docTitle = `Teacher_Resit_Report_${termSlug}_cutoff${teacherRewriteCutoffPct}pct_${dateFile}`;
@@ -1753,6 +1819,59 @@ function exportTeacherRewriteCSV() {
       background: #fef3c7;
       color: #b45309;
       border: 1px solid #fde68a;
+      white-space: nowrap;
+    }
+    .paper-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      white-space: nowrap;
+    }
+    .sub-group-container {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .sub-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+    .sub-item-name {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 11px;
+    }
+    .sub-item-metrics {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .raw-label {
+      font-size: 9.5px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    .pct-badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 800;
+      font-size: 10px;
+      background: #fee2e2;
+      color: #dc2626;
+      white-space: nowrap;
     }
     .status-badge {
       display: inline-block;
@@ -1763,6 +1882,7 @@ function exportTeacherRewriteCSV() {
       color: #dc2626;
       border: 1px solid #fecaca;
       font-size: 9.5px;
+      white-space: nowrap;
     }
     .compliance-box {
       background: #fffbeb;
@@ -1853,18 +1973,17 @@ function exportTeacherRewriteCSV() {
     <table class="roster-table">
       <thead>
         <tr>
-          <th style="width:40px;">S/N</th>
-          <th style="width:230px;">Student Full Name</th>
-          <th style="width:130px;">Registration No</th>
-          <th style="width:85px;">Class</th>
-          <th style="width:85px;">Arm</th>
-          <th style="width:210px;">Subject Scheduled for Resit</th>
-          <th style="width:115px;">Exact Mark</th>
-          <th style="width:105px;">Raw Score</th>
-          <th style="width:80px;">%</th>
-          <th style="width:80px;">Cutoff</th>
+          <th style="width:36px;">S/N</th>
+          <th style="width:210px;">Student Full Name</th>
+          <th style="width:120px;">Registration No</th>
+          <th style="width:75px;">Class</th>
+          <th style="width:75px;">Arm</th>
+          <th style="width:90px;">Papers</th>
+          <th style="width:340px;">Subjects Scheduled for Resit (Exact Mark &amp; %)</th>
+          <th style="width:65px;">Avg %</th>
+          <th style="width:65px;">Cutoff</th>
           <th style="width:110px;">Status</th>
-          <th style="width:200px;">Action Plan</th>
+          <th style="width:180px;">Action Plan</th>
         </tr>
       </thead>
       <tbody>
@@ -1899,7 +2018,30 @@ function exportTeacherRewriteCSV() {
 
   <script>
     document.getElementById('btnDownloadExcel').onclick = function() {
-      var excelHtml = '\\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body><table border="1">${rowsExcel.join("").replace(/"/g, '\\"')}<\\/table><\\/body><\\/html>';
+      var excelHeader = '<tr style="height:32px;"><th colspan="11" style="background:#0f172a;color:#ffffff;font-size:15px;text-align:center;font-weight:bold;padding:10px;">HONEYLAND ACADEMIC PORTAL — OFFICIAL STUDENT EXAMINATION RESIT ROSTER</th></tr>' +
+        '<tr><td colspan="11" style="text-align:center;font-size:11px;color:#64748b;padding:4px;">Teacher Classroom Record for Remedial Instruction & Examination Board</td></tr>' +
+        '<tr><td colspan="11"></td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Academic Term:</td><td colspan="3">${esc(activeTerm)}</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Date Generated:</td><td colspan="4">${esc(dateStr)}</td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Resit Benchmark:</td><td colspan="3">Score ≤ ${teacherRewriteCutoffPct}% (Mandatory Retake)</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Score Conversion:</td><td colspan="4">${esc(scalingDesc)}</td></tr>' +
+        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Identified Students:</td><td colspan="3">${teacherRewriteStudents.length} Students Flagged</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Total Resit Papers:</td><td colspan="4">${totalPapers} Papers Scheduled</td></tr>' +
+        '<tr><td colspan="11"></td></tr>' +
+        '<tr style="background:#0f172a;color:#ffffff;font-weight:bold;text-align:center;">' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">S/N</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Student Full Name</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Registration Number</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Class</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Arm</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Resit Papers</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;text-align:left;">Subjects Scheduled for Resit (Exact Mark & %)</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Average %</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Benchmark</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Status</th>' +
+        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Recommended Action Plan</th>' +
+        '</tr>';
+
+      var excelHtml = '\\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head><meta charset="utf-8" /><style>td { mso-number-format:"\\@"; vertical-align:middle; } th { mso-number-format:"\\@"; }</style></head>' +
+        '<body><table border="1" cellpadding="6" cellspacing="0">' + excelHeader + '${rowsExcel.join("").replace(/"/g, '\\"')}<\\/table><\\/body><\\/html>';
       var blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
