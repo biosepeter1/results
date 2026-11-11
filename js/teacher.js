@@ -752,10 +752,6 @@ if ($("btnTeacherExportRewrite")) {
   $("btnTeacherExportRewrite").addEventListener("click", () => exportTeacherRewriteCSV());
 }
 
-if ($("btnTeacherPrintRewrite")) {
-  $("btnTeacherPrintRewrite").addEventListener("click", () => window.print());
-}
-
 // ── Show App ──
 function showApp() {
   document.documentElement.classList.add("restoring-teacher-session");
@@ -1502,39 +1498,448 @@ function exportTeacherRewriteCSV() {
     return;
   }
 
-  const rows = [];
-  rows.push(["S/N", "Student Name", "Registration Number", "Class", "Arm", "Subject to Rewrite", "Raw Score", "Percentage (%)", "Resit Benchmark", "Status", "Academic Term"]);
+  const activeTerm = currentTerm || (teacherRewriteStudents[0] && teacherRewriteStudents[0].term) || "Current Academic Term";
+  const conv = getTeacherConversionForTerm(activeTerm);
+  const scalingDesc = conv ? `Scaled /${conv.targetMax} from /${conv.originalMax} (Multiplier: ×${(conv.targetMax / conv.originalMax).toFixed(2).replace(/\.00$/, "")})` : "Raw Scores (No scaling configured)";
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const dateFile = now.toISOString().slice(0, 10);
+  const termSlug = activeTerm.replace(/[^a-zA-Z0-9]/g, "_");
+
+  let totalPapers = 0;
+  teacherRewriteStudents.forEach(s => {
+    totalPapers += (s.rewriteSubjects || []).length;
+  });
 
   let sn = 1;
+  const rowsPdf = [];
+  const rowsExcel = [];
+
   teacherRewriteStudents.forEach(s => {
     (s.rewriteSubjects || []).forEach(rSub => {
-      const maxMark = getTeacherSubjectMaxMark(rSub, s.term || currentTerm);
-      const csvScore = rSub.score !== undefined ? (maxMark ? `${rSub.score}/${maxMark}` : rSub.score) : "-";
-      rows.push([
-        sn++,
-        `"${(s.name || '').replace(/"/g, '""')}"`,
-        `"${(s.reg || '').replace(/"/g, '""')}"`,
-        `"${formatClassAbbr(s.class) || (s.class || '')}"`,
-        `"${formatArmAbbr(s.arm) || (s.arm || '')}"`,
-        `"${(rSub.subject || '').replace(/"/g, '""')}"`,
-        csvScore,
-        `${rSub.pct}%`,
-        `≤ ${teacherRewriteCutoffPct}%`,
-        "MANDATORY REWRITE REQUIRED",
-        `"${(s.term || currentTerm || '').replace(/"/g, '""')}"`
-      ]);
+      const maxMark = getTeacherSubjectMaxMark(rSub, s.term || activeTerm) || 20;
+      const rawNum = parseTeacherRawScoreNum(rSub.score !== undefined ? rSub.score : rSub.pct);
+      const scaledVal = conv ? applyTeacherScoreConversion(rawNum, activeTerm) : rawNum;
+      const rawVal = !isNaN(rawNum) ? rawNum : scaledVal;
+      const rawMax = conv ? conv.originalMax : maxMark;
+
+      const altClass = (sn % 2 === 0) ? "row-alt" : "";
+
+      rowsPdf.push(`
+        <tr class="${altClass}">
+          <td class="cell-center" style="font-weight:700;color:#64748b;">${sn}</td>
+          <td class="cell-left cell-bold">${esc(s.name || "")}</td>
+          <td class="cell-center" style="font-family:Consolas,monospace;color:#475569;">${esc(s.reg || "N/A")}</td>
+          <td class="cell-center">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
+          <td class="cell-center">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
+          <td class="cell-left cell-bold">${esc(rSub.subject || "")}</td>
+          <td class="cell-center"><span class="mark-badge">${scaledVal} / ${maxMark}</span></td>
+          <td class="cell-center" style="color:#64748b;">${rawVal} / ${rawMax}</td>
+          <td class="cell-center cell-bold cell-fail">${rSub.pct}%</td>
+          <td class="cell-center" style="color:#64748b;">≤ ${teacherRewriteCutoffPct}%</td>
+          <td class="cell-center"><span class="status-badge">REWRITE</span></td>
+          <td class="cell-left" style="font-size:10px;color:#334155;">Remedial Tutoring &amp; Re-examination</td>
+        </tr>
+      `);
+
+      rowsExcel.push(`
+        <tr class="${altClass}">
+          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${sn}</td>
+          <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;">${esc(s.name || "")}</td>
+          <td style="text-align:center;font-family:monospace;border:1px solid #cbd5e1;padding:6px;">${esc(s.reg || "N/A")}</td>
+          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
+          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
+          <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;">${esc(rSub.subject || "")}</td>
+          <td style="text-align:center;font-weight:bold;color:#b45309;background:#fef3c7;border:1px solid #cbd5e1;padding:6px;">${scaledVal} / ${maxMark}</td>
+          <td style="text-align:center;color:#64748b;border:1px solid #cbd5e1;padding:6px;">${rawVal} / ${rawMax}</td>
+          <td style="text-align:center;font-weight:bold;color:#dc2626;border:1px solid #cbd5e1;padding:6px;">${rSub.pct}%</td>
+          <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;">≤ ${teacherRewriteCutoffPct}%</td>
+          <td style="text-align:center;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #cbd5e1;padding:6px;">MANDATORY REWRITE</td>
+          <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;">Remedial Tutoring &amp; Re-examination</td>
+        </tr>
+      `);
+
+      sn++;
     });
   });
 
-  const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  const termSlug = (currentTerm || "All_Terms").replace(/[^a-zA-Z0-9]/g, "_");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Teacher_Rewrite_Roster_${termSlug}_Cutoff_${teacherRewriteCutoffPct}pct.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const docTitle = `Teacher_Resit_Report_${termSlug}_cutoff${teacherRewriteCutoffPct}pct_${dateFile}`;
+
+  const pdfHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${docTitle}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm 12mm 12mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+      margin: 0;
+      padding: 24px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .report-page-container {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      thead {
+        display: table-header-group !important;
+      }
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+      }
+      .signature-section {
+        page-break-inside: avoid !important;
+      }
+    }
+    .no-print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      margin: -24px -24px 24px -24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+    .btn-action {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-action:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    .report-page-container {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 30px 36px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .header-banner {
+      text-align: center;
+      border-bottom: 2.5px solid #0f172a;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .school-name {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #0f172a;
+      text-transform: uppercase;
+      margin: 0 0 4px 0;
+    }
+    .report-heading {
+      font-size: 14px;
+      font-weight: 700;
+      color: #b45309;
+      margin: 0 0 4px 0;
+      letter-spacing: 0.4px;
+    }
+    .report-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin: 0;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-k {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .meta-v {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .roster-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin-bottom: 20px;
+    }
+    .roster-table th {
+      background: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 9px 6px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
+    .roster-table td {
+      padding: 7px 6px;
+      border: 1px solid #cbd5e1;
+      vertical-align: middle;
+    }
+    .roster-table tbody tr.row-alt {
+      background: #f8fafc;
+    }
+    .cell-center { text-align: center; }
+    .cell-left { text-align: left; }
+    .cell-bold { font-weight: 700; }
+    .cell-fail { color: #dc2626; }
+    .mark-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      font-size: 9.5px;
+    }
+    .compliance-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #f59e0b;
+      border-radius: 4px;
+      padding: 9px 14px;
+      font-size: 10.5px;
+      color: #92400e;
+      margin-bottom: 26px;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 36px;
+      margin-top: 36px;
+      text-align: center;
+    }
+    .sig-line {
+      border-top: 1.5px solid #0f172a;
+      padding-top: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sig-role {
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print no-print-toolbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-weight:800;font-size:15px;letter-spacing:0.3px;">📄 Honeyland Official PDF Generator</span>
+      <span style="background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:4px;font-size:11.5px;">
+        💡 In Destination, choose <b>"Save as PDF"</b> to download your formatted document
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-action" onclick="window.print();">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Save as PDF / Print
+      </button>
+      <button class="btn-action btn-secondary" id="btnDownloadExcel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Excel (.xls)
+      </button>
+      <button class="btn-action btn-secondary" onclick="window.close();" style="padding:9px 14px;">✕ Close</button>
+    </div>
+  </div>
+
+  <div class="report-page-container">
+    <div class="header-banner">
+      <div class="school-name">HONEYLAND ACADEMIC PORTAL — EXECUTIVE EXAMINATION SYSTEM</div>
+      <div class="report-heading">OFFICIAL STUDENT EXAMINATION RESIT &amp; ACADEMIC INTERVENTION ROSTER</div>
+      <div class="report-sub">Teacher Classroom Record for Remedial Instruction &amp; Re-examination</div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span class="meta-k">Academic Term</span>
+        <span class="meta-v">${esc(activeTerm)}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-k">Date Generated</span>
+        <span class="meta-v">${esc(dateStr)}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-k">Resit Benchmark</span>
+        <span class="meta-v">Score ≤ ${teacherRewriteCutoffPct}% (Mandatory Retake)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-k">Score Conversion</span>
+        <span class="meta-v">${esc(scalingDesc)}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-k">Identified Students</span>
+        <span class="meta-v">${teacherRewriteStudents.length} Students Flagged</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-k">Total Resit Papers</span>
+        <span class="meta-v">${totalPapers} Papers Scheduled</span>
+      </div>
+    </div>
+
+    <table class="roster-table">
+      <thead>
+        <tr>
+          <th style="width:40px;">S/N</th>
+          <th style="width:230px;">Student Full Name</th>
+          <th style="width:130px;">Registration No</th>
+          <th style="width:85px;">Class</th>
+          <th style="width:85px;">Arm</th>
+          <th style="width:210px;">Subject Scheduled for Resit</th>
+          <th style="width:115px;">Exact Mark</th>
+          <th style="width:105px;">Raw Score</th>
+          <th style="width:80px;">%</th>
+          <th style="width:80px;">Cutoff</th>
+          <th style="width:110px;">Status</th>
+          <th style="width:200px;">Action Plan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsPdf.join("")}
+      </tbody>
+    </table>
+
+    <div class="compliance-box">
+      <b>Institutional Policy Directive:</b> Students recorded in this roster scored at or below the institutional resit threshold of <b>${teacherRewriteCutoffPct}%</b>. Teachers and subject coordinators are instructed to administer targeted remedial instruction prior to conducting the formal re-examination.
+    </div>
+
+    <div class="signature-section">
+      <div class="signature-grid">
+        <div>
+          <div style="height:45px;"></div>
+          <div class="sig-line">Class / Subject Teacher</div>
+          <div class="sig-role">Date: ________________________</div>
+        </div>
+        <div>
+          <div style="height:45px;"></div>
+          <div class="sig-line">Vice Principal (Academics)</div>
+          <div class="sig-role">Date: ________________________</div>
+        </div>
+        <div>
+          <div style="height:45px;"></div>
+          <div class="sig-line">Principal / Head of School</div>
+          <div class="sig-role">Date: ________________________</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('btnDownloadExcel').onclick = function() {
+      var excelHtml = '\\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body><table border="1">${rowsExcel.join("").replace(/"/g, '\\"')}<\\/table><\\/body><\\/html>';
+      var blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '${docTitle}.xls';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+    };
+
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        try { window.print(); } catch(e) {}
+      }, 450);
+    });
+  <\\/script>
+</body>
+</html>`;
+
+  const printWin = window.open("", "_blank");
+  if (!printWin) {
+    showToast({
+      type: "warning",
+      title: "Popup Blocked",
+      message: "Please allow popups for this site to view and download the PDF report."
+    });
+    return;
+  }
+
+  printWin.document.open();
+  printWin.document.write(pdfHtml);
+  printWin.document.close();
+  printWin.document.title = docTitle;
+  printWin.focus();
+
+  showToast({
+    type: "success",
+    title: "PDF Report Opened",
+    message: `Generated official PDF report with ${teacherRewriteStudents.length} students. Choose 'Save as PDF' to save.`
+  });
 }
 
 // ── Pagination Handlers ──
