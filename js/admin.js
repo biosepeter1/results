@@ -4764,17 +4764,35 @@ function getConversionConfig() {
     if (!raw) return { terms: {} };
     const parsed = JSON.parse(raw);
     if (!parsed) return { terms: {} };
-    if (parsed.terms) return parsed;
+    let terms = parsed.terms || {};
     // Normalize legacy single-term setting:
     if (parsed.originalMax && parsed.targetMax) {
       const tKey = parsed.targetTerm || "__ALL__";
-      return {
-        terms: {
-          [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
-        }
+      terms = {
+        [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
       };
     }
-    return { terms: {} };
+    // Deduplicate synonymous entries so localStorage stays clean
+    const cleanTerms = {};
+    const seenCats = new Set();
+    let hasDupes = false;
+    for (const [k, c] of Object.entries(terms)) {
+      if (!c) continue;
+      const cat = (k === "__ALL__") ? "__ALL__" : getCanonicalAdminTermCategory(k);
+      const key = `${cat}_${c.targetMax}_${c.originalMax}`;
+      if (!seenCats.has(key)) {
+        seenCats.add(key);
+        cleanTerms[k] = c;
+      } else {
+        hasDupes = true;
+      }
+    }
+    if (hasDupes) {
+      try {
+        localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify({ terms: cleanTerms }));
+      } catch (_) {}
+    }
+    return { terms: cleanTerms };
   } catch (e) {
     return { terms: {} };
   }
@@ -5023,9 +5041,23 @@ function refreshConversionUI() {
 
   const activeEntries = Object.entries(config.terms || {}).filter(([_, s]) => s && s.originalMax && s.targetMax && s.originalMax !== s.targetMax);
   if (activeEntries.length > 0) {
-    const summary = activeEntries.map(([t, s]) => `${t === "__ALL__" ? "All Terms" : t} (/${s.targetMax})`).join(", ");
+    const seenCats = new Set();
+    const uniqueActive = [];
+    for (const [t, s] of activeEntries) {
+      const cat = (t === "__ALL__") ? "__ALL__" : getCanonicalAdminTermCategory(t);
+      const catKey = `${cat}_${s.targetMax}`;
+      if (!seenCats.has(catKey)) {
+        seenCats.add(catKey);
+        let cleanName = t === "__ALL__" ? "All Terms" : t;
+        if (cat.endsWith("midterm")) cleanName = "Mid Term";
+        else if (cat.endsWith("firsttest")) cleanName = "First Test";
+        else if (cat.endsWith("exam")) cleanName = "Examination";
+        uniqueActive.push(`${cleanName} (/${s.targetMax})`);
+      }
+    }
+
     if (activeLbl) {
-      activeLbl.textContent = "✅ Active scaling: " + summary;
+      activeLbl.textContent = "✅ Active scaling: " + uniqueActive.join(", ");
       activeLbl.style.color = "var(--status-good, #10b981)";
     }
   } else {
@@ -5990,22 +6022,12 @@ function initConversionPanel() {
     }
     const config = getConversionConfig();
     if (!config.terms) config.terms = {};
-    config.terms[targetTerm] = { originalMax: o, targetMax: t };
-
-    // Register canonical aliases so any synonym in uploaded score rows immediately hits exact match
-    const normKey = normalizeAdminTermKey(targetTerm);
-    if (normKey.includes("midterm") || (normKey.includes("mid") && normKey.includes("term"))) {
-      config.terms["Mid Term Test"] = { originalMax: o, targetMax: t };
-      config.terms["Mid Term Examination"] = { originalMax: o, targetMax: t };
-      config.terms["Mid Term"] = { originalMax: o, targetMax: t };
-      config.terms["MID TERM EXAMINATION"] = { originalMax: o, targetMax: t };
-    } else if (normKey.includes("firsttest") || normKey.includes("1sttest") || normKey.includes("ca1")) {
-      config.terms["First Test"] = { originalMax: o, targetMax: t };
-      config.terms["First Term First Test"] = { originalMax: o, targetMax: t };
-    } else if (normKey.includes("firstterm") || normKey.includes("1stterm")) {
-      config.terms["First Term Examination"] = { originalMax: o, targetMax: t };
-      config.terms["First Term Exam"] = { originalMax: o, targetMax: t };
+    const newCat = (targetTerm === "__ALL__") ? "__ALL__" : getCanonicalAdminTermCategory(targetTerm);
+    for (const k of Object.keys(config.terms)) {
+      const kCat = (k === "__ALL__") ? "__ALL__" : getCanonicalAdminTermCategory(k);
+      if (kCat === newCat) delete config.terms[k];
     }
+    config.terms[targetTerm] = { originalMax: o, targetMax: t };
 
     applyBtn.disabled = true;
     applyBtn.textContent = "Applying...";

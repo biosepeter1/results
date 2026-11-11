@@ -156,17 +156,27 @@ function getTeacherConversionConfig() {
     if (!raw) return { terms: {} };
     const parsed = JSON.parse(raw);
     if (!parsed) return { terms: {} };
-    if (parsed.terms) return parsed;
+    let terms = parsed.terms || {};
     // Normalize legacy single-term setting
     if (parsed.originalMax && parsed.targetMax) {
       const tKey = parsed.targetTerm || "__ALL__";
-      return {
-        terms: {
-          [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
-        }
+      terms = {
+        [tKey]: { originalMax: parsed.originalMax, targetMax: parsed.targetMax }
       };
     }
-    return { terms: {} };
+    // Deduplicate synonymous entries so localStorage stays clean
+    const cleanTerms = {};
+    const seenCats = new Set();
+    for (const [k, c] of Object.entries(terms)) {
+      if (!c) continue;
+      const cat = (k === "__ALL__") ? "__ALL__" : getCanonicalTeacherTermCategory(k);
+      const key = `${cat}_${c.targetMax}_${c.originalMax}`;
+      if (!seenCats.has(key)) {
+        seenCats.add(key);
+        cleanTerms[k] = c;
+      }
+    }
+    return { terms: cleanTerms };
   } catch (e) {
     return { terms: {} };
   }
@@ -255,18 +265,6 @@ function getTeacherConversionForTerm(term) {
 
 function setTeacherScoreConversion(obj) {
   if (obj && !obj.disabled && (obj.terms || (obj.originalMax && obj.targetMax))) {
-    // Also register aliases if a term is provided
-    if (obj.terms) {
-      for (const [k, val] of Object.entries(obj.terms)) {
-        const norm = normalizeTeacherTermKey(k);
-        if (norm.includes("midterm") || (norm.includes("mid") && norm.includes("term"))) {
-          obj.terms["Mid Term Test"] = val;
-          obj.terms["Mid Term Examination"] = val;
-          obj.terms["Mid Term"] = val;
-          obj.terms["MID TERM EXAMINATION"] = val;
-        }
-      }
-    }
     localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(obj));
   } else {
     localStorage.removeItem(SCORE_CONVERSION_KEY);
