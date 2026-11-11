@@ -1535,6 +1535,51 @@ if ($("refreshTeachersBtn")) {
   };
 }
 
+if ($("downloadTeachersExcelBtn")) {
+  $("downloadTeachersExcelBtn").onclick = () => {
+    const list = (allTeachers && allTeachers.length) ? allTeachers : [];
+    if (!list.length) {
+      alert("No teacher accounts available to download.");
+      return;
+    }
+    const headers = [
+      "#",
+      "Teacher Name",
+      "Username",
+      "Password",
+      "Assigned Subjects",
+      "Assigned Classes",
+      "Assigned Arms"
+    ];
+    const rows = list.map((t, idx) => {
+      const subs = (t.subjects && t.subjects.length) ? t.subjects.join("; ") : "All Subjects";
+      const cls = (t.classes && t.classes.length) ? t.classes.join(", ") : "All Classes";
+      const arms = (t.arms && t.arms.length) ? t.arms.join(", ") : "All Arms";
+      return [
+        idx + 1,
+        `"${(t.name || "").replace(/"/g, '""')}"`,
+        `"${(t.username || t.id || "").replace(/"/g, '""')}"`,
+        `"${(t.password || "").replace(/"/g, '""')}"`,
+        `"${subs.replace(/"/g, '""')}"`,
+        `"${cls.replace(/"/g, '""')}"`,
+        `"${arms.replace(/"/g, '""')}"`
+      ];
+    });
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Teachers_Accounts_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 300);
+  };
+}
+
 // Modal Controls: Open Edit
 function openEditTeacherModal(docId) {
   const t = allTeachers.find(x => x.id === docId);
