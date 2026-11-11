@@ -966,7 +966,11 @@ window.openStudentResitSlip = function (studentId) {
 
 function exportRewriteRosterCsv() {
   if (!dashRewriteStudents || !dashRewriteStudents.length) {
-    alert("No students currently require rewrite under the selected cutoff (≤" + dashRewriteCutoffPct + "%).");
+    showToast({
+      type: "warning",
+      title: "No Rewrite Students",
+      message: "No students currently require rewrite under the selected cutoff (≤" + dashRewriteCutoffPct + "%)."
+    });
     return;
   }
 
@@ -1001,6 +1005,11 @@ function exportRewriteRosterCsv() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  showToast({
+    type: "success",
+    title: "Rewrite Roster Downloaded",
+    message: `Exported roster with ${dashRewriteStudents.length} students requiring resit.`
+  });
 }
 
 function renderDashboardStudentActionCenter() {
@@ -1584,7 +1593,11 @@ if ($("downloadTeachersExcelBtn")) {
   $("downloadTeachersExcelBtn").onclick = () => {
     const list = (allTeachers && allTeachers.length) ? allTeachers : [];
     if (!list.length) {
-      alert("No teacher accounts available to download.");
+      showToast({
+        type: "warning",
+        title: "No Teachers Found",
+        message: "No teacher accounts available to download."
+      });
       return;
     }
     const headers = [
@@ -1622,6 +1635,11 @@ if ($("downloadTeachersExcelBtn")) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }, 300);
+    showToast({
+      type: "success",
+      title: "Teachers Downloaded",
+      message: `Exported ${list.length} teacher accounts in Excel/CSV format.`
+    });
   };
 }
 
@@ -1709,9 +1727,19 @@ $("modalSaveBtn").onclick = async () => {
     renderTeachersTable();
 
     $("teacherModal").classList.remove("open");
+    showToast({
+      type: "success",
+      title: origId ? "Teacher Updated" : "Teacher Added",
+      message: `Account for "${docData.name}" (${cleanUser}) saved successfully.`
+    });
     await loadTeachers(true);
   } catch (e) {
     $("modalErrorMsg").textContent = "Save failed: " + e.message;
+    showToast({
+      type: "error",
+      title: "Save Failed",
+      message: e.message
+    });
   }
   $("modalSaveBtn").disabled = false;
   $("modalSaveBtn").textContent = "Save teacher";
@@ -1729,9 +1757,18 @@ async function deleteTeacher(docId) {
     renderTeachersTable();
 
     await window.dbClient.deleteTeacher(docId);
+    showToast({
+      type: "info",
+      title: "Teacher Removed",
+      message: `Account for "${tName}" has been deleted.`
+    });
     await loadTeachers(true);
   } catch (e) {
-    alert("Delete failed: " + e.message);
+    showToast({
+      type: "error",
+      title: "Delete Failed",
+      message: e.message
+    });
   }
 }
 
@@ -1894,7 +1931,11 @@ function editUploadTermName(oldTerm) {
   if (newName === null) return;
   const trimmed = newName.trim();
   if (!trimmed) {
-    alert("Term name cannot be empty.");
+    showToast({
+      type: "warning",
+      title: "Name Required",
+      message: "Term name cannot be empty."
+    });
     return;
   }
   if (trimmed === oldTerm) return;
@@ -1969,10 +2010,19 @@ if ($("saveCustomTermOptionBtn")) {
   $("saveCustomTermOptionBtn").onclick = () => {
     const val = $("customTermInput")?.value.trim();
     if (!val) {
-      alert("Please enter a custom term name to save as an option.");
+      showToast({
+        type: "warning",
+        title: "Term Name Required",
+        message: "Please enter a custom term name to save as an option."
+      });
       return;
     }
     addCustomTermAsOption(val);
+    showToast({
+      type: "success",
+      title: "Term Added",
+      message: `"${val}" added to upload term options.`
+    });
   };
 }
 
@@ -2394,7 +2444,11 @@ function renderCbtTermOptions() {
 
 function addCustomCbtTermOption(termName) {
   if (!termName || !termName.trim()) {
-    alert("Please enter a term name (e.g. FIRST TERM EXAMINATION).");
+    showToast({
+      type: "warning",
+      title: "Term Name Required",
+      message: "Please enter a term name (e.g. FIRST TERM EXAMINATION)."
+    });
     return;
   }
   const cleaned = termName.trim().toUpperCase();
@@ -2458,8 +2512,18 @@ async function setAdminCbtActiveTerm(newTerm) {
       badge.style.display = "inline";
       setTimeout(() => { badge.style.display = "none"; }, 4000);
     }
+    showToast({
+      type: "success",
+      title: "Active Exam Term Updated",
+      message: `CBT examination term set to "${activeCbtExamTerm}". Live for all teachers.`
+    });
   } catch (err) {
     console.error("Could not update active term in Supabase:", err);
+    showToast({
+      type: "error",
+      title: "Active Term Sync Failed",
+      message: err.message
+    });
   }
 }
 
@@ -2566,8 +2630,17 @@ async function saveAdminCbtDefaults() {
       badge.style.display = "inline";
       setTimeout(() => { badge.style.display = "none"; }, 3000);
     }
+    showToast({
+      type: "success",
+      title: "Parameters Saved",
+      message: `Enforced school-wide duration (${dur} mins) and marks per question (${marks}).`
+    });
   } catch (err) {
-    alert("Could not save exam defaults to Supabase: " + err.message);
+    showToast({
+      type: "error",
+      title: "Save Failed",
+      message: "Could not save exam defaults to Supabase: " + err.message
+    });
   }
 }
 
@@ -3054,6 +3127,11 @@ function saveCbtSubjectFromModal() {
   saveCbtSubjectsStorage();
   refreshCbtSubjectsCatalog();
   closeCbtSubjectModal();
+  showToast({
+    type: "success",
+    title: origKey ? "Subject Updated" : "Subject Added",
+    message: `Subject "${name}" saved to CBT catalog.`
+  });
 }
 
 function deleteCbtSubject(name) {
@@ -3066,6 +3144,11 @@ function deleteCbtSubject(name) {
 
   saveCbtSubjectsStorage();
   refreshCbtSubjectsCatalog();
+  showToast({
+    type: "info",
+    title: "Subject Removed",
+    message: `Subject "${name}" removed from CBT catalog.`
+  });
 }
 
 function resetCbtSubjectsToDefault() {
@@ -3074,6 +3157,11 @@ function resetCbtSubjectsToDefault() {
   cbtDeletedDefaults = [];
   saveCbtSubjectsStorage();
   refreshCbtSubjectsCatalog();
+  showToast({
+    type: "success",
+    title: "Catalog Reset",
+    message: "Restored CBT subjects catalog to 45 standard defaults."
+  });
 }
 
 function exportCbtSubjectsJson() {
@@ -3087,6 +3175,11 @@ function exportCbtSubjectsJson() {
   }));
 
   triggerJsonDownload("cbtApp_v2.subjects.json", mongoSubjects);
+  showToast({
+    type: "success",
+    title: "JSON Exported",
+    message: `Exported ${entries.length} subjects to cbtApp_v2.subjects.json.`
+  });
 }
 
 // Collapsible Dropdown Accordion for CBT Subjects Catalog
@@ -3204,7 +3297,11 @@ async function saveCbtTermsMappings() {
   });
 
   if (hasInvalid) {
-    alert("One or more MongoDB ObjectIds are invalid. Each ObjectId must be exactly 24 hexadecimal characters (0-9, a-f).");
+    showToast({
+      type: "error",
+      title: "Invalid ObjectId",
+      message: "One or more MongoDB ObjectIds are invalid. Each ObjectId must be exactly 24 hexadecimal characters (0-9, a-f)."
+    });
     return;
   }
 
@@ -3214,7 +3311,11 @@ async function saveCbtTermsMappings() {
   if (sessVal) {
     if (!/^[0-9a-fA-F]{24}$/.test(sessVal)) {
       if (sessInput) sessInput.style.borderColor = "#ef4444";
-      alert("Academic Session ObjectId must be exactly 24 hexadecimal characters.");
+      showToast({
+        type: "error",
+        title: "Invalid Session ID",
+        message: "Academic Session ObjectId must be exactly 24 hexadecimal characters."
+      });
       return;
     }
     if (sessInput) sessInput.style.borderColor = "";
@@ -3245,6 +3346,12 @@ async function saveCbtTermsMappings() {
     fb.style.display = "inline";
     setTimeout(() => { fb.style.display = "none"; }, 3500);
   }
+
+  showToast({
+    type: "success",
+    title: "Mappings Saved",
+    message: "Term & Academic Session MongoDB ObjectIds synchronized with cloud."
+  });
 }
 
 function exportCbtTermsJson() {
@@ -3273,6 +3380,11 @@ function exportCbtTermsJson() {
   });
 
   triggerJsonDownload("cbtApp_v2.terms.json", mongoTerms);
+  showToast({
+    type: "success",
+    title: "Terms JSON Exported",
+    message: "Exported cbtApp_v2.terms.json for MongoDB Compass."
+  });
 }
 
 function initCbtTermsManager() {
@@ -3467,9 +3579,18 @@ async function deleteCBTSubmission(docId) {
   if (!confirm(`Delete exam "${sub?.title || 'this submission'}"?`)) return;
   try {
     await window.dbClient.deleteSubmission(docId);
+    showToast({
+      type: "info",
+      title: "Exam Deleted",
+      message: `Exam "${sub?.title || 'submission'}" was removed.`
+    });
     await loadCBTSubmissions();
   } catch (err) {
-    alert("Delete failed: " + err.message);
+    showToast({
+      type: "error",
+      title: "Delete Failed",
+      message: err.message
+    });
   }
 }
 
@@ -4641,7 +4762,11 @@ function _autoSeedSupabaseFromCache(rows) {
 async function pushCachedScoresToCloud() {
   const cached = getCachedScores();
   if (!cached || !Array.isArray(cached.rows) || cached.rows.length === 0) {
-    alert("No saved device scores found to push. Please upload a CSV first.");
+    showToast({
+      type: "warning",
+      title: "No Cached Scores",
+      message: "No saved device scores found to push. Please upload a CSV first."
+    });
     return;
   }
 
@@ -4671,10 +4796,18 @@ async function pushCachedScoresToCloud() {
     await loadStudentScores(true);
 
     if (pushBtn) { pushBtn.style.display = "none"; }
-    alert("Successfully pushed " + rows.length.toLocaleString() + " records to Supabase! All portals now have access.");
+    showToast({
+      type: "success",
+      title: "Scores Pushed",
+      message: `Successfully pushed ${rows.length.toLocaleString()} records to Supabase! All portals now have access.`
+    });
   } catch (err) {
     console.error("Push to cloud error:", err);
-    alert("Push failed: " + err.message + "\nCheck browser console for details.");
+    showToast({
+      type: "error",
+      title: "Push Failed",
+      message: err.message
+    });
     if (pushBtn) { pushBtn.disabled = false; pushBtn.innerHTML = "&#8679; Push to Cloud"; }
   }
 }
@@ -5061,9 +5194,17 @@ async function runSmartDeduplication() {
     await loadStudentScores(true);
     await loadLiveTerms();
 
-    alert(`✓ Deduplication Complete!\n\nRemoved ${stats.removed || 0} duplicate records from Supabase.\nAll teacher views have been updated to clean single records.`);
+    showToast({
+      type: "success",
+      title: "Deduplication Complete",
+      message: `Removed ${stats.removed || 0} duplicate records from Supabase. Teacher views updated.`
+    });
   } catch (err) {
-    alert("Deduplication error: " + err.message);
+    showToast({
+      type: "error",
+      title: "Deduplication Error",
+      message: err.message
+    });
   } finally {
     const sBtn = document.getElementById("scoresDeduplicateBtn");
     if (sBtn) { sBtn.disabled = false; sBtn.innerHTML = "🧹 Remove Duplicates"; }
@@ -5184,12 +5325,20 @@ function initConversionPanel() {
     }
 
     if (!o || o <= 0) {
-      alert("Please provide the Original Max score (e.g. 20) or select a term with uploaded scores.");
+      showToast({
+        type: "warning",
+        title: "Original Max Required",
+        message: "Please provide the Original Max score (e.g. 20) or select a term with uploaded scores."
+      });
       origEl.focus();
       return;
     }
     if (!t || t <= 0) {
-      alert("Please enter the Target Max score you want to scale to (e.g. 30).");
+      showToast({
+        type: "warning",
+        title: "Target Max Required",
+        message: "Please enter the Target Max score you want to scale to (e.g. 30)."
+      });
       tgtEl.focus();
       return;
     }
@@ -5210,8 +5359,17 @@ function initConversionPanel() {
       }
       const label = targetTerm === "__ALL__" ? "All Terms" : targetTerm;
       showConversionFeedback(`✓ Scaling for "${label}" saved to Supabase & live for teachers!`);
+      showToast({
+        type: "success",
+        title: "Scaling Applied",
+        message: `Scaled "${label}" from /${o} to /${t} (×${(t / o).toFixed(2).replace(/\.00$/, "")}). Saved to cloud.`
+      });
     } catch (err) {
-      alert("Score conversion saved locally but cloud sync failed: " + err.message);
+      showToast({
+        type: "error",
+        title: "Cloud Sync Failed",
+        message: "Score conversion saved locally but cloud sync failed: " + err.message
+      });
     } finally {
       applyBtn.disabled = false;
       applyBtn.textContent = "Apply";
@@ -5242,6 +5400,11 @@ function initConversionPanel() {
       }
       const label = targetTerm === "__ALL__" ? "All Terms" : targetTerm;
       showConversionFeedback(`✓ Reset scaling for "${label}"`);
+      showToast({
+        type: "info",
+        title: "Scaling Reset",
+        message: `Reset score conversion for "${label}".`
+      });
     } catch (err) {
       console.warn("Cloud reset warning:", err);
     } finally {
@@ -5264,7 +5427,14 @@ function initConversionPanel() {
 // Export CSV
 $("scoresExportCsvBtn").onclick = () => {
   const sorted = getSortedAdminRows();
-  if (!sorted.length) { alert("No rows to export."); return; }
+  if (!sorted.length) {
+    showToast({
+      type: "warning",
+      title: "No Rows to Export",
+      message: "There are no score rows available to export."
+    });
+    return;
+  }
   const headers = ["#", "Student Name", "Reg Number", "Subject", "Class", "Arm", "Score", "Percentage", "Status", "Date & Time", "Term"];
   const rows = sorted.map((r, i) => {
     const rawScore = parseFloat(r.score) || 0;
@@ -5295,6 +5465,11 @@ $("scoresExportCsvBtn").onclick = () => {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+  showToast({
+    type: "success",
+    title: "Scores Exported",
+    message: `Exported ${sorted.length} student examination score records.`
+  });
 };
 
 function esc(s) {
