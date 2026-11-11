@@ -2293,7 +2293,7 @@ function renderCbtTermOptions() {
         select.value = activeCbtExamTerm;
         const drawer = $("cbtAdminCustomTermDrawer");
         if (drawer) {
-          drawer.style.display = "block";
+          drawer.classList.add("open");
           const input = $("cbtAdminCustomTermInput");
           if (input) {
             input.value = "";
@@ -2368,7 +2368,7 @@ function addCustomCbtTermOption(termName) {
 
   // Close custom drawer & clear input
   const drawer = $("cbtAdminCustomTermDrawer");
-  if (drawer) drawer.style.display = "none";
+  if (drawer) drawer.classList.remove("open");
   if ($("cbtAdminCustomTermInput")) $("cbtAdminCustomTermInput").value = "";
 }
 
@@ -2433,7 +2433,7 @@ if ($("cbtAddCustomTermBtn")) {
   $("cbtAddCustomTermBtn").onclick = () => {
     const drawer = $("cbtAdminCustomTermDrawer");
     if (drawer) {
-      drawer.style.display = "block";
+      drawer.classList.add("open");
       const input = $("cbtAdminCustomTermInput");
       if (input) {
         input.value = "";
@@ -2463,7 +2463,7 @@ if ($("cbtAdminSaveCustomTermBtn")) {
 if ($("cbtAdminCancelCustomBtn")) {
   $("cbtAdminCancelCustomBtn").onclick = () => {
     const drawer = $("cbtAdminCustomTermDrawer");
-    if (drawer) drawer.style.display = "none";
+    if (drawer) drawer.classList.remove("open");
   };
 }
 
@@ -3050,16 +3050,25 @@ function exportCbtSubjectsJson() {
 // Collapsible Dropdown Accordion for CBT Subjects Catalog
 function toggleCbtSubjectsAccordion(forceOpen) {
   const body = $("cbtSubjectsCollapsibleBody");
-  const icon = $("cbtSubjectsToggleIcon");
+  const card = $("cbtSubjectsManagerCard");
+  const btn = $("cbtToggleSubjectsBtn");
   const text = $("cbtSubjectsToggleText");
   if (!body) return;
 
-  const isCurrentlyOpen = body.style.display !== "none";
+  const isCurrentlyOpen = body.classList.contains("open");
   const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
 
-  body.style.display = willOpen ? "block" : "none";
-  if (icon) icon.textContent = willOpen ? "▲" : "▼";
-  if (text) text.textContent = willOpen ? "Collapse Catalog" : "Expand Catalog";
+  if (willOpen) {
+    body.classList.add("open");
+    if (card) card.classList.add("cbt-accordion-open");
+    if (btn) btn.classList.add("open");
+    if (text) text.textContent = "Collapse Catalog";
+  } else {
+    body.classList.remove("open");
+    if (card) card.classList.remove("cbt-accordion-open");
+    if (btn) btn.classList.remove("open");
+    if (text) text.textContent = "Expand Catalog";
+  }
 }
 
 if ($("cbtToggleSubjectsBtn")) {
@@ -3230,18 +3239,27 @@ function initCbtTermsManager() {
   if ($("cbtExportTermsJsonBtn")) $("cbtExportTermsJsonBtn").onclick = exportCbtTermsJson;
 
   const toggleBtn = $("cbtToggleTermsBtn");
+  const card = $("cbtTermsManagerCard");
   const header = $("cbtTermsHeader");
   const body = $("cbtTermsCollapsibleBody");
-  const icon = $("cbtTermsToggleIcon");
   const text = $("cbtTermsToggleText");
 
   function toggleTermsAccordion(forceOpen) {
     if (!body) return;
-    const isCurrentlyOpen = body.style.display !== "none";
+    const isCurrentlyOpen = body.classList.contains("open");
     const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
-    body.style.display = willOpen ? "block" : "none";
-    if (icon) icon.textContent = willOpen ? "▲" : "▼";
-    if (text) text.textContent = willOpen ? "Collapse Mappings" : "Expand Mappings";
+
+    if (willOpen) {
+      body.classList.add("open");
+      if (card) card.classList.add("cbt-accordion-open");
+      if (toggleBtn) toggleBtn.classList.add("open");
+      if (text) text.textContent = "Collapse Mappings";
+    } else {
+      body.classList.remove("open");
+      if (card) card.classList.remove("cbt-accordion-open");
+      if (toggleBtn) toggleBtn.classList.remove("open");
+      if (text) text.textContent = "Expand Mappings";
+    }
   }
 
   if (toggleBtn) {

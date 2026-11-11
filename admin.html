@@ -29,7 +29,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=2.8">
+  <link rel="stylesheet" href="css/admin.css?v=2.9">
 </head>
 
 <body>
@@ -1184,28 +1184,30 @@
             <div id="cbtAdminTermsContainer" style="display:none"></div>
           </div>
 
-          <!-- Custom Term Input Drawer (Automatically saves as an option) -->
-          <div id="cbtAdminCustomTermDrawer"
-            style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
-              ➕ Add Custom Examination Term
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input type="text" id="cbtAdminCustomTermInput" class="form-input"
-                style="padding:6px 12px;font-size:13px;min-width:260px;flex:1;max-width:440px"
-                placeholder="e.g. FIRST TERM EXAMINATION, MOCK EXAM 2026...">
-              <button type="button" class="btn btn-sm btn-primary" id="cbtAdminSaveCustomTermBtn"
-                style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none">
-                💾 Save as Option &amp; Set Active
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtAdminCancelCustomBtn"
-                style="font-size:12px;padding:6px 12px">
-                Cancel
-              </button>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
-              💡 <em>Whatever custom term you enter automatically saves permanently as a selectable option and
-                becomes the active term for all teachers!</em>
+          <!-- Custom Term Input Drawer (Automatically saves as an option, smoothly animated) -->
+          <div id="cbtAdminCustomTermDrawer" class="cbt-accordion-collapse"
+            style="margin-top:12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
+            <div class="cbt-accordion-inner" style="padding:12px 14px">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
+                ➕ Add Custom Examination Term
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="text" id="cbtAdminCustomTermInput" class="form-input"
+                  style="padding:6px 12px;font-size:13px;min-width:260px;flex:1;max-width:440px"
+                  placeholder="e.g. FIRST TERM EXAMINATION, MOCK EXAM 2026...">
+                <button type="button" class="btn btn-sm btn-primary" id="cbtAdminSaveCustomTermBtn"
+                  style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none">
+                  💾 Save as Option &amp; Set Active
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtAdminCancelCustomBtn"
+                  style="font-size:12px;padding:6px 12px">
+                  Cancel
+                </button>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+                💡 <em>Whatever custom term you enter automatically saves permanently as a selectable option and
+                  becomes the active term for all teachers!</em>
+              </div>
             </div>
           </div>
 
@@ -1340,7 +1342,7 @@
 
         <!-- CBT Subjects & MongoDB Catalog Manager (Collapsible Dropdown Accordion) -->
         <div class="card" style="margin-top:24px" id="cbtSubjectsManagerCard">
-          <div class="card-header" id="cbtSubjectsHeader"
+          <div class="card-header cbt-collapsible-header" id="cbtSubjectsHeader"
             style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"
             title="Click to expand or collapse CBT subjects catalog">
             <div style="flex:1;min-width:240px">
@@ -1357,58 +1359,59 @@
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleSubjectsBtn"
                 style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-                <span id="cbtSubjectsToggleIcon" style="display:inline-block;transition:transform 0.2s">▼</span>
+                <span id="cbtSubjectsToggleIcon" class="cbt-toggle-arrow">▼</span>
                 <span id="cbtSubjectsToggleText">Expand Catalog</span>
               </button>
             </div>
           </div>
 
-          <!-- Collapsible Body -->
-          <div id="cbtSubjectsCollapsibleBody"
-            style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
-            <div
-              style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-              <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:10px">
-                <span id="cbtSubjectCountLabel">Loading subjects…</span>
-                <span>•</span>
-                <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
+          <!-- Collapsible Body with Smooth Animation -->
+          <div id="cbtSubjectsCollapsibleBody" class="cbt-accordion-collapse">
+            <div class="cbt-accordion-inner" style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
+              <div
+                style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+                <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:10px">
+                  <span id="cbtSubjectCountLabel">Loading subjects…</span>
+                  <span>•</span>
+                  <span style="font-size:11px">Compass Collection: <code>cbtApp_v2.subjects</code></span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input type="search" class="search-input" id="cbtSubjectSearchInput"
+                    placeholder="Filter subjects or IDs..." style="width:200px">
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn"
+                    title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn"
+                    title="Reset catalog to standard 45 subjects">Reset Defaults</button>
+                  <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
+                </div>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="search" class="search-input" id="cbtSubjectSearchInput"
-                  placeholder="Filter subjects or IDs..." style="width:200px">
-                <button type="button" class="btn btn-secondary btn-sm" id="cbtExportSubjectsJsonBtn"
-                  title="Export subjects as JSON for MongoDB Compass">Export subjects.json</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="cbtResetSubjectsBtn"
-                  title="Reset catalog to standard 45 subjects">Reset Defaults</button>
-                <button type="button" class="btn btn-sm" id="cbtOpenAddSubjectBtn">+ Add Subject</button>
-              </div>
-            </div>
 
-            <div class="table-wrap" style="max-height:360px;overflow-y:auto">
-              <table class="inst-table">
-                <thead>
-                  <tr>
-                    <th style="width:40px">#</th>
-                    <th>Subject Name</th>
-                    <th>MongoDB ObjectId (24-hex)</th>
-                    <th>Catalog Type</th>
-                    <th style="text-align:right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="cbtSubjectsTbody">
-                  <tr>
-                    <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-wrap" style="max-height:360px;overflow-y:auto">
+                <table class="inst-table">
+                  <thead>
+                    <tr>
+                      <th style="width:40px">#</th>
+                      <th>Subject Name</th>
+                      <th>MongoDB ObjectId (24-hex)</th>
+                      <th>Catalog Type</th>
+                      <th style="text-align:right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cbtSubjectsTbody">
+                    <tr>
+                      <td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Loading subjects…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- CBT Terms & Sessions MongoDB Catalog Manager (Collapsible Dropdown Accordion) -->
         <div class="card" style="margin-top:24px" id="cbtTermsManagerCard">
-          <div class="card-header" id="cbtTermsHeader"
+          <div class="card-header cbt-collapsible-header" id="cbtTermsHeader"
             style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"
             title="Click to expand or collapse CBT terms &amp; sessions mappings">
             <div style="flex:1;min-width:240px">
@@ -1421,26 +1424,26 @@
             <div style="display:flex;gap:8px;align-items:center">
               <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleTermsBtn"
                 style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-                <span id="cbtTermsToggleIcon" style="display:inline-block;transition:transform 0.2s">▼</span>
+                <span id="cbtTermsToggleIcon" class="cbt-toggle-arrow">▼</span>
                 <span id="cbtTermsToggleText">Expand Mappings</span>
               </button>
             </div>
           </div>
 
-          <!-- Collapsible Body -->
-          <div id="cbtTermsCollapsibleBody"
-            style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
-            <div
-              style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted)">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span>Compass Collections: <code>cbtApp_v2.terms</code> &amp; <code>cbtApp_v2.sessions</code></span>
-                <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term mappings saved!</span>
+          <!-- Collapsible Body with Smooth Animation -->
+          <div id="cbtTermsCollapsibleBody" class="cbt-accordion-collapse">
+            <div class="cbt-accordion-inner" style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
+              <div
+                style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span>Compass Collections: <code>cbtApp_v2.terms</code> &amp; <code>cbtApp_v2.sessions</code></span>
+                  <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term mappings saved!</span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export terms.json</button>
+                  <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session IDs</button>
+                </div>
               </div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export terms.json</button>
-                <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session IDs</button>
-              </div>
-            </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
             <!-- First Term Era -->
@@ -1538,11 +1541,12 @@
               </div>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.5">
-            💡 <strong>Why this matters:</strong> The offline CBT app filters exams by the active term's MongoDB
-            <code>_id</code>. By saving your term IDs here from MongoDB Compass, any exams downloaded as
-            <code>exams.json</code> will immediately show their questions in the offline app when that term is active!
-          </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.5">
+                💡 <strong>Why this matters:</strong> The offline CBT app filters exams by the active term's MongoDB
+                <code>_id</code>. By saving your term IDs here from MongoDB Compass, any exams downloaded as
+                <code>exams.json</code> will immediately show their questions in the offline app when that term is active!
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1914,7 +1918,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=3.5"></script>
+  <script src="js/admin.js?v=3.6"></script>
 </body>
 
 </html>
