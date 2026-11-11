@@ -214,6 +214,40 @@ function getRowEffectivePct(r) {
   return conv !== null ? conv : (r.pct || 0);
 }
 
+function getTeacherSubjectMaxMark(subObj, termName) {
+  const t = termName || currentTerm;
+  const c = getTeacherConversionForTerm(t);
+  if (c && c.targetMax) return Number(c.targetMax);
+
+  if (subObj) {
+    if (subObj.max) return Number(subObj.max);
+    if (subObj.maxScore) return Number(subObj.maxScore);
+
+    const s = parseFloat(subObj.score !== undefined ? subObj.score : subObj.rawScore);
+    const p = parseFloat(subObj.pct);
+    if (s > 0 && p > 0) {
+      const derived = Math.round(s / (p / 100));
+      if (derived > 0 && Number.isFinite(derived)) return derived;
+    }
+  }
+
+  if (Array.isArray(allRows) && allRows.length > 0) {
+    for (let i = 0; i < Math.min(allRows.length, 200); i++) {
+      const r = allRows[i];
+      if (!t || r.term === t) {
+        const s = parseFloat(r.score);
+        const p = parseFloat(r.pct);
+        if (s > 0 && p > 0) {
+          const derived = Math.round(s / (p / 100));
+          if (derived > 0 && Number.isFinite(derived)) return derived;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function updateTeacherConvNotice() {
   const notice = $("teacherConvNotice");
   if (notice) notice.style.display = "none";
@@ -1076,9 +1110,10 @@ function renderTableOnly() {
 
     filteredRewrite.forEach((s, idx) => {
       const rewriteBadges = s.rewriteSubjects.map(rSub => {
-        const scoreDisplay = (rSub.score !== undefined && rSub.score !== null && String(rSub.score) !== String(rSub.pct))
-          ? `${rSub.score} (${rSub.pct}%)`
-          : `${rSub.pct}%`;
+        const maxMark = getTeacherSubjectMaxMark(rSub, s.term || currentTerm);
+        const scoreDisplay = (rSub.score !== undefined && rSub.score !== null)
+          ? (maxMark ? `${rSub.score}/${maxMark}` : `${rSub.score}`)
+          : (maxMark ? `${rSub.pct}/${maxMark}` : `${rSub.pct}`);
         return `
           <span onclick="event.stopPropagation(); window.toggleTeacherStudentDrawer('${s.id}', '${esc(rSub.subject)}');"
             title="Click to reveal exact marks for ${esc(rSub.subject)}"
@@ -1146,6 +1181,9 @@ function renderTableOnly() {
         const badgeBg = isRw ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
         const badgeColor = isRw ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
 
+        const maxMark = getTeacherSubjectMaxMark(sc, s.term || currentTerm);
+        const exactScoreDisplay = sc.score !== undefined ? (maxMark ? `${sc.score}/${maxMark}` : sc.score) : (maxMark ? `${sc.pct}/${maxMark}` : sc.pct);
+
         return `
                 <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
                   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
@@ -1155,7 +1193,7 @@ function renderTableOnly() {
                     </span>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                    <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                    <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(exactScoreDisplay)}</strong></span>
                     <span style="font-size:13px; font-weight:700; color:${badgeColor};">${sc.pct}%</span>
                   </div>
                   <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
@@ -1350,6 +1388,9 @@ window.openTeacherStudentScoreModal = function (studentId, isResit = false) {
 
       const rowBg = (isResit && isRewrite) ? "background:rgba(245,158,11,0.08);" : "";
 
+      const maxMark = getTeacherSubjectMaxMark(sc, s.term || currentTerm);
+      const modalScoreDisplay = sc.score !== undefined ? (maxMark ? `${esc(sc.score)}/${maxMark}` : esc(sc.score)) : "-";
+
       return `
         <tr style="border-bottom:1px solid var(--border-subtle); ${rowBg}">
           <td style="padding:10px 8px;font-weight:600;color:var(--text-subtle);">${i + 1}</td>
@@ -1357,7 +1398,7 @@ window.openTeacherStudentScoreModal = function (studentId, isResit = false) {
             ${esc(sc.subject)}
             ${isRewrite ? `<span style="font-size:10px;padding:2px 6px;margin-left:6px;border-radius:3px;background:#f59e0b;color:#fff;font-weight:700;letter-spacing:0.02em;">REWRITE</span>` : ""}
           </td>
-          <td style="padding:10px 8px;text-align:center;font-weight:600;">${sc.score !== undefined ? esc(sc.score) : "-"}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:600;">${modalScoreDisplay}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:${isP ? '#10b981' : (isRewrite ? '#f59e0b' : '#ef4444')};">${sc.pct}%</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;">${grade}</td>
           <td style="padding:10px 8px;text-align:center;">
@@ -1414,6 +1455,8 @@ function exportTeacherRewriteCSV() {
   let sn = 1;
   teacherRewriteStudents.forEach(s => {
     (s.rewriteSubjects || []).forEach(rSub => {
+      const maxMark = getTeacherSubjectMaxMark(rSub, s.term || currentTerm);
+      const csvScore = rSub.score !== undefined ? (maxMark ? `${rSub.score}/${maxMark}` : rSub.score) : "-";
       rows.push([
         sn++,
         `"${(s.name || '').replace(/"/g, '""')}"`,
@@ -1421,7 +1464,7 @@ function exportTeacherRewriteCSV() {
         `"${formatClassAbbr(s.class) || (s.class || '')}"`,
         `"${formatArmAbbr(s.arm) || (s.arm || '')}"`,
         `"${(rSub.subject || '').replace(/"/g, '""')}"`,
-        rSub.score !== undefined ? rSub.score : "-",
+        csvScore,
         `${rSub.pct}%`,
         `≤ ${teacherRewriteCutoffPct}%`,
         "MANDATORY REWRITE REQUIRED",

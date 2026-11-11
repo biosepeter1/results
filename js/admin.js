@@ -1118,9 +1118,10 @@ function renderDashboardStudentActionCenter() {
       `);
     } else if (isFailTab) {
       const failBadges = s.failedSubjects.map(f => {
-        const scoreDisplay = (f.score !== undefined && f.score !== null && String(f.score) !== String(f.pct))
-          ? `${f.score} (${f.pct}%)`
-          : `${f.pct}%`;
+        const maxMark = getAdminSubjectMaxMark(f, s.term || adminCurrentTerm);
+        const scoreDisplay = (f.score !== undefined && f.score !== null)
+          ? (maxMark ? `${f.score}/${maxMark}` : `${f.score}`)
+          : (maxMark ? `${f.pct}/${maxMark}` : `${f.pct}`);
         const isRewrite = f.pct <= dashRewriteCutoffPct;
         return `
           <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
@@ -1177,6 +1178,8 @@ function renderDashboardStudentActionCenter() {
         const isPass = sc.pct >= 50;
         const isRewrite = sc.pct <= dashRewriteCutoffPct;
         const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const maxMark = getAdminSubjectMaxMark(sc, s.term || adminCurrentTerm);
+        const exactScoreDisplay = sc.score !== undefined ? (maxMark ? `${sc.score}/${maxMark}` : sc.score) : (maxMark ? `${sc.pct}/${maxMark}` : sc.pct);
         return `
                   <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)')}; border-left:4px solid ${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')}; border-radius:var(--radius); transition:all 0.25s ease;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
@@ -1186,7 +1189,7 @@ function renderDashboardStudentActionCenter() {
                       </span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
+                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(exactScoreDisplay)}</strong></span>
                       <span style="font-size:13px; font-weight:700; color:${isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444')};">${sc.pct}%</span>
                     </div>
                     <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
@@ -4030,6 +4033,31 @@ function applyPctConversion(rawScore, term) {
   if (!c || !c.originalMax || !c.targetMax) return null; // null = use stored pct
   const converted = applyScoreConversion(rawScore, term);
   return Math.round((converted / c.targetMax) * 100 * 10) / 10;
+}
+
+function getAdminSubjectMaxMark(subObj, termName) {
+  const t = termName || adminCurrentTerm;
+  const c = getConversionForTerm(t);
+  if (c && c.targetMax) return Number(c.targetMax);
+
+  if (subObj) {
+    if (subObj.max) return Number(subObj.max);
+    if (subObj.maxScore) return Number(subObj.maxScore);
+
+    const s = parseFloat(subObj.score !== undefined ? subObj.score : subObj.rawScore);
+    const p = parseFloat(subObj.pct);
+    if (s > 0 && p > 0) {
+      const derived = Math.round(s / (p / 100));
+      if (derived > 0 && Number.isFinite(derived)) return derived;
+    }
+  }
+
+  if (typeof detectOriginalMaxForTerm === "function" && Array.isArray(allScoreRows) && allScoreRows.length > 0) {
+    const detected = detectOriginalMaxForTerm(allScoreRows, t);
+    if (detected && detected > 0) return detected;
+  }
+
+  return null;
 }
 
 function populateConversionTermSelect(terms) {
