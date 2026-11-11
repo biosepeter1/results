@@ -5060,6 +5060,45 @@ function initConversionPanel() {
     });
   }
 
+  // Mobile Collapsible Dropdown toggle for Score Conversion (only active on mobile)
+  const convToggleBtn = document.getElementById("convMobileToggleBtn");
+  const convHeader = document.getElementById("convHeaderBar");
+  const convPanel = document.getElementById("scoreConversionPanel");
+  const convBody = document.getElementById("convCollapsibleBody");
+  const convToggleText = document.getElementById("convMobileToggleText");
+
+  function toggleMobileScoreConversion(forceOpen) {
+    if (!convPanel) return;
+    const isCurrentlyOpen = convPanel.classList.contains("mobile-open");
+    const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+    if (willOpen) {
+      convPanel.classList.add("mobile-open");
+      if (convBody) convBody.classList.add("open");
+      if (convToggleText) convToggleText.textContent = "Close";
+    } else {
+      convPanel.classList.remove("mobile-open");
+      if (convBody) convBody.classList.remove("open");
+      if (convToggleText) convToggleText.textContent = "Configure";
+    }
+  }
+
+  if (convToggleBtn) {
+    convToggleBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleMobileScoreConversion();
+    };
+  }
+
+  if (convHeader) {
+    convHeader.onclick = (e) => {
+      if (window.innerWidth <= 768) {
+        if (e.target.closest("button") || e.target.closest("select") || e.target.closest("input")) return;
+        toggleMobileScoreConversion();
+      }
+    };
+  }
+
   refreshConversionUI();
 
   function updatePreview() {
