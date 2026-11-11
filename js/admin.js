@@ -318,12 +318,53 @@ function initDashboardEvents() {
     $("dashSubjectTabNeedsSupport").onclick = () => setSubjectViewTab("needs_support");
   }
 
+  // Collapsible Dropdown Accordion for Student Academic Action Center
+  function toggleDashActionCenterAccordion(forceOpen) {
+    const body = $("dashActionCenterCollapsibleBody");
+    const card = $("dashStudentActionCenterCard");
+    const btn = $("dashToggleActionCenterBtn");
+    const text = $("dashActionCenterToggleText");
+    if (!body) return;
+
+    const isCurrentlyOpen = body.classList.contains("open");
+    const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+    if (willOpen) {
+      body.classList.add("open");
+      if (card) card.classList.add("cbt-accordion-open");
+      if (btn) btn.classList.add("open");
+      if (text) text.textContent = "Collapse Action Center";
+    } else {
+      body.classList.remove("open");
+      if (card) card.classList.remove("cbt-accordion-open");
+      if (btn) btn.classList.remove("open");
+      if (text) text.textContent = "Expand Action Center";
+    }
+  }
+
+  window.toggleDashActionCenterAccordion = toggleDashActionCenterAccordion;
+
+  if ($("dashToggleActionCenterBtn")) {
+    $("dashToggleActionCenterBtn").onclick = (e) => {
+      e.stopPropagation();
+      toggleDashActionCenterAccordion();
+    };
+  }
+
+  if ($("dashActionCenterHeader")) {
+    $("dashActionCenterHeader").onclick = (e) => {
+      if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select")) return;
+      toggleDashActionCenterAccordion();
+    };
+  }
+
   const setStudentViewTab = (tab) => {
     dashActiveTabStudentView = tab;
     if ($("dashStudentsTabFail")) $("dashStudentsTabFail").classList.toggle("active", tab === "fail");
     if ($("dashStudentsTabRewrite")) $("dashStudentsTabRewrite").classList.toggle("active", tab === "rewrite");
     if ($("dashStudentsTabHonor")) $("dashStudentsTabHonor").classList.toggle("active", tab === "honor");
     if ($("dashRewriteToolbar")) $("dashRewriteToolbar").style.display = (tab === "rewrite") ? "flex" : "none";
+    toggleDashActionCenterAccordion(true);
     renderDashboardStudentActionCenter();
   };
 
@@ -340,6 +381,7 @@ function initDashboardEvents() {
   if ($("dashCardRewriteKpi")) {
     $("dashCardRewriteKpi").onclick = () => {
       setStudentViewTab("rewrite");
+      toggleDashActionCenterAccordion(true);
       const card = $("dashStudentActionCenterCard");
       if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
     };

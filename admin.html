@@ -605,131 +605,149 @@
 
         <!-- Actionable Student Lists (Failed/At-Risk vs Honor Roll) -->
         <div class="card dash-action-center-card" id="dashStudentActionCenterCard" style="margin-bottom:20px;">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">Student Academic Action Center</h3>
-              <div class="card-sub">Actionable drill-down for student counseling, intervention, and academic honors.
+          <div class="card-header cbt-collapsible-header" id="dashActionCenterHeader"
+            style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"
+            title="Click to expand or collapse Student Academic Action Center">
+            <div style="flex:1;min-width:240px">
+              <h3 class="card-title" style="margin:0">Student Academic Action Center</h3>
+              <div class="card-sub" style="margin:4px 0 0 0">Actionable drill-down for student counseling, intervention,
+                and academic honors.
               </div>
             </div>
-            <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-secondary btn-sm active" id="dashStudentsTabFail"
-                style="color:#ef4444;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabRewrite"
-                style="color:#f59e0b;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="1 4 1 10 7 10" />
-                  <polyline points="23 20 23 14 17 14" />
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                </svg>
-                Students That Need to Rewrite (<span id="dashBadgeRewriteCount">0</span>)
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabHonor"
-                style="color:#10b981;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="8" r="7" />
-                  <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-                </svg>
-                Academic Honour Roll (<span id="dashBadgeHonorCount">0</span>)
-              </button>
-            </div>
-          </div>
-
-          <!-- Rewrite Controls Bar (Visible on Rewrite Tab) -->
-          <div id="dashRewriteToolbar" class="dash-rewrite-toolbar"
-            style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">
-              <span style="color:#f59e0b;font-weight:700;display:inline-flex;align-items:center;gap:5px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path
-                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-                Rewrite Threshold:
-              </span>
-              <select id="dashRewriteCutoffSelect"
-                style="padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;">
-                <option value="20">Scores ≤ 20% (Critically low e.g. 0/5, 5/30, 10/50)</option>
-                <option value="25" selected>Scores ≤ 25% (Standard Resit Threshold)</option>
-                <option value="30">Scores ≤ 30% (Remedial &amp; Resit)</option>
-                <option value="40">Scores ≤ 40% (Below Average)</option>
-                <option value="50">All Scores &lt; 50% (All Fails)</option>
-              </select>
-              <span id="dashRewriteSummaryInfo" style="color:var(--text-muted);font-size:12px;">Mandatory resit required
-                for students with scores at or below this cutoff</span>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button type="button" class="btn btn-secondary btn-sm" id="dashExportRewriteBtn"
-                style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Export Rewrite Roster (CSV)
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashPrintRewriteListBtn"
-                style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 6 2 18 2 18 9" />
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                  <rect x="6" y="14" width="12" height="8" />
-                </svg>
-                Print Resit Roster
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-sm active" id="dashStudentsTabFail"
+                  style="color:#ef4444;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabRewrite"
+                  style="color:#f59e0b;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="1 4 1 10 7 10" />
+                    <polyline points="23 20 23 14 17 14" />
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+                  </svg>
+                  Students That Need to Rewrite (<span id="dashBadgeRewriteCount">0</span>)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabHonor"
+                  style="color:#10b981;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="7" />
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                  </svg>
+                  Academic Honour Roll (<span id="dashBadgeHonorCount">0</span>)
+                </button>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashToggleActionCenterBtn"
+                style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span id="dashActionCenterToggleIcon" class="cbt-toggle-arrow">▼</span>
+                <span id="dashActionCenterToggleText">Expand Action Center</span>
               </button>
             </div>
           </div>
 
-          <!-- Search in student drill-down -->
-          <div class="dash-student-search-bar"
-            style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-            <input type="search" id="dashStudentSearchInput"
-              placeholder="Quick search student name, reg no, or class..."
-              style="max-width:320px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;">
-            <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-              <span style="display:inline-flex;align-items:center;gap:5px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                <span><strong style="color:var(--text);">Click any student row or failed subject badge</strong> to
-                  reveal their complete score sheet &amp; exact marks.</span>
-              </span>
-            </div>
-          </div>
+          <!-- Collapsible Body with Smooth Animation -->
+          <div id="dashActionCenterCollapsibleBody" class="cbt-accordion-collapse">
+            <div class="cbt-accordion-inner"
+              style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
+              <!-- Rewrite Controls Bar (Visible on Rewrite Tab) -->
+              <div id="dashRewriteToolbar" class="dash-rewrite-toolbar"
+                style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">
+                  <span style="color:#f59e0b;font-weight:700;display:inline-flex;align-items:center;gap:5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3" />
+                      <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    Rewrite Threshold:
+                  </span>
+                  <select id="dashRewriteCutoffSelect"
+                    style="padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;">
+                    <option value="20">Scores ≤ 20% (Critically low e.g. 0/5, 5/30, 10/50)</option>
+                    <option value="25" selected>Scores ≤ 25% (Standard Resit Threshold)</option>
+                    <option value="30">Scores ≤ 30% (Remedial &amp; Resit)</option>
+                    <option value="40">Scores ≤ 40% (Below Average)</option>
+                    <option value="50">All Scores &lt; 50% (All Fails)</option>
+                  </select>
+                  <span id="dashRewriteSummaryInfo" style="color:var(--text-muted);font-size:12px;">Mandatory resit
+                    required
+                    for students with scores at or below this cutoff</span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="dashExportRewriteBtn"
+                    style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Export Rewrite Roster (CSV)
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="dashPrintRewriteListBtn"
+                    style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 6 2 18 2 18 9" />
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                      <rect x="6" y="14" width="12" height="8" />
+                    </svg>
+                    Print Resit Roster
+                  </button>
+                </div>
+              </div>
 
-          <div class="table-scroll dash-students-table-scroll">
-            <table id="dashStudentsTable" class="dash-students-table" style="width:100%;font-size:13px;">
-              <thead id="dashStudentsTableHead">
-                <tr>
-                  <th style="width:40px;">#</th>
-                  <th>STUDENT NAME</th>
-                  <th>REG NUMBER</th>
-                  <th>CLASS &amp; ARM</th>
-                  <th>FAILED SUBJECTS</th>
-                  <th style="text-align:center;">AVG SCORE</th>
-                </tr>
-              </thead>
-              <tbody id="dashStudentsTableBody">
-                <tr>
-                  <td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Loading students…</td>
-                </tr>
-              </tbody>
-            </table>
+              <!-- Search in student drill-down -->
+              <div class="dash-student-search-bar"
+                style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+                <input type="search" id="dashStudentSearchInput"
+                  placeholder="Quick search student name, reg no, or class..."
+                  style="max-width:320px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;">
+                <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-flex;align-items:center;gap:5px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <span><strong style="color:var(--text);">Click any student row or failed subject badge</strong> to
+                      reveal their complete score sheet &amp; exact marks.</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="table-scroll dash-students-table-scroll">
+                <table id="dashStudentsTable" class="dash-students-table" style="width:100%;font-size:13px;">
+                  <thead id="dashStudentsTableHead">
+                    <tr>
+                      <th style="width:40px;">#</th>
+                      <th>STUDENT NAME</th>
+                      <th>REG NUMBER</th>
+                      <th>CLASS &amp; ARM</th>
+                      <th>FAILED SUBJECTS</th>
+                      <th style="text-align:center;">AVG SCORE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashStudentsTableBody">
+                    <tr>
+                      <td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Loading students…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1154,11 +1172,6 @@
                   style="background:rgba(235,87,87,0.15);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">CBT
                   Sync</span>
               </div>
-              <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0 0">
-                Set the active examination term. Teachers preparing exams will automatically inherit this term for all
-                exam titles (e.g. <code>YEAR 8 FRENCH MID TERM TEST</code> or
-                <code>MATHEMATICS FIRST TERM EXAMINATION</code>).
-              </p>
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="btn btn-secondary btn-sm" id="cbtAddCustomTermBtn"
@@ -1372,7 +1385,8 @@
 
           <!-- Collapsible Body with Smooth Animation -->
           <div id="cbtSubjectsCollapsibleBody" class="cbt-accordion-collapse">
-            <div class="cbt-accordion-inner" style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
+            <div class="cbt-accordion-inner"
+              style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
               <div
                 style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
                 <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:10px">
@@ -1423,7 +1437,8 @@
               <div style="display:flex;align-items:center;gap:8px">
                 <h2 class="card-title" style="margin:0">CBT Terms &amp; Academic Sessions (MongoDB Compass Mapping)</h2>
               </div>
-              <p class="card-sub" style="margin:4px 0 0 0">Map each Term and Academic Session to its exact MongoDB ObjectId so the offline CBT
+              <p class="card-sub" style="margin:4px 0 0 0">Map each Term and Academic Session to its exact MongoDB
+                ObjectId so the offline CBT
                 app displays exams and questions in every term</p>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
@@ -1437,119 +1452,130 @@
 
           <!-- Collapsible Body with Smooth Animation -->
           <div id="cbtTermsCollapsibleBody" class="cbt-accordion-collapse">
-            <div class="cbt-accordion-inner" style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
+            <div class="cbt-accordion-inner"
+              style="border-top:1px solid var(--border);padding-top:16px;margin-top:14px">
               <div
                 style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted)">
                 <div style="display:flex;align-items:center;gap:8px">
                   <span>Compass Collections: <code>cbtApp_v2.terms</code> &amp; <code>cbtApp_v2.sessions</code></span>
-                  <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term mappings saved!</span>
+                  <span id="cbtTermsSavedFeedback" style="color:var(--status-good);display:none;font-weight:600">✓ Term
+                    mappings saved!</span>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
-                  <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export terms.json</button>
-                  <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session IDs</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtExportTermsJsonBtn">Export
+                    terms.json</button>
+                  <button type="button" class="btn btn-sm" id="cbtSaveTermsMappingsBtn">💾 Save Term &amp; Session
+                    IDs</button>
                 </div>
               </div>
 
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
-            <!-- First Term Era -->
-            <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
-              <div
-                style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
-                <span>🎓 First Term Era</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">First Test ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_FirstTest"
-                    data-term-key="FIRST TERM FIRST TEST" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
+                <!-- First Term Era -->
+                <div
+                  style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
+                  <div
+                    style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                    <span>🎓 First Term Era</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">First Test ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_FirstTest"
+                        data-term-key="FIRST TERM FIRST TEST" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Mid Term Examination
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_MidTerm"
+                        data-term-key="MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        value="6ad23855ba97e63fcc418c99">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">First Term Examination
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_FirstTermExam"
+                        data-term-key="FIRST TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        value="6af2fad4eff03ebd34477ed1" placeholder="24-hex ObjectId">
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Mid Term Examination ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_MidTerm"
-                    data-term-key="MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    value="6ad23855ba97e63fcc418c99">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">First Term Examination
-                    ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_FirstTermExam"
-                    data-term-key="FIRST TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    value="6af2fad4eff03ebd34477ed1" placeholder="24-hex ObjectId">
-                </div>
-              </div>
-            </div>
 
-            <!-- Second Term Era -->
-            <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
-              <div
-                style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
-                <span>🎓 Second Term Era</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Second Term First Test
-                    ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_SecondTest"
-                    data-term-key="SECOND TERM FIRST TEST" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
+                <!-- Second Term Era -->
+                <div
+                  style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
+                  <div
+                    style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                    <span>🎓 Second Term Era</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Second Term First Test
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_SecondTest"
+                        data-term-key="SECOND TERM FIRST TEST" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Second Term Mid Term
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_SecondMidTerm"
+                        data-term-key="SECOND TERM MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Second Term Examination
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_SecondTermExam"
+                        data-term-key="SECOND TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Second Term Mid Term ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_SecondMidTerm"
-                    data-term-key="SECOND TERM MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Second Term Examination
-                    ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_SecondTermExam"
-                    data-term-key="SECOND TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
-                </div>
-              </div>
-            </div>
 
-            <!-- Third Term Era & Session -->
-            <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
-              <div
-                style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
-                <span>🎓 Third Term Era &amp; Session</span>
+                <!-- Third Term Era & Session -->
+                <div
+                  style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:14px">
+                  <div
+                    style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                    <span>🎓 Third Term Era &amp; Session</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Third Term First Test
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdTest"
+                        data-term-key="THIRD TERM FIRST TEST" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Third Term Mid Term
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdMidTerm"
+                        data-term-key="THIRD TERM MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Third Term Examination
+                        ObjectId</label>
+                      <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdTermExam"
+                        data-term-key="THIRD TERM EXAMINATION" style="font-family:monospace;font-size:12px"
+                        placeholder="24-hex ObjectId">
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size:11px;font-weight:600">Academic Session (e.g. 2026/2027)
+                        ObjectId</label>
+                      <input class="form-input" id="mongoSessionIdInput" style="font-family:monospace;font-size:12px"
+                        value="6aabf6c9fe918aaa23f28245">
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Third Term First Test
-                    ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdTest"
-                    data-term-key="THIRD TERM FIRST TEST" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Third Term Mid Term ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdMidTerm"
-                    data-term-key="THIRD TERM MID TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Third Term Examination
-                    ObjectId</label>
-                  <input class="form-input cbt-term-id-input" id="mongoTermId_ThirdTermExam"
-                    data-term-key="THIRD TERM EXAMINATION" style="font-family:monospace;font-size:12px"
-                    placeholder="24-hex ObjectId">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;font-weight:600">Academic Session (e.g. 2026/2027)
-                    ObjectId</label>
-                  <input class="form-input" id="mongoSessionIdInput" style="font-family:monospace;font-size:12px"
-                    value="6aabf6c9fe918aaa23f28245">
-                </div>
-              </div>
-            </div>
-          </div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.5">
                 💡 <strong>Why this matters:</strong> The offline CBT app filters exams by the active term's MongoDB
                 <code>_id</code>. By saving your term IDs here from MongoDB Compass, any exams downloaded as
-                <code>exams.json</code> will immediately show their questions in the offline app when that term is active!
+                <code>exams.json</code> will immediately show their questions in the offline app when that term is
+                active!
               </div>
             </div>
           </div>
@@ -1923,7 +1949,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=3.7"></script>
+  <script src="js/admin.js?v=3.8"></script>
 </body>
 
 </html>
