@@ -1544,7 +1544,6 @@ function exportTeacherRewriteCSV() {
   });
 
   const rowsPdf = [];
-  const rowsExcel = [];
 
   teacherRewriteStudents.forEach((s, idx) => {
     const sn = idx + 1;
@@ -1572,17 +1571,6 @@ function exportTeacherRewriteCSV() {
       `;
     }).join("");
 
-    // Excel Grouped Subject List: newline in same cell with mso-data-placement
-    const excelSubjectList = rewriteList.map(rSub => {
-      const maxMark = getTeacherSubjectMaxMark(rSub, s.term || activeTerm) || 20;
-      const rawNum = parseTeacherRawScoreNum(rSub.score !== undefined ? rSub.score : rSub.pct);
-      const scaledVal = conv ? applyTeacherScoreConversion(rawNum, activeTerm) : rawNum;
-      const rawVal = !isNaN(rawNum) ? rawNum : scaledVal;
-      const rawMax = conv ? conv.originalMax : maxMark;
-      const convNote = (rawMax !== maxMark || rawVal !== scaledVal) ? ` (raw: ${rawVal} of ${rawMax})` : "";
-      return `• ${esc(rSub.subject || "")}: ${scaledVal} of ${maxMark}${convNote}`;
-    }).join('<br style="mso-data-placement:same-cell;"/>');
-
     const altClass = (sn % 2 === 0) ? "row-alt" : "";
 
     rowsPdf.push(`
@@ -1599,19 +1587,6 @@ function exportTeacherRewriteCSV() {
           </div>
         </td>
         <td class="cell-center"><span class="status-badge">MANDATORY REWRITE</span></td>
-      </tr>
-    `);
-
-    rowsExcel.push(`
-      <tr class="${altClass}">
-        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${sn}</td>
-        <td style="text-align:left;font-weight:bold;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(s.name || "")}</td>
-        <td style="text-align:center;font-family:monospace;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(s.reg || "N/A")}</td>
-        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(formatClassAbbr(s.class) || s.class || "-")}</td>
-        <td style="text-align:center;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${esc(formatArmAbbr(s.arm) || s.arm || "-")}</td>
-        <td style="text-align:center;font-weight:bold;color:#b45309;background:#fef3c7;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${paperCountLabel}</td>
-        <td style="text-align:left;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">${excelSubjectList}</td>
-        <td style="text-align:center;font-weight:bold;color:#dc2626;background:#fee2e2;border:1px solid #cbd5e1;padding:6px;mso-number-format:'\\@';">MANDATORY REWRITE</td>
       </tr>
     `);
   });
@@ -1915,10 +1890,6 @@ function exportTeacherRewriteCSV() {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Save as PDF / Print
       </button>
-      <button class="btn-action btn-secondary" id="btnDownloadExcel">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Excel (.xls)
-      </button>
       <button class="btn-action btn-secondary" onclick="window.close();" style="padding:9px 14px;">✕ Close</button>
     </div>
   </div>
@@ -2001,38 +1972,6 @@ function exportTeacherRewriteCSV() {
   </div>
 
   <script>
-    document.getElementById('btnDownloadExcel').onclick = function() {
-      var excelHeader = '<tr style="height:32px;"><th colspan="8" style="background:#0f172a;color:#ffffff;font-size:15px;text-align:center;font-weight:bold;padding:10px;">HONEYLAND ACADEMIC PORTAL — OFFICIAL STUDENT EXAMINATION RESIT ROSTER</th></tr>' +
-        '<tr><td colspan="8" style="text-align:center;font-size:11px;color:#64748b;padding:4px;">Teacher Classroom Record for Remedial Instruction & Examination Board</td></tr>' +
-        '<tr><td colspan="8"></td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Academic Term:</td><td colspan="2">${esc(activeTerm)}</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Date Generated:</td><td colspan="2">${esc(dateStr)}</td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Resit Benchmark:</td><td colspan="2">Score ≤ ${teacherRewriteCutoffPct}% (Mandatory Retake)</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Score Conversion:</td><td colspan="2">${esc(scalingDesc)}</td></tr>' +
-        '<tr><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Identified Students:</td><td colspan="2">${teacherRewriteStudents.length} Students Flagged</td><td colspan="2" style="font-weight:bold;background:#f1f5f9;">Total Resit Papers:</td><td colspan="2">${totalPapers} Papers Scheduled</td></tr>' +
-        '<tr><td colspan="8"></td></tr>' +
-        '<tr style="background:#0f172a;color:#ffffff;font-weight:bold;text-align:center;">' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">S/N</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Student Full Name</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Registration Number</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Class</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Arm</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Resit Papers</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;text-align:left;">Subjects Scheduled for Resit (Exact Mark)</th>' +
-        '<th style="background:#0f172a;color:#ffffff;padding:8px;">Academic Status</th>' +
-        '</tr>';
-
-      var excelHtml = '\\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
-        '<head><meta charset="utf-8" /><style>td { mso-number-format:"\\@"; vertical-align:middle; } th { mso-number-format:"\\@"; }</style></head>' +
-        '<body><table border="1" cellpadding="6" cellspacing="0">' + excelHeader + '${rowsExcel.join("").replace(/"/g, '\\"')}<\\/table><\\/body><\\/html>';
-      var blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = '${docTitle}.xls';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
-    };
-
     window.addEventListener('load', function() {
       setTimeout(function() {
         try { window.print(); } catch(e) {}
