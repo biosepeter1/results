@@ -290,6 +290,13 @@ function initDashboardEvents() {
 
   if (tSel) {
     tSel.addEventListener("change", () => {
+      adminCurrentTerm = tSel.value || null;
+      if (typeof updateAdminTermTabs === "function") updateAdminTermTabs();
+      const convSel = document.getElementById("convTermSelect");
+      if (convSel && tSel.value) {
+        convSel.value = tSel.value;
+        if (typeof refreshConversionUI === "function") refreshConversionUI();
+      }
       populateDashboardClassAndArmFilters();
       renderExecutiveDashboard();
     });
@@ -576,9 +583,10 @@ async function renderExecutiveDashboard() {
       }
     }
 
-    const rowTerm = r.term || adminCurrentTerm || "";
+    const dashSelectedTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+    const rowTerm = r.term || dashSelectedTerm || adminCurrentTerm || "";
     const convSetting = getConversionForTerm(rowTerm);
-    const origMax = parsedOrigMax || (convSetting ? convSetting.originalMax : 20);
+    const origMax = parsedOrigMax || (convSetting ? convSetting.originalMax : (detectOriginalMaxForTerm(allScoreRows, rowTerm) || 20));
     const targetMax = convSetting ? convSetting.targetMax : origMax;
 
     // Converted / scaled score
@@ -923,7 +931,8 @@ window.openStudentScoreModal = function (studentId, isResit = false) {
     if (modalPrintBtn) modalPrintBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Student Result Slip`;
   }
 
-  if ($("dashStudentModalMeta")) $("dashStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || adminCurrentTerm || "All Terms"}`;
+  const dashScopeTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+  if ($("dashStudentModalMeta")) $("dashStudentModalMeta").textContent = `${s.class} · ${s.arm} | Reg: ${s.reg || "N/A"} | Term: ${s.term || dashScopeTerm || adminCurrentTerm || "All Terms"}`;
   if ($("dashStudentModalAvg")) {
     $("dashStudentModalAvg").textContent = `${s.avgScore}%`;
     $("dashStudentModalAvg").style.color = s.avgScore >= 50 ? "#10b981" : "#ef4444";
@@ -987,7 +996,8 @@ function exportRewriteRosterCsv() {
     return;
   }
 
-  const activeTerm = adminCurrentTerm || (dashRewriteStudents[0] && dashRewriteStudents[0].term) || "Current Academic Term";
+  const dashExportTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+  const activeTerm = dashExportTerm || (dashRewriteStudents[0] && dashRewriteStudents[0].term) || adminCurrentTerm || "Current Academic Term";
   const conv = getConversionForTerm(activeTerm);
   const scalingDesc = conv ? `Scaled /${conv.targetMax} from /${conv.originalMax} (Multiplier: ×${(conv.targetMax / conv.originalMax).toFixed(2).replace(/\.00$/, "")})` : "Raw Scores (No scaling configured)";
   const now = new Date();
@@ -1532,9 +1542,12 @@ function renderDashboardStudentActionCenter() {
 
   const rowsHtml = [];
   filteredList.slice(0, 60).forEach((s, idx) => {
+    const dashCenterTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+    const studentEffTerm = s.term || dashCenterTerm || adminCurrentTerm;
+
     if (isRewriteTab) {
       const rewriteBadges = s.rewriteSubjects.map(rSub => {
-        const maxMark = rSub.maxMark || getAdminSubjectMaxMark(rSub, s.term || adminCurrentTerm) || 20;
+        const maxMark = rSub.maxMark || getAdminSubjectMaxMark(rSub, studentEffTerm) || 20;
         const curScore = (rSub.scaledScore !== undefined && !isNaN(rSub.scaledScore))
           ? rSub.scaledScore
           : (rSub.score !== undefined ? rSub.score : rSub.pct);
@@ -1567,7 +1580,7 @@ function renderDashboardStudentActionCenter() {
       `);
     } else if (isFailTab) {
       const failBadges = s.failedSubjects.map(f => {
-        const maxMark = f.maxMark || getAdminSubjectMaxMark(f, s.term || adminCurrentTerm) || 20;
+        const maxMark = f.maxMark || getAdminSubjectMaxMark(f, studentEffTerm) || 20;
         const curScore = (f.scaledScore !== undefined && !isNaN(f.scaledScore))
           ? f.scaledScore
           : (f.score !== undefined ? f.score : f.pct);
@@ -4558,14 +4571,24 @@ function getConversionForTerm(term) {
   const config = getConversionConfig();
   if (!config || !config.terms) return null;
 
+  const dashTerm = (typeof $("dashFilterTerm") !== "undefined" && $("dashFilterTerm")) ? $("dashFilterTerm").value : "";
+  const effectiveTerm = term || dashTerm || adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : "");
+  if (!effectiveTerm) {
+    if (config.terms["__ALL__"]) {
+      const c = config.terms["__ALL__"];
+      if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+    }
+    return null;
+  }
+
   // 1. Direct exact match
-  if (term && config.terms[term]) {
-    const c = config.terms[term];
+  if (config.terms[effectiveTerm]) {
+    const c = config.terms[effectiveTerm];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
 
   // 2. Normalized case-insensitive and punctuation-insensitive match
-  const tNorm = normalizeAdminTermKey(term || adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : ""));
+  const tNorm = normalizeAdminTermKey(effectiveTerm);
   if (tNorm) {
     for (const [k, c] of Object.entries(config.terms)) {
       if (k === "__ALL__" || !c) continue;
@@ -4577,7 +4600,7 @@ function getConversionForTerm(term) {
   }
 
   // 3. Semantic / canonical assessment matching (e.g. "Mid Term Test" matches "Mid Term Examination", "Mid Term", "midterm")
-  const tCat = getCanonicalAdminTermCategory(term || adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : ""));
+  const tCat = getCanonicalAdminTermCategory(effectiveTerm);
   if (tCat) {
     for (const [k, c] of Object.entries(config.terms)) {
       if (k === "__ALL__" || !c) continue;
@@ -4588,32 +4611,12 @@ function getConversionForTerm(term) {
     }
   }
 
-  // 4. Fallback to active system term if row term differed
-  const curNorm = normalizeAdminTermKey(adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : ""));
-  if (curNorm && curNorm !== tNorm) {
-    for (const [k, c] of Object.entries(config.terms)) {
-      if (k === "__ALL__" || !c) continue;
-      const kNorm = normalizeAdminTermKey(k);
-      if (kNorm && (kNorm === curNorm || kNorm.includes(curNorm) || curNorm.includes(kNorm))) {
-        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
-      }
-    }
-  }
-
-  // 5. Fallback: If only ONE term conversion is configured, apply it school-wide
-  const termKeys = Object.keys(config.terms).filter(k => k !== "__ALL__");
-  if (termKeys.length === 1) {
-    const single = config.terms[termKeys[0]];
-    if (single && single.originalMax && single.targetMax && single.originalMax !== single.targetMax) {
-      return single;
-    }
-  }
-
-  // 6. Global "__ALL__" rule
+  // 4. Global "__ALL__" rule (applied across all terms ONLY if school explicitly set All Terms)
   if (config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
+
   return null;
 }
 
@@ -4656,7 +4659,8 @@ function applyPctConversion(rawScore, term) {
 }
 
 function getAdminSubjectMaxMark(subObj, termName) {
-  const t = termName || (subObj && subObj.term) || adminCurrentTerm;
+  const dashTerm = (typeof $("dashFilterTerm") !== "undefined" && $("dashFilterTerm")) ? $("dashFilterTerm").value : "";
+  const t = termName || (subObj && subObj.term) || dashTerm || adminCurrentTerm;
   const c = getConversionForTerm(t);
   if (c && c.targetMax) return Number(c.targetMax);
 
@@ -5258,6 +5262,11 @@ function buildAdminTermTabs() {
       sel.value = "__ALL__";
       refreshConversionUI();
     }
+    const tSel = $("dashFilterTerm");
+    if (tSel) {
+      tSel.value = "";
+      populateDashboardClassAndArmFilters();
+    }
   };
   $tabs.appendChild(allTab);
 
@@ -5277,6 +5286,11 @@ function buildAdminTermTabs() {
       if (sel) {
         sel.value = term;
         refreshConversionUI();
+      }
+      const tSel = $("dashFilterTerm");
+      if (tSel) {
+        tSel.value = term;
+        populateDashboardClassAndArmFilters();
       }
     };
     $tabs.appendChild(btn);

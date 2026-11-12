@@ -204,14 +204,23 @@ function getTeacherConversionForTerm(term) {
   const config = getTeacherConversionConfig();
   if (!config || !config.terms) return null;
 
+  const effectiveTerm = term || (typeof currentTerm !== "undefined" ? currentTerm : "");
+  if (!effectiveTerm) {
+    if (config.terms["__ALL__"]) {
+      const c = config.terms["__ALL__"];
+      if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+    }
+    return null;
+  }
+
   // 1. Direct exact match
-  if (term && config.terms[term]) {
-    const c = config.terms[term];
+  if (config.terms[effectiveTerm]) {
+    const c = config.terms[effectiveTerm];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
 
   // 2. Normalized case-insensitive and punctuation-insensitive match
-  const tNorm = normalizeTeacherTermKey(term || (typeof currentTerm !== "undefined" ? currentTerm : ""));
+  const tNorm = normalizeTeacherTermKey(effectiveTerm);
   if (tNorm) {
     for (const [k, c] of Object.entries(config.terms)) {
       if (k === "__ALL__" || !c) continue;
@@ -223,7 +232,7 @@ function getTeacherConversionForTerm(term) {
   }
 
   // 3. Semantic / canonical assessment matching (e.g. "Mid Term Test" matches "Mid Term Examination", "Mid Term", "midterm")
-  const tCat = getCanonicalTeacherTermCategory(term || (typeof currentTerm !== "undefined" ? currentTerm : ""));
+  const tCat = getCanonicalTeacherTermCategory(effectiveTerm);
   if (tCat) {
     for (const [k, c] of Object.entries(config.terms)) {
       if (k === "__ALL__" || !c) continue;
@@ -234,32 +243,12 @@ function getTeacherConversionForTerm(term) {
     }
   }
 
-  // 4. Fallback to active system term if row term differed
-  const curNorm = normalizeTeacherTermKey(typeof currentTerm !== "undefined" ? currentTerm : "");
-  if (curNorm && curNorm !== tNorm) {
-    for (const [k, c] of Object.entries(config.terms)) {
-      if (k === "__ALL__" || !c) continue;
-      const kNorm = normalizeTeacherTermKey(k);
-      if (kNorm && (kNorm === curNorm || kNorm.includes(curNorm) || curNorm.includes(kNorm))) {
-        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
-      }
-    }
-  }
-
-  // 5. Fallback: If only ONE term conversion is configured, apply it
-  const termKeys = Object.keys(config.terms).filter(k => k !== "__ALL__");
-  if (termKeys.length === 1) {
-    const single = config.terms[termKeys[0]];
-    if (single && single.originalMax && single.targetMax && single.originalMax !== single.targetMax) {
-      return single;
-    }
-  }
-
-  // 6. Global "__ALL__" rule
+  // 4. Global "__ALL__" rule (applied across all terms ONLY if school explicitly set All Terms)
   if (config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
     if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
   }
+
   return null;
 }
 
