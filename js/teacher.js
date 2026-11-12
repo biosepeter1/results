@@ -1217,13 +1217,7 @@ function renderTableOnly() {
       tr.onclick = () => window.toggleTeacherStudentDrawer(s.id);
       tr.innerHTML = `
         <td data-label="#" style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
-        <td data-label="Student Name" style="padding:10px 8px;font-weight:600;color:var(--text);">
-          <div>${esc(s.name)}</div>
-          <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:5px;">
-            <svg id="t-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
-            <span>Click to reveal scores</span>
-          </div>
-        </td>
+        <td data-label="Student Name" style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
         <td data-label="Reg Number" style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
         <td data-label="Class &amp; Arm" style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
         <td data-label="Mandatory Rewrite Subjects" style="padding:10px 8px;">${rewriteBadges}</td>

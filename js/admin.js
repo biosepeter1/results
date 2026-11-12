@@ -1586,13 +1586,7 @@ function renderDashboardStudentActionCenter() {
       rowsHtml.push(`
         <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
-            <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:#f59e0b;margin-top:2px;display:flex;align-items:center;gap:5px;">
-              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
-              <span>Click to reveal scores</span>
-            </div>
-          </td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${rewriteBadges}</td>
@@ -1682,13 +1676,7 @@ function renderDashboardStudentActionCenter() {
       rowsHtml.push(`
         <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
-            <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:var(--accent);margin-top:2px;display:flex;align-items:center;gap:5px;">
-              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
-              <span>Click to reveal scores</span>
-            </div>
-          </td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${failBadges}</td>
@@ -1758,13 +1746,7 @@ function renderDashboardStudentActionCenter() {
       rowsHtml.push(`
         <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
           <td style="padding:10px 8px;font-weight:700;color:var(--accent);">${rankBadge}</td>
-          <td style="padding:10px 8px;font-weight:600;color:var(--text);">
-            <div>${esc(s.name)}</div>
-            <div style="font-size:11px;color:var(--status-good);margin-top:2px;display:flex;align-items:center;gap:5px;">
-              <svg id="dash-chevron-${s.id}" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
-              <span>Click to reveal scores</span>
-            </div>
-          </td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
