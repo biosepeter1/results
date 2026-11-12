@@ -1248,10 +1248,6 @@ function renderTableOnly() {
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (&le;${teacherRewriteCutoffPct}%)</span>
-              <button type="button" class="btn-text" onclick="event.stopPropagation(); window.openTeacherResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706; display:inline-flex; align-items:center; gap:5px; border:1px solid rgba(245,158,11,0.4); border-radius:4px; background:var(--surface);">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Print Resit Slip
-              </button>
             </div>
           </div>
 
