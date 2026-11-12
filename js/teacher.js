@@ -2339,66 +2339,277 @@ function getSampleDiagramPng() {
   }
 }
 
-// Format Guide / Sample Insert (Includes sample diagram on Question 1)
-$("tCbtInsertSampleBtn").onclick = () => {
-  const sampleImg = getSampleDiagramPng();
+// Crisp Canvas-generated Mathematics Trigonometry Diagram (Right Triangle with θ, 3, 4, 5)
+function getMathSampleDiagramPng() {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 440;
+    canvas.height = 240;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
 
-  $("tCbtRawText").value = `1. Which organelle labeled in the diagram below is responsible for cellular respiration and energy production?
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 440, 240);
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 438, 238);
 
-[🖼️ Diagram Attached]
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Right-Angled Triangle Trigonometry", 220, 25);
 
-A. Nucleus
-B. Mitochondria
-C. Ribosome
-D. Endoplasmic reticulum
+    ctx.beginPath();
+    ctx.moveTo(70, 190);
+    ctx.lineTo(320, 190);
+    ctx.lineTo(320, 60);
+    ctx.closePath();
+    ctx.fillStyle = "#f0fdf4";
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#047857";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(298, 190);
+    ctx.lineTo(298, 168);
+    ctx.lineTo(320, 168);
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = "#047857";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(70, 190, 42, -0.48, 0, false);
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = "#d97706";
+    ctx.stroke();
+
+    ctx.fillStyle = "#b45309";
+    ctx.font = "bold 16px system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("θ", 125, 182);
+
+    ctx.fillStyle = "#b91c1c";
+    ctx.font = "bold 12px system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("Opposite = 3", 332, 125);
+
+    ctx.fillStyle = "#1d4ed8";
+    ctx.font = "bold 12px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Adjacent = 4", 195, 212);
+
+    ctx.fillStyle = "#047857";
+    ctx.font = "bold 12px system-ui, sans-serif";
+    ctx.save();
+    ctx.translate(180, 115);
+    ctx.rotate(Math.atan2(60 - 190, 320 - 70));
+    ctx.textAlign = "center";
+    ctx.fillText("Hypotenuse = 5", 0, -10);
+    ctx.restore();
+
+    return canvas.toDataURL("image/png");
+  } catch (e) {
+    return "";
+  }
+}
+
+// Official 5-Question Mathematics Sample with standard mathematical signs and CBT structure
+const CBT_MATH_SAMPLE_TEXT = `1. Solve for x in the quadratic equation: x² − 5x + 6 = 0.
+A. x = 1 or x = 6
+B. x = 2 or x = 3
+C. x = −2 or x = −3
+D. x = 0 or x = 5
 Answer: B
 
-2. What is the standard SI unit of temperature?
-A. Fahrenheit
-B. Celsius
-C. Kelvin
-D. Rankine
+2. Calculate the area of a circle with radius r = 7 cm (Take π = 22/7).
+A. 44 cm²
+B. 88 cm²
+C. 154 cm²
+D. 308 cm²
 Answer: C
 
-3. Which gas do green plants absorb from the atmosphere for photosynthesis?
-A. Carbon dioxide
-B. Oxygen
-C. Nitrogen
-D. Hydrogen
+3. In a right-angled triangle, if sin(θ) = 3/5, what is the value of cos(θ)?
+[🖼️ Diagram Attached]
+A. 4/5
+B. 5/4
+C. 3/4
+D. 4/3
+Answer: A
+
+4. Simplify the expression: √(144) + (3 × 4) ÷ 2 − 2³.
+A. 8
+B. 10
+C. 12
+D. 14
+Answer: B
+
+5. Find the range of values of x satisfying the inequality: 3x − 4 ≤ 5x + 8.
+A. x ≥ −6
+B. x ≤ −6
+C. x ≥ 6
+D. x ≤ 6
 Answer: A`;
 
-  updateTeacherExamTitle();
-  if ($("tCbtSubject")) {
-    const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
-      ? teacher.subjects.filter(s => s && s.trim())
-      : [];
-    if (assigned.length > 0) {
-      $("tCbtSubject").value = assigned[0];
-    } else {
-      let opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === "biology");
-      if (!opt) {
-        opt = document.createElement("option");
-        opt.value = opt.textContent = "Biology";
-        $("tCbtSubject").appendChild(opt);
-      }
-      $("tCbtSubject").value = opt.value;
+const CBT_MATH_SAMPLE_DOC_HTML = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Mathematics CBT Sample</title>
+  <style>
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; margin: 30pt; }
+    h2 { margin: 0 0 4pt 0; text-align: center; color: #1e3a8a; font-size: 16pt; }
+    .sub { text-align: center; font-size: 10pt; color: #64748b; font-weight: bold; margin-bottom: 16pt; }
+    p { margin: 0 0 4pt 0; }
+    .q { font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; }
+    .opt { margin-left: 20pt; }
+    .ans { color: #047857; font-weight: bold; margin-left: 20pt; margin-top: 2pt; margin-bottom: 12pt; }
+  </style>
+</head>
+<body>
+  <h2>HONEYLAND CBT EXAMINATION PORTAL</h2>
+  <div class="sub">OFFICIAL MATHEMATICS QUESTION TEMPLATE &amp; FORMAT SAMPLE (5 QUESTIONS)</div>
+  <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-bottom: 14pt;" />
+
+  <p class="q">1. Solve for x in the quadratic equation: x² − 5x + 6 = 0.</p>
+  <p class="opt">A. x = 1 or x = 6</p>
+  <p class="opt">B. x = 2 or x = 3</p>
+  <p class="opt">C. x = −2 or x = −3</p>
+  <p class="opt">D. x = 0 or x = 5</p>
+  <p class="ans">Answer: B</p>
+
+  <p class="q">2. Calculate the area of a circle with radius r = 7 cm (Take π = 22/7).</p>
+  <p class="opt">A. 44 cm²</p>
+  <p class="opt">B. 88 cm²</p>
+  <p class="opt">C. 154 cm²</p>
+  <p class="opt">D. 308 cm²</p>
+  <p class="ans">Answer: C</p>
+
+  <p class="q">3. In a right-angled triangle, if sin(θ) = 3/5, what is the value of cos(θ)?</p>
+  <p class="opt">A. 4/5</p>
+  <p class="opt">B. 5/4</p>
+  <p class="opt">C. 3/4</p>
+  <p class="opt">D. 4/3</p>
+  <p class="ans">Answer: A</p>
+
+  <p class="q">4. Simplify the expression: √(144) + (3 × 4) ÷ 2 − 2³.</p>
+  <p class="opt">A. 8</p>
+  <p class="opt">B. 10</p>
+  <p class="opt">C. 12</p>
+  <p class="opt">D. 14</p>
+  <p class="ans">Answer: B</p>
+
+  <p class="q">5. Find the range of values of x satisfying the inequality: 3x − 4 ≤ 5x + 8.</p>
+  <p class="opt">A. x ≥ −6</p>
+  <p class="opt">B. x ≤ −6</p>
+  <p class="opt">C. x ≥ 6</p>
+  <p class="opt">D. x ≤ 6</p>
+  <p class="ans">Answer: A</p>
+</body>
+</html>`;
+
+function downloadCbtSampleFile(filename, content, mimeType) {
+  try {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) {
+    window.open("samples/" + encodeURIComponent(filename), "_blank");
+  }
+}
+
+// Download handlers for Sample Templates
+if ($("tCbtDownloadSampleTxtBtn")) {
+  $("tCbtDownloadSampleTxtBtn").onclick = (e) => {
+    e.preventDefault();
+    downloadCbtSampleFile("Mathematics_CBT_Sample.txt", CBT_MATH_SAMPLE_TEXT, "text/plain;charset=utf-8");
+  };
+}
+
+if ($("tCbtDownloadSampleDocBtn")) {
+  $("tCbtDownloadSampleDocBtn").onclick = (e) => {
+    e.preventDefault();
+    downloadCbtSampleFile("Mathematics_CBT_Sample.doc", CBT_MATH_SAMPLE_DOC_HTML, "application/msword;charset=utf-8");
+  };
+}
+
+if ($("tCbtDownloadSampleDocxBtn")) {
+  $("tCbtDownloadSampleDocxBtn").onclick = (e) => {
+    e.preventDefault();
+    fetch("samples/Mathematics_CBT_Sample.docx")
+      .then(res => {
+        if (!res.ok) throw new Error("File not found");
+        return res.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Mathematics_CBT_Sample.docx";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      })
+      .catch(() => {
+        downloadCbtSampleFile("Mathematics_CBT_Sample.doc", CBT_MATH_SAMPLE_DOC_HTML, "application/msword;charset=utf-8");
+      });
+  };
+}
+
+// Format Guide / Sample Insert (Loads 5 Mathematics questions with Math signs and Question 3 diagram)
+if ($("tCbtInsertSampleBtn")) {
+  $("tCbtInsertSampleBtn").onclick = () => {
+    const sampleImg = getMathSampleDiagramPng();
+
+    $("tCbtRawText").value = CBT_MATH_SAMPLE_TEXT;
+
+    if ($("tCbtTargetQuestions")) {
+      $("tCbtTargetQuestions").value = "5";
     }
-  }
 
-  // Parse questions with sample diagram attached to Question 1
-  const parsed = parseExamText($("tCbtRawText").value);
-  teacherParsedQuestions = parsed.questions;
-  if (teacherParsedQuestions[0] && sampleImg) {
-    teacherParsedQuestions[0].image = sampleImg;
-  }
+    if ($("tCbtSubject")) {
+      const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+        ? teacher.subjects.filter(s => s && s.trim())
+        : [];
+      const mathOpt = assigned.find(s => s.toLowerCase().includes("math"));
+      if (mathOpt) {
+        $("tCbtSubject").value = mathOpt;
+      } else if (assigned.length > 0) {
+        $("tCbtSubject").value = assigned[0];
+      } else {
+        let opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase().includes("math"));
+        if (!opt) {
+          opt = document.createElement("option");
+          opt.value = opt.textContent = "Mathematics";
+          $("tCbtSubject").appendChild(opt);
+        }
+        $("tCbtSubject").value = opt.value;
+      }
+    }
 
-  $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-  $("tCbtReviewCard").style.display = "block";
-  $("tCbtSubmitSuccess").style.display = "none";
-  $("tCbtParseMsg").style.color = "var(--status-good)";
-  $("tCbtParseMsg").textContent = "✓ Sample questions loaded (includes Question 1 with attached diagram). Review below!";
-  renderTeacherReviewQuestions();
-};
+    updateTeacherExamTitle();
+
+    // Parse questions with sample diagram attached to Question 3
+    const parsed = parseExamText($("tCbtRawText").value);
+    teacherParsedQuestions = parsed.questions;
+    if (teacherParsedQuestions[2] && sampleImg) {
+      teacherParsedQuestions[2].image = sampleImg;
+    }
+
+    $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
+    $("tCbtReviewCard").style.display = "block";
+    $("tCbtSubmitSuccess").style.display = "none";
+    $("tCbtParseMsg").style.color = "var(--status-good)";
+    $("tCbtParseMsg").textContent = "✓ 5 Mathematics sample questions loaded (with math signs & Question 3 diagram). Review below!";
+    renderTeacherReviewQuestions();
+  };
+}
 
 $("tCbtClearTextBtn").onclick = () => {
   $("tCbtRawText").value = "";
@@ -2544,12 +2755,12 @@ function normalizeExamText(text) {
     return prefix + "\n" + letter.toUpperCase() + ". ";
   });
 
-  // G. Clean up questions in the main exam section (avoid touching answer key pairs)
+  // G. Clean up questions in the main exam section (only separate questions jammed together on the SAME line)
   const parts = t.split(/✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS)/i);
   let mainExam = parts[0];
   const answerKeySection = parts[1] !== undefined ? parts.slice(1).join("\n") : null;
 
-  mainExam = mainExam.replace(/([^\n])\s+(\d+[\.\)\:\-]\s+[A-Z])/g, "$1\n\n$2");
+  mainExam = mainExam.replace(/([^\r\n])[^\S\r\n]+(\d+[\.\)\:\-][^\S\r\n]+[A-Za-z])/g, "$1\n\n$2");
 
   if (answerKeySection) {
     const formattedKey = answerKeySection
@@ -2680,7 +2891,21 @@ function handleTeacherFile(file) {
   } else {
     const reader = new FileReader();
     reader.onload = ev => {
-      $("tCbtRawText").value = ev.target.result;
+      let content = ev.target.result;
+      if (file && file.name && file.name.toLowerCase().endsWith(".doc") && /<html/i.test(content)) {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, "text/html");
+          doc.querySelectorAll("p, div, tr, li, h1, h2, h3, h4, h5, h6, blockquote").forEach(el => {
+            el.insertAdjacentText("afterend", "\n\n");
+          });
+          doc.querySelectorAll("br").forEach(el => {
+            el.insertAdjacentText("afterend", "\n");
+          });
+          content = doc.body ? (doc.body.textContent || "") : content;
+        } catch (e) {}
+      }
+      $("tCbtRawText").value = content;
       parseTeacherCbtText();
     };
     reader.readAsText(file);

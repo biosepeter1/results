@@ -9,8 +9,8 @@
   --border-subtle: #e5e9ef;
 
   --text: #1a1f26;
-  --text-muted: #536070;
-  --text-subtle: #798696;
+  --text-muted: #475569;
+  --text-subtle: #64748b;
 
   --accent: #B94A4A;
   --accent-hover: #A33838;
@@ -37,8 +37,8 @@
     --border-subtle: #242932;
 
     --text: #e8ecf1;
-    --text-muted: #9ba6b5;
-    --text-subtle: #6e7987;
+    --text-muted: #cbd5e1;
+    --text-subtle: #94a3b8;
 
     --accent: #D67575;
     --accent-hover: #E28888;
@@ -47,9 +47,9 @@
     --accent-tint-border: #4D2D2D;
     --accent-text: #13161a;
 
-    --status-good: #4BB06E;
-    --status-avg: #E09F3E;
-    --status-fail: #E65A5A;
+    --status-good: #34d399;
+    --status-avg: #fbbf24;
+    --status-fail: #f87171;
   }
 }
 
@@ -564,7 +564,8 @@ textarea {
 }
 .mobile-nav-item.active {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--accent-text, #ffffff);
+  font-weight: 700;
 }
 
 .drawer-footer {
@@ -2948,6 +2949,7 @@ table.inst-table tr:hover td {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     line-height: 1.2 !important;
+    color: var(--text-subtle) !important;
   }
 
   /* Performance Tier Cards: 2x2 Grid */

@@ -784,18 +784,18 @@ async function renderExecutiveDashboard() {
         const cPassRate = c.totalScores ? ((c.passes / c.totalScores) * 100).toFixed(1) : "0.0";
         const cAvg = c.totalScores ? (c.scoreSum / c.totalScores).toFixed(1) : "0.0";
         const rateNum = Number(cPassRate);
-        const statusBadge = rateNum >= 80 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.12);color:#10b981;font-weight:600;">Excellent</span>` :
-          (rateNum >= 60 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3b82f6;font-weight:600;">Good</span>` :
-            `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:600;">Needs Support</span>`);
+        const statusBadge = rateNum >= 80 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(52,211,153,0.18);color:#34d399;font-weight:600;">Excellent</span>` :
+          (rateNum >= 60 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,0.18);color:#60a5fa;font-weight:600;">Good</span>` :
+            `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(248,113,113,0.18);color:#f87171;font-weight:600;">Needs Support</span>`);
 
         return `
           <tr style="border-bottom:1px solid var(--border-subtle);">
             <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(c.className)}</td>
             <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${c.students.size}</td>
-            <td style="padding:10px 8px;text-align:center;font-weight:600;color:${rateNum >= 70 ? '#10b981' : (rateNum >= 50 ? '#f59e0b' : '#ef4444')}">${cPassRate}%</td>
+            <td style="padding:10px 8px;text-align:center;font-weight:600;color:${rateNum >= 70 ? '#34d399' : (rateNum >= 50 ? '#fbbf24' : '#f87171')}">${cPassRate}%</td>
             <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${cAvg}%</td>
             <td style="padding:10px 8px;text-align:right;">
-              <span style="color:#10b981;font-weight:600;">${c.passes}P</span> / <span style="color:#ef4444;font-weight:600;">${c.fails}F</span> ${statusBadge}
+              <span style="color:#34d399;font-weight:600;">${c.passes}P</span> / <span style="color:#f87171;font-weight:600;">${c.fails}F</span> ${statusBadge}
             </td>
           </tr>
         `;

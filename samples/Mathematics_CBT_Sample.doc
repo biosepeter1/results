@@ -1,0 +1,55 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Mathematics CBT Sample</title>
+  <style>
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; margin: 30pt; }
+    h2 { margin: 0 0 4pt 0; text-align: center; color: #1e3a8a; font-size: 16pt; }
+    .sub { text-align: center; font-size: 10pt; color: #64748b; font-weight: bold; margin-bottom: 16pt; }
+    p { margin: 0 0 4pt 0; }
+    .q { font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; }
+    .opt { margin-left: 20pt; }
+    .ans { color: #047857; font-weight: bold; margin-left: 20pt; margin-top: 2pt; margin-bottom: 12pt; }
+  </style>
+</head>
+<body>
+  <h2>HONEYLAND CBT EXAMINATION PORTAL</h2>
+  <div class="sub">OFFICIAL MATHEMATICS QUESTION TEMPLATE &amp; FORMAT SAMPLE (5 QUESTIONS)</div>
+  <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-bottom: 14pt;" />
+
+  <p class="q">1. Solve for x in the quadratic equation: x² − 5x + 6 = 0.</p>
+  <p class="opt">A. x = 1 or x = 6</p>
+  <p class="opt">B. x = 2 or x = 3</p>
+  <p class="opt">C. x = −2 or x = −3</p>
+  <p class="opt">D. x = 0 or x = 5</p>
+  <p class="ans">Answer: B</p>
+
+  <p class="q">2. Calculate the area of a circle with radius r = 7 cm (Take π = 22/7).</p>
+  <p class="opt">A. 44 cm²</p>
+  <p class="opt">B. 88 cm²</p>
+  <p class="opt">C. 154 cm²</p>
+  <p class="opt">D. 308 cm²</p>
+  <p class="ans">Answer: C</p>
+
+  <p class="q">3. In a right-angled triangle, if sin(θ) = 3/5, what is the value of cos(θ)?</p>
+  <p class="opt">A. 4/5</p>
+  <p class="opt">B. 5/4</p>
+  <p class="opt">C. 3/4</p>
+  <p class="opt">D. 4/3</p>
+  <p class="ans">Answer: A</p>
+
+  <p class="q">4. Simplify the expression: √(144) + (3 × 4) ÷ 2 − 2³.</p>
+  <p class="opt">A. 8</p>
+  <p class="opt">B. 10</p>
+  <p class="opt">C. 12</p>
+  <p class="opt">D. 14</p>
+  <p class="ans">Answer: B</p>
+
+  <p class="q">5. Find the range of values of x satisfying the inequality: 3x − 4 ≤ 5x + 8.</p>
+  <p class="opt">A. x ≥ −6</p>
+  <p class="opt">B. x ≤ −6</p>
+  <p class="opt">C. x ≥ 6</p>
+  <p class="opt">D. x ≤ 6</p>
+  <p class="ans">Answer: A</p>
+</body>
+</html>

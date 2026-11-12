@@ -598,16 +598,36 @@
                     click <code>🖼️ Attach Diagram</code> in Step 3!</li>
                 </ul>
               </div>
+
+              <!-- Download Sample Templates Section -->
+              <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color, rgba(255,255,255,0.12));border-radius:8px">
+                <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                  <span>📥 Download Mathematics CBT Sample (5 Questions):</span>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);margin:0 0 8px 0;line-height:1.4">
+                  Includes mathematical signs (², ³, √, π, θ, ≤, ≥, ×, ÷) and ready-to-use CBT formatting.
+                </p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <a href="samples/Mathematics_CBT_Sample.txt" download="Mathematics_CBT_Sample.txt" id="tCbtDownloadSampleTxtBtn" class="btn-secondary" style="font-size:11px;padding:6px 10px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer">
+                    📄 Download .txt
+                  </a>
+                  <a href="samples/Mathematics_CBT_Sample.docx" download="Mathematics_CBT_Sample.docx" id="tCbtDownloadSampleDocxBtn" class="btn-secondary" style="font-size:11px;padding:6px 10px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer">
+                    📘 Download .docx
+                  </a>
+                  <a href="samples/Mathematics_CBT_Sample.doc" download="Mathematics_CBT_Sample.doc" id="tCbtDownloadSampleDocBtn" class="btn-secondary" style="font-size:11px;padding:6px 10px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer">
+                    📑 Download .doc
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
                 <span class="cbt-form-label" style="margin:0">Or Paste Directly From Word / Notepad</span>
-                <button type="button" class="btn-text" id="tCbtInsertSampleBtn" style="font-size:12px">✨ Insert Sample
-                  with Diagram</button>
+                <button type="button" class="btn-text" id="tCbtInsertSampleBtn" style="font-size:12px">✨ Insert Math Sample (5 Questions)</button>
               </div>
               <textarea class="cbt-form-input" id="tCbtRawText" rows="10"
-                placeholder="1. Which organelle is responsible for cellular respiration?&#10;[🖼️ Diagram Attached]&#10;A. Nucleus&#10;B. Mitochondria&#10;C. Ribosome&#10;D. Endoplasmic reticulum&#10;Answer: B"
+                placeholder="1. Solve for x in the quadratic equation: x² − 5x + 6 = 0.&#10;A. x = 1 or x = 6&#10;B. x = 2 or x = 3&#10;C. x = −2 or x = −3&#10;D. x = 0 or x = 5&#10;Answer: B&#10;&#10;2. Calculate the area of a circle with radius r = 7 cm (Take π = 22/7).&#10;A. 44 cm²&#10;B. 88 cm²&#10;C. 154 cm²&#10;D. 308 cm²&#10;Answer: C"
                 style="font-family:monospace;font-size:13px"></textarea>
 
               <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
