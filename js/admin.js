@@ -890,36 +890,8 @@ function renderDashboardSubjectRadar() {
 
 let dashStudentByIdMap = new Map();
 
-window.toggleDashStudentDrawer = function (studentId, highlightSubject) {
-  const drawer = $(`dash-drawer-${studentId}`);
-  const chevron = $(`dash-chevron-${studentId}`);
-  if (!drawer) return;
-
-  const isClosed = (drawer.style.display === "none");
-  if (isClosed) {
-    drawer.style.display = "table-row";
-    if (chevron) chevron.style.transform = "rotate(180deg)";
-  } else if (!highlightSubject) {
-    drawer.style.display = "none";
-    if (chevron) chevron.style.transform = "rotate(0deg)";
-    return;
-  }
-
-  if (highlightSubject) {
-    const slug = highlightSubject.replace(/[^a-zA-Z0-9]/g, '_');
-    const card = document.getElementById(`dash-card-${studentId}-${slug}`);
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      card.style.outline = "2px solid #ef4444";
-      card.style.boxShadow = "0 0 12px rgba(239,68,68,0.6)";
-      card.style.transform = "scale(1.02)";
-      setTimeout(() => {
-        card.style.outline = "";
-        card.style.boxShadow = "";
-        card.style.transform = "";
-      }, 2500);
-    }
-  }
+window.toggleDashStudentDrawer = function (studentId) {
+  window.openStudentScoreModal(studentId);
 };
 
 window.openStudentScoreModal = function (studentId, isResit = false) {
@@ -1521,7 +1493,7 @@ function renderDashboardStudentActionCenter() {
           <th>STUDENT NAME</th>
           <th>REG NUMBER</th>
           <th>CLASS &amp; ARM</th>
-          <th>FAILED SUBJECTS (CLICK TO REVEAL)</th>
+          <th>FAILED SUBJECTS</th>
           <th style="text-align:center;">AVG SCORE</th>
         </tr>
       `;
@@ -1573,8 +1545,8 @@ function renderDashboardStudentActionCenter() {
           : `Score: ${curScore}/${maxMark}`;
 
         return `
-          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(rSub.subject)}');" 
-            title="${esc(titleTip)} — Click to reveal exact marks for ${esc(rSub.subject)}" 
+          <span onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}');" 
+            title="${esc(titleTip)} — Click to view official report slip" 
             style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:4px; background:rgba(245,158,11,0.18); color:#d97706; font-size:11px; font-weight:700; border:1px solid rgba(245,158,11,0.45); transition:transform 0.15s, background 0.15s;">
             <span>${esc(rSub.subject)}</span>
             <strong style="background:rgba(245,158,11,0.3); padding:1px 6px; border-radius:3px; color:#b45309;">${scoreDisplay}</strong>
@@ -1584,68 +1556,13 @@ function renderDashboardStudentActionCenter() {
 
       // Main Student Row for Rewrite
       rowsHtml.push(`
-        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
+        <tr class="dash-student-row" onclick="window.openStudentScoreModal('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to view official report slip">
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${rewriteBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
-        </tr>
-      `);
-
-      // Expandable Drawer Row for Rewrite
-      rowsHtml.push(`
-        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
-              <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  Examination Rewrite Breakdown: ${esc(s.name)}
-                </span>
-                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#d97706; font-weight:700;">${s.rewriteSubjects.length} Paper(s) Scheduled for Rewrite (≤${dashRewriteCutoffPct}%)</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentResitSlip('${s.id}')" style="font-size:11px; padding:3px 8px; font-weight:600; color:#d97706; display:inline-flex; align-items:center; gap:5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                  Print Resit Slip
-                </button>
-              </div>
-            </div>
-
-            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
-              ${s.scores.map(sc => {
-        const isPass = sc.pct >= 50;
-        const isRewrite = sc.pct <= dashRewriteCutoffPct;
-        const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-        const borderColor = isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)');
-        const borderLeftColor = isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444');
-        const badgeText = isRewrite ? 'REWRITE REQUIRED' : (isPass ? 'PASS' : 'FAIL');
-        const badgeBg = isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)');
-        const badgeColor = isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444');
-
-        return `
-                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${borderColor}; border-left:4px solid ${borderLeftColor}; border-radius:var(--radius); transition:all 0.25s ease;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
-                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
-                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${badgeBg}; color:${badgeColor}; white-space:nowrap;">
-                        ${badgeText}
-                      </span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${sc.scaledScore !== undefined && !isNaN(sc.scaledScore) ? `${sc.scaledScore} of ${sc.maxMark || 20}` : esc(sc.score !== undefined ? sc.score : sc.pct)}</strong>${(sc.origMax && sc.maxMark && sc.maxMark !== sc.origMax && !isNaN(sc.rawScore)) ? ` <span style="font-size:10px;color:var(--text-muted);">(raw: ${sc.rawScore} of ${sc.origMax})</span>` : ""}</span>
-                      <span style="font-size:13px; font-weight:700; color:${badgeColor};">${sc.pct}%</span>
-                    </div>
-                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
-                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${borderLeftColor};"></div>
-                    </div>
-                  </div>
-                `;
-      }).join('')}
-            </div>
-          </td>
         </tr>
       `);
     } else if (isFailTab) {
@@ -1662,8 +1579,8 @@ function renderDashboardStudentActionCenter() {
           : `Score: ${curScore}/${maxMark}`;
 
         return `
-          <span onclick="event.stopPropagation(); window.toggleDashStudentDrawer('${s.id}', '${esc(f.subject)}');" 
-            title="${esc(titleTip)} — Click to reveal exact marks for ${esc(f.subject)}" 
+          <span onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}');" 
+            title="${esc(titleTip)} — Click to view official report slip" 
             style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:3px 8px; border-radius:4px; background:${isRewrite ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)'}; color:${isRewrite ? '#d97706' : '#ef4444'}; font-size:11px; font-weight:600; border:1px solid ${isRewrite ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.25)'}; transition:transform 0.15s, background 0.15s;">
             <span>${esc(f.subject)}</span>
             <strong style="background:${isRewrite ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.22)'}; padding:1px 5px; border-radius:3px;">${scoreDisplay}</strong>
@@ -1674,64 +1591,13 @@ function renderDashboardStudentActionCenter() {
 
       // Main Student Row
       rowsHtml.push(`
-        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
+        <tr class="dash-student-row" onclick="window.openStudentScoreModal('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to view official report slip">
           <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);">${idx + 1}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;">${failBadges}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#ef4444;">${s.avgScore}%</td>
-        </tr>
-      `);
-
-      // Expandable Drawer Row
-      rowsHtml.push(`
-        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
-              <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  Assessment Score Breakdown: ${esc(s.name)}
-                </span>
-                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:${s.avgScore >= 50 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}; color:${s.avgScore >= 50 ? '#10b981' : '#ef4444'}; font-weight:700;">Overall Average: ${s.avgScore}%</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px; display:inline-flex; align-items:center; gap:5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  View Official Report Slip
-                </button>
-              </div>
-            </div>
-
-            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
-              ${s.scores.map(sc => {
-        const isPass = sc.pct >= 50;
-        const isRewrite = sc.pct <= dashRewriteCutoffPct;
-        const cardId = `dash-card-${s.id}-${(sc.subject || '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-        const maxMark = getAdminSubjectMaxMark(sc, s.term || adminCurrentTerm);
-        const exactScoreDisplay = sc.score !== undefined ? (maxMark ? `${sc.score}/${maxMark}` : sc.score) : (maxMark ? `${sc.pct}/${maxMark}` : sc.pct);
-        return `
-                  <div id="${cardId}" style="padding:10px 12px; background:var(--surface); border:1px solid ${isRewrite ? '#f59e0b' : (isPass ? 'var(--border)' : 'rgba(239,68,68,0.4)')}; border-left:4px solid ${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')}; border-radius:var(--radius); transition:all 0.25s ease;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
-                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
-                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:${isRewrite ? 'rgba(245,158,11,0.2)' : (isPass ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.15)')}; color:${isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444')}; white-space:nowrap;">
-                        ${isRewrite ? 'REWRITE' : (isPass ? 'PASS' : 'FAIL')}
-                      </span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(exactScoreDisplay)}</strong></span>
-                      <span style="font-size:13px; font-weight:700; color:${isRewrite ? '#d97706' : (isPass ? '#10b981' : '#ef4444')};">${sc.pct}%</span>
-                    </div>
-                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
-                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:${isRewrite ? '#f59e0b' : (isPass ? '#10b981' : '#ef4444')};"></div>
-                    </div>
-                  </div>
-                `;
-      }).join('')}
-            </div>
-          </td>
         </tr>
       `);
     } else {
@@ -1744,59 +1610,13 @@ function renderDashboardStudentActionCenter() {
             ? `<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#ffedd5;color:#9a3412;font-size:11px;font-weight:800;border:1px solid rgba(249,115,22,0.3);">3RD</span>`
             : `<span style="color:var(--text-muted);font-weight:600;">#${idx + 1}</span>`));
       rowsHtml.push(`
-        <tr class="dash-student-row" onclick="window.toggleDashStudentDrawer('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to reveal all assessment scores">
+        <tr class="dash-student-row" onclick="window.openStudentScoreModal('${s.id}')" style="cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border-subtle);" title="Click to view official report slip">
           <td style="padding:10px 8px;font-weight:700;color:var(--accent);">${rankBadge}</td>
           <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
           <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
           <td style="padding:10px 8px;">${esc(s.class)} · ${esc(s.arm)}</td>
           <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${s.scores.length} subjects</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;color:#10b981;font-size:14px;">${s.avgScore}%</td>
-        </tr>
-      `);
-
-      // Expandable Drawer Row for Honor student
-      rowsHtml.push(`
-        <tr id="dash-drawer-${s.id}" class="dash-student-drawer" style="display:none; background:var(--surface-alt);">
-          <td colspan="6" style="padding:14px 18px; border-bottom:2px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border);">
-              <div>
-                <span style="font-weight:700; font-size:13px; color:var(--text); display:inline-flex; align-items:center; gap:6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-                  Academic Honors Transcript: ${esc(s.name)}
-                </span>
-                <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">(${esc(s.class)} · ${esc(s.arm)} · Reg: ${esc(s.reg || "N/A")})</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(16,185,129,0.12); color:#10b981; font-weight:700;">Distinction Average: ${s.avgScore}%</span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.openStudentScoreModal('${s.id}')" style="font-size:11px; padding:3px 8px; display:inline-flex; align-items:center; gap:5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  View Official Report Slip
-                </button>
-              </div>
-            </div>
-
-            <div class="dash-drawer-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px;">
-              ${s.scores.map(sc => {
-        return `
-                  <div style="padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-left:4px solid #10b981; border-radius:var(--radius);">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
-                      <span style="font-weight:600; font-size:12px; color:var(--text); line-height:1.3;">${esc(sc.subject)}</span>
-                      <span style="font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(16,185,129,0.12); color:#10b981; white-space:nowrap;">
-                        PASS
-                      </span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-                      <span style="font-size:11px; color:var(--text-muted);">Exact Score: <strong style="color:var(--text); font-size:13px;">${esc(sc.score !== undefined ? sc.score : sc.pct)}</strong></span>
-                      <span style="font-size:13px; font-weight:700; color:#10b981;">${sc.pct}%</span>
-                    </div>
-                    <div style="height:4px; width:100%; background:var(--surface-alt); border-radius:2px; overflow:hidden; margin-top:5px;">
-                      <div style="width:${Math.min(100, Math.max(0, sc.pct))}%; height:100%; background:#10b981;"></div>
-                    </div>
-                  </div>
-                `;
-      }).join('')}
-            </div>
-          </td>
         </tr>
       `);
     }
