@@ -2625,3 +2625,89 @@ tbody td.muted-cell {
   background: rgba(239, 68, 68, 0.06) !important;
   color: #ef4444 !important;
 }
+
+/* Mathematics CBT Sample Download Box & Buttons */
+.cbt-download-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface-alt, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: var(--radius, 8px);
+}
+
+.cbt-download-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #f8fafc);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cbt-download-sub {
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin: 0 0 10px 0;
+  line-height: 1.45;
+}
+
+.cbt-download-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cbt-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  line-height: 1;
+}
+
+.cbt-download-btn:hover {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.cbt-download-btn:active {
+  transform: translateY(0);
+}
+
+.cbt-download-btn.cbt-dl-txt {
+  background: #065f46;
+  border: 1px solid #059669;
+}
+.cbt-download-btn.cbt-dl-txt:hover {
+  background: #047857;
+  border-color: #34d399;
+}
+
+.cbt-download-btn.cbt-dl-docx {
+  background: #1e40af;
+  border: 1px solid #2563eb;
+}
+.cbt-download-btn.cbt-dl-docx:hover {
+  background: #1d4ed8;
+  border-color: #60a5fa;
+}
+
+.cbt-download-btn.cbt-dl-doc {
+  background: #5b21b6;
+  border: 1px solid #7c3aed;
+}
+.cbt-download-btn.cbt-dl-doc:hover {
+  background: #6d28d9;
+  border-color: #a78bfa;
+}
