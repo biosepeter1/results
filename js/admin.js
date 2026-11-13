@@ -784,18 +784,18 @@ async function renderExecutiveDashboard() {
         const cPassRate = c.totalScores ? ((c.passes / c.totalScores) * 100).toFixed(1) : "0.0";
         const cAvg = c.totalScores ? (c.scoreSum / c.totalScores).toFixed(1) : "0.0";
         const rateNum = Number(cPassRate);
-        const statusBadge = rateNum >= 80 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(52,211,153,0.18);color:#34d399;font-weight:600;">Excellent</span>` :
-          (rateNum >= 60 ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(96,165,250,0.18);color:#60a5fa;font-weight:600;">Good</span>` :
-            `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(248,113,113,0.18);color:#f87171;font-weight:600;">Needs Support</span>`);
+        const statusBadge = rateNum >= 80 ? `<span class="status-badge badge-excellent">Excellent</span>` :
+          (rateNum >= 60 ? `<span class="status-badge badge-good">Good</span>` :
+            `<span class="status-badge badge-support">Needs Support</span>`);
 
         return `
           <tr style="border-bottom:1px solid var(--border-subtle);">
             <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(c.className)}</td>
             <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${c.students.size}</td>
-            <td style="padding:10px 8px;text-align:center;font-weight:600;color:${rateNum >= 70 ? '#34d399' : (rateNum >= 50 ? '#fbbf24' : '#f87171')}">${cPassRate}%</td>
+            <td style="padding:10px 8px;text-align:center;font-weight:700;color:${rateNum >= 70 ? 'var(--status-good)' : (rateNum >= 50 ? 'var(--status-avg)' : 'var(--status-fail)')}">${cPassRate}%</td>
             <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${cAvg}%</td>
             <td style="padding:10px 8px;text-align:right;">
-              <span style="color:#34d399;font-weight:600;">${c.passes}P</span> / <span style="color:#f87171;font-weight:600;">${c.fails}F</span> ${statusBadge}
+              <span style="color:var(--status-good);font-weight:700;">${c.passes}P</span> / <span style="color:var(--status-fail);font-weight:700;">${c.fails}F</span> ${statusBadge}
             </td>
           </tr>
         `;
@@ -2378,63 +2378,268 @@ if (dropZone && csvFileInput) {
   csvFileInput.onchange = () => handleCSVFile(csvFileInput.files[0]);
 }
 
+let lastLoadedCSVFile = null;
+let lastLoadedCSVText = null;
+
+const SCHOOL_SUBJECTS_CATALOG = [
+  "Mathematics", "English Language", "Basic Science", "Basic Technology", "Agricultural Science",
+  "Civic Education", "Christian Religious Studies", "Computer Studies", "Social Studies", "Physical Health Education",
+  "Business Studies", "French Language", "Home Economics", "Cultural and Creative Arts", "History",
+  "Digital Technologies", "Visual Arts", "Music", "Security Education", "Fashion Design and Garment making", "Literature in English"
+];
+
+const KNOWN_ARMS_CATALOG = [
+  "FRANKLIN", "HOLMES", "EINSTEIN", "DARWIN", "IVY", "GOLD", "SILVER", "EMERALD",
+  "DIAMOND", "RUBY", "BLUE", "GREEN", "RED", "YELLOW", "ARM A", "ARM B", "ARM C", "ARM D"
+];
+
 function handleCSVFile(file) {
   if (!file || !file.name.toLowerCase().endsWith(".csv")) {
     setUploadError("Please provide a valid .csv file.");
     return;
   }
+  lastLoadedCSVFile = file;
   const fr = new FileReader();
   fr.onload = e => {
-    const res = parseCSV(e.target.result);
-    parsedSubjects = res.subjects;
-    totalParsedRecords = res.total;
-    if (!totalParsedRecords) {
-      setUploadError("No valid student score rows found in this CSV.");
-      return;
-    }
-    showCSVPreview(res.sampleRows);
-    $("dropTitle").textContent = file.name;
-    $("dropSub").textContent = `${totalParsedRecords.toLocaleString()} records across ${Object.keys(parsedSubjects).length} subjects`;
-    setUploadError("");
-    checkUploadReady();
+    lastLoadedCSVText = e.target.result;
+    reparseLoadedCSV();
   };
   fr.readAsText(file);
 }
 
-function splitLine(line) {
-  const res = [];
-  const re = /("([^"]*)"|([^,]*))(,|$)/g;
-  let m;
-  while ((m = re.exec(line)) !== null) {
-    res.push(m[2] !== undefined ? m[2] : (m[3] || ''));
-    if (!m[4]) break;
+function reparseLoadedCSV() {
+  if (!lastLoadedCSVText || !lastLoadedCSVFile) return;
+  const manualSub = $("uploadSubjectSelect") ? $("uploadSubjectSelect").value : "";
+  const res = parseCSV(lastLoadedCSVText, lastLoadedCSVFile.name, manualSub);
+  parsedSubjects = res.subjects;
+  totalParsedRecords = res.total;
+  if (!totalParsedRecords) {
+    setUploadError("No valid student score rows found in this CSV.");
+    return;
   }
-  return res;
+  showCSVPreview(res.sampleRows);
+  $("dropTitle").textContent = lastLoadedCSVFile.name;
+  $("dropSub").textContent = `${totalParsedRecords.toLocaleString()} records across ${Object.keys(parsedSubjects).length} subjects`;
+  setUploadError("");
+  checkUploadReady();
 }
 
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
+function splitLine(line, delimiter = ",") {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function detectCSVDelimiter(firstLine) {
+  if (firstLine.includes("\t")) return "\t";
+  if (firstLine.includes(";") && !firstLine.includes(",")) return ";";
+  return ",";
+}
+
+function parseCSV(text, filename = "", manualSubject = "") {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { subjects: {}, total: 0, sampleRows: [] };
+
+  const delimiter = detectCSVDelimiter(lines[0]);
+  const rawHeaders = splitLine(lines[0], delimiter).map(h => h.replace(/^["']|["']$/g, "").trim());
+  const normHeaders = rawHeaders.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
+
+  const isHeaderRow = normHeaders.some(h =>
+    /^(subject|course|class|arm|student|name|reg|admission|score|mark|pct|percentage|date|time|status|submission)$/.test(h)
+  );
+
+  const startLine = isHeaderRow ? 1 : 0;
+  if (startLine >= lines.length) return { subjects: {}, total: 0, sampleRows: [] };
+  const headerMap = {};
+
+  if (isHeaderRow) {
+    normHeaders.forEach((h, idx) => {
+      if (/^(studentname|student|fullname|name|candidatename|candidate|pupil|learner)$/.test(h) && headerMap.student === undefined) headerMap.student = idx;
+      else if (/^(regnumber|regno|reg|registrationno|registrationnumber|admissionno|admissionnumber|admno|studentid|id|matricno)$/.test(h) && headerMap.reg === undefined) headerMap.reg = idx;
+      else if (/^(subjectname|subject|course|coursename|paper)$/.test(h) && headerMap.subject === undefined) headerMap.subject = idx;
+      else if (/^(classname|class|classlevel|level|grade|year)$/.test(h) && headerMap.class === undefined) headerMap.class = idx;
+      else if (/^(classarm|arm|section|subclass|armname)$/.test(h) && headerMap.arm === undefined) headerMap.arm = idx;
+      else if (/^(score|mark|marks|totalscore|rawscore|examscore|result)$/.test(h) && headerMap.score === undefined) headerMap.score = idx;
+      else if (/^(percentage|percent|pct|percentmarks)$/.test(h) && headerMap.pct === undefined) headerMap.pct = idx;
+      else if (/^(date|datetime|dateandtime|timestamp|time|submittedat|submissiontime|examdate)$/.test(h) && headerMap.date === undefined) headerMap.date = idx;
+      else if (/^(status|submission|submissiontype|submissionstatus|mode|type)$/.test(h) && headerMap.status === undefined) headerMap.status = idx;
+      else if (/^(questions|questionsanswered|questioncount|scorefraction)$/.test(h) && headerMap.questions === undefined) headerMap.questions = idx;
+    });
+  }
+
+  // Sample data lines to run content heuristics
+  const sampleDataLines = lines.slice(startLine, Math.min(lines.length, startLine + 10));
+  const colRoles = {};
+  const maxCols = Math.max(...sampleDataLines.map(l => splitLine(l, delimiter).length));
+
+  for (let colIdx = 0; colIdx < maxCols; colIdx++) {
+    const colValues = sampleDataLines.map(l => {
+      const parts = splitLine(l, delimiter);
+      return (parts[colIdx] || "").replace(/^["']|["']$/g, "").trim();
+    }).filter(Boolean);
+
+    if (!colValues.length) continue;
+
+    const isReg = colValues.filter(v => /^STDS\d+-\d+/i.test(v) || /^[A-Z]{3,}\d*-\d+/i.test(v)).length >= (colValues.length * 0.5);
+    if (isReg) { colRoles[colIdx] = "reg"; continue; }
+
+    const isSubmission = colValues.filter(v => /^(NORMAL|LATE|AUTO|EXTRA)\s*(SUBMISSION)?$/i.test(v) || /^SUBMISSION$/i.test(v)).length >= (colValues.length * 0.5);
+    if (isSubmission) { colRoles[colIdx] = "status"; continue; }
+
+    const isQuestionFraction = colValues.filter(v => /^\d+\s*(of|\/)\s*\d+$/i.test(v)).length >= (colValues.length * 0.5);
+    if (isQuestionFraction) { colRoles[colIdx] = "questions"; continue; }
+
+    const isArm = colValues.filter(v => KNOWN_ARMS_CATALOG.includes(v.toUpperCase()) || /^(Franklin|Holmes|Einstein|Darwin|Ivy|Gold|Silver|Emerald|Diamond|Ruby|Blue|Green|Red|Yellow|Arm\s*[A-Z]|[A-D])$/i.test(v)).length >= (colValues.length * 0.5);
+    if (isArm) { colRoles[colIdx] = "arm"; continue; }
+
+    const isClass = colValues.filter(v => /^(Year\s*\d+|Grade\s*\d+|JSS\s*\d|SSS\s*\d|Basic\s*\d|Primary\s*\d)/i.test(v)).length >= (colValues.length * 0.5);
+    if (isClass) { colRoles[colIdx] = "class"; continue; }
+
+    const isSubject = colValues.filter(v => SCHOOL_SUBJECTS_CATALOG.some(sub => sub.toLowerCase() === v.toLowerCase())).length >= (colValues.length * 0.5);
+    if (isSubject) { colRoles[colIdx] = "subject"; continue; }
+
+    const isDate = colValues.filter(v => /\b(AM|PM)\b/i.test(v) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(v) || /\d{4}-\d{2}-\d{2}/.test(v) || /[A-Za-z]{3}\s+\d{1,2},\s*\d{4}/.test(v)).length >= (colValues.length * 0.5);
+    if (isDate) { colRoles[colIdx] = "date"; continue; }
+
+    const isPct = colValues.filter(v => /^\d+(\.\d+)?%$/.test(v)).length >= (colValues.length * 0.5);
+    if (isPct) { colRoles[colIdx] = "pct"; continue; }
+
+    const isNumericScore = colValues.filter(v => /^\d+(\.\d+)?$/.test(v) && parseFloat(v) <= 100).length >= (colValues.length * 0.5);
+    if (isNumericScore && headerMap.score === undefined) { colRoles[colIdx] = "score"; continue; }
+
+    const isStudentName = colValues.filter(v => /^[A-Za-z\s\.\-]{4,60}$/.test(v) && v.split(/\s+/).length >= 2 && !/submission/i.test(v)).length >= (colValues.length * 0.5);
+    if (isStudentName) { colRoles[colIdx] = "student"; continue; }
+  }
+
+  const getCol = (role) => {
+    for (const [idx, r] of Object.entries(colRoles)) {
+      if (r === role) return parseInt(idx, 10);
+    }
+    return headerMap[role] !== undefined ? headerMap[role] : -1;
+  };
+
+  const studentCol = getCol("student") !== -1 ? getCol("student") : 3;
+  const regCol = getCol("reg") !== -1 ? getCol("reg") : 4;
+  const classCol = getCol("class") !== -1 ? getCol("class") : 1;
+  const armCol = getCol("arm") !== -1 ? getCol("arm") : 2;
+  const subjectCol = getCol("subject");
+  const scoreCol = getCol("score") !== -1 ? getCol("score") : 6;
+  const pctCol = getCol("pct") !== -1 ? getCol("pct") : 8;
+  const dateCol = getCol("date") !== -1 ? getCol("date") : 9;
+  const questionsCol = getCol("questions");
+
+  // Determine fallback subject from manual selection, filename, or default
+  let fallbackSubject = manualSubject || "";
+  if (!fallbackSubject && filename) {
+    const fLow = filename.toLowerCase();
+    const foundSub = SCHOOL_SUBJECTS_CATALOG.find(s => fLow.includes(s.toLowerCase()));
+    if (foundSub) fallbackSubject = foundSub;
+  }
+  if (!fallbackSubject) fallbackSubject = "Mathematics";
+
   const subjects = {};
   const sampleRows = [];
   let total = 0;
 
-  for (let i = 1; i < lines.length; i++) {
-    const c = splitLine(lines[i]);
-    if (c.length < 9) continue;
-    const subject = c[0].trim();
-    const student = c[3].trim();
-    if (!subject || !student) continue;
+  for (let i = startLine; i < lines.length; i++) {
+    const c = splitLine(lines[i], delimiter);
+    if (c.length < 2) continue;
 
-    const pct = Math.round(parseFloat((c[8] || '').replace(/[^0-9.]/g, '')) || 0);
-    const date = c.slice(9).join(',').replace(/"/g, '').trim();
+    // Student name
+    let student = (studentCol !== -1 && c[studentCol]) ? c[studentCol].replace(/^["']|["']$/g, "").trim().toUpperCase() : "";
+    if (!student || /^(NORMAL|LATE|AUTO)\s*SUBMISSION$/i.test(student) || KNOWN_ARMS_CATALOG.includes(student)) {
+      const nameCand = c.find(val => /^[A-Za-z\s\.\-]{5,60}$/.test(val) && val.split(/\s+/).length >= 2 && !/submission/i.test(val) && !KNOWN_ARMS_CATALOG.includes(val.toUpperCase()));
+      if (nameCand) student = nameCand.trim().toUpperCase();
+    }
+    if (!student) continue;
+
+    // Reg number
+    let reg = (regCol !== -1 && c[regCol]) ? c[regCol].replace(/^["']|["']$/g, "").trim() : "";
+    if (!/^STDS\d+/i.test(reg)) {
+      const regCand = c.find(val => /^STDS\d+-\d+/i.test(val) || /^[A-Z]{3,}\d*-\d+/i.test(val));
+      if (regCand) reg = regCand.trim();
+    }
+
+    // Arm
+    let arm = (armCol !== -1 && c[armCol]) ? c[armCol].replace(/^["']|["']$/g, "").trim().toUpperCase() : "";
+    if (!KNOWN_ARMS_CATALOG.includes(arm)) {
+      const armCand = c.find(val => KNOWN_ARMS_CATALOG.includes(val.toUpperCase()));
+      if (armCand) arm = armCand.trim().toUpperCase();
+    }
+
+    // Class (auto-derive from reg if empty: STDS7 -> Year 7, STDS8 -> Year 8, STDS9 -> Year 9)
+    let className = (classCol !== -1 && c[classCol]) ? c[classCol].replace(/^["']|["']$/g, "").trim() : "";
+    if (!className || !/Year\s*\d/i.test(className)) {
+      const classCand = c.find(val => /Year\s*\d/i.test(val));
+      if (classCand) {
+        className = classCand.trim();
+      } else if (/^STDS(\d+)/i.test(reg)) {
+        const yr = reg.match(/^STDS(\d+)/i)[1];
+        className = `Year ${yr}`;
+      }
+    }
+    if (!className) className = "Year 7";
+
+    // Subject
+    let subject = (subjectCol !== -1 && c[subjectCol]) ? c[subjectCol].replace(/^["']|["']$/g, "").trim() : "";
+    if (!subject || KNOWN_ARMS_CATALOG.includes(subject.toUpperCase())) {
+      subject = fallbackSubject;
+    }
+
+    // Score & Percentage
+    let score = (scoreCol !== -1 && c[scoreCol]) ? c[scoreCol].replace(/^["']|["']$/g, "").trim() : "";
+    let pct = 0;
+    if (pctCol !== -1 && c[pctCol]) {
+      const pctMatch = c[pctCol].replace(/[^0-9.]/g, "");
+      pct = Math.round(parseFloat(pctMatch) || 0);
+      if (pct > 100) pct = 0; // guard against year 2026 parsed as pct
+    }
+
+    // If score has "X of Y" (or questionsCol has it)
+    const qFraction = (questionsCol !== -1 && c[questionsCol]) ? c[questionsCol] : score;
+    const qMatch = (qFraction || "").match(/(\d+)\s*(?:of|\/)\s*(\d+)/i);
+    if (qMatch) {
+      const correct = parseInt(qMatch[1], 10);
+      const totalQ = parseInt(qMatch[2], 10);
+      if (!pct && totalQ > 0) pct = Math.round((correct / totalQ) * 100);
+      if (!score || score === qFraction) score = String(correct);
+    } else {
+      const numScore = parseFloat((score || "").replace(/[^0-9.]/g, ""));
+      if (!isNaN(numScore)) {
+        if (!pct && numScore <= 100) pct = Math.round(numScore);
+        score = String(numScore);
+      }
+    }
+
+    // Date
+    let date = (dateCol !== -1 && c[dateCol]) ? c[dateCol].replace(/^["']|["']$/g, "").trim() : "";
+    if (!date) date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
     if (!subjects[subject]) subjects[subject] = [];
     const record = {
-      class: c[1].trim(),
-      arm: c[2].trim().toUpperCase(),
+      class: className,
+      arm,
       student,
-      reg: c[4].trim(),
-      score: (c[6] || '').replace(/"/g, '').trim(),
+      reg,
+      score,
       pct,
       date
     };
@@ -2442,23 +2647,33 @@ function parseCSV(text) {
     total++;
     if (sampleRows.length < 6) sampleRows.push({ ...record, subject });
   }
+
   return { subjects, total, sampleRows };
 }
 
 function showCSVPreview(rows) {
   $("csvPreviewSection").style.display = "block";
   $("csvRecordCount").textContent = totalParsedRecords.toLocaleString();
-  $("csvPreviewHead").innerHTML = "<tr>" + ["Subject", "Class", "Arm", "Student", "Score", "%"].map(h => `<th>${h}</th>`).join("") + "</tr>";
+  $("csvPreviewHead").innerHTML = "<tr>" + ["Subject", "Class", "Arm", "Student", "Reg No", "Score", "%"].map(h => `<th>${h}</th>`).join("") + "</tr>";
   $("csvPreviewBody").innerHTML = rows.map(r => `
     <tr>
       <td>${esc(r.subject)}</td>
       <td>${esc(r.class)}</td>
       <td>${esc(r.arm)}</td>
       <td style="font-weight:600">${esc(r.student)}</td>
+      <td><code style="font-size:11px;background:rgba(255,255,255,0.06);padding:2px 4px;border-radius:3px;">${esc(r.reg || '-')}</code></td>
       <td>${esc(r.score)}</td>
       <td>${r.pct}%</td>
     </tr>
   `).join("");
+}
+
+if ($("uploadSubjectSelect")) {
+  $("uploadSubjectSelect").onchange = () => {
+    if (lastLoadedCSVText && lastLoadedCSVFile) {
+      reparseLoadedCSV();
+    }
+  };
 }
 
 $("csvClearBtn").onclick = () => {
@@ -2534,12 +2749,18 @@ $("uploadScoresBtn").onclick = async () => {
       el.style.display = "block";
     }
 
+    // Instantly refresh in-memory scores & UI views without requiring page reload!
+    await loadStudentScores(true);
+    renderUploadTermSelector();
+    buildAdminTermTabs();
+    applyScoreFilters();
+    if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
+    await loadLiveTerms();
+
     setTimeout(() => {
       $("csvClearBtn")?.click();
       if ($("uploadProgressWrap")) $("uploadProgressWrap").style.display = "none";
     }, 3000);
-
-    await loadLiveTerms();
   } catch (e) {
     setUploadProgress(0, "");
     if ($("uploadProgressWrap")) $("uploadProgressWrap").style.display = "none";
@@ -2555,7 +2776,7 @@ function setUploadProgress(pct, text) {
 
 async function loadLiveTerms() {
   const $list = $("liveTermsList");
-  if ($list) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabase...</div>';
+  if ($list && !$list.children.length) $list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading live terms from Supabase...</div>';
   try {
     const termList = await window.dbClient.getLiveTerms(allScoreRows);
     termScoreCountsMap = {};
@@ -2587,12 +2808,49 @@ async function loadLiveTerms() {
 
 async function deleteTerm(term) {
   if (!confirm(`Are you sure you want to delete all scores for "${term}"?\n\nThis will remove it from all teacher portal views.`)) return;
+
+  // 1. Instant optimistic DOM removal from "Live Test Scores" list (0ms wait)
+  const $list = $("liveTermsList");
+  if ($list) {
+    const items = $list.querySelectorAll(".live-term-item");
+    items.forEach(it => {
+      const nameEl = it.querySelector(".live-term-name");
+      if (nameEl && nameEl.textContent.trim().toLowerCase() === term.trim().toLowerCase()) {
+        it.style.transition = "opacity 0.2s, transform 0.2s";
+        it.style.opacity = "0";
+        it.style.transform = "scale(0.95)";
+        setTimeout(() => it.remove(), 200);
+      }
+    });
+  }
+
+  // 2. Immediately purge deleted term from in-memory records and local cache
+  allScoreRows = allScoreRows.filter(r => (r.term || "").trim().toLowerCase() !== term.trim().toLowerCase());
+  delete termScoreCountsMap[term];
+  const now = new Date();
+  const timeStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  setCachedScores(allScoreRows, now.toISOString(), timeStr);
+
+  // 3. Immediately refresh tabs and dashboard
+  renderUploadTermSelector();
+  buildAdminTermTabs();
+  applyScoreFilters();
+  if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
+
   try {
+    // 4. Delete from Supabase cloud (exam_results & live_terms in exam_meta)
     await window.dbClient.deleteTerm(term);
-    delete termScoreCountsMap[term];
+
+    // 5. Fresh reload from cloud to ensure perfect synchronization
+    await loadStudentScores(true);
     await loadLiveTerms();
+    renderUploadTermSelector();
+    buildAdminTermTabs();
+    applyScoreFilters();
+    if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
   } catch (e) {
     alert("Delete failed: " + e.message);
+    await loadLiveTerms();
   }
 }
 
@@ -3931,6 +4189,7 @@ async function openCBTPreview(docId) {
   if ($("cbtPreviewLaunchDate")) $("cbtPreviewLaunchDate").value = launchDateVal;
   if ($("cbtPreviewGateOpen")) $("cbtPreviewGateOpen").value = sub.startTime || sub.gateOpen || "08:00";
   if ($("cbtPreviewGateClose")) $("cbtPreviewGateClose").value = sub.endTime || sub.gateClose || "20:00";
+  if ($("cbtPreviewDuration")) $("cbtPreviewDuration").value = parseInt(sub.duration || sub.durationMinutes || 40, 10);
   if ($("cbtPreviewShuffle")) $("cbtPreviewShuffle").checked = sub.shuffle !== false;
 
   const timeD = `${sub.startTime || sub.gateOpen || "08:00"} – ${sub.endTime || sub.gateClose || "20:00"}`;
@@ -4343,6 +4602,7 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     const newLaunch = $("cbtPreviewLaunchDate")?.value || "2026-10-27";
     const newGateOpen = $("cbtPreviewGateOpen")?.value || "08:00";
     const newGateClose = $("cbtPreviewGateClose")?.value || "20:00";
+    const newDuration = parseInt($("cbtPreviewDuration")?.value, 10) || 40;
     const newShuffle = $("cbtPreviewShuffle") ? $("cbtPreviewShuffle").checked : true;
 
     // Collect updated assigned arms (Admin exclusive)
@@ -4363,6 +4623,8 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     activePreviewSubmission.endTime = newGateClose;
     activePreviewSubmission.gateOpen = newGateOpen;
     activePreviewSubmission.gateClose = newGateClose;
+    activePreviewSubmission.duration = newDuration;
+    activePreviewSubmission.durationMinutes = newDuration;
     activePreviewSubmission.shuffle = newShuffle;
     activePreviewSubmission.selectedArms = checkedArms;
     activePreviewSubmission.arm = checkedArms.map(a => ({ "$oid": a }));
@@ -4384,7 +4646,17 @@ if ($("cbtPreviewSaveScheduleBtn")) {
         allCbtSubmissions[subIdx].endTime = newGateClose;
         allCbtSubmissions[subIdx].gateOpen = newGateOpen;
         allCbtSubmissions[subIdx].gateClose = newGateClose;
+        allCbtSubmissions[subIdx].duration = newDuration;
+        allCbtSubmissions[subIdx].durationMinutes = newDuration;
         allCbtSubmissions[subIdx].shuffle = newShuffle;
+      }
+
+      // Update modal header duration display
+      const resolvedSubName = (activePreviewSubmission.subjectName && activePreviewSubmission.subjectName !== "—" && activePreviewSubmission.subjectName !== "-")
+        ? activePreviewSubmission.subjectName
+        : ((typeof resolveCbtSubject === "function" ? resolveCbtSubject(activePreviewSubmission.title || "").name : "") || "Biology");
+      if ($("cbtPreviewModalMeta")) {
+        $("cbtPreviewModalMeta").textContent = `Teacher: ${activePreviewSubmission.teacherName || "Staff"} · Subject: ${resolvedSubName} · Class: ${activePreviewSubmission.className || "All"} · Duration: ${newDuration} mins · Total: ${(activePreviewSubmission.questions || []).length} questions`;
       }
 
       if ($("cbtScheduleSummaryPill")) {
@@ -4397,17 +4669,17 @@ if ($("cbtPreviewSaveScheduleBtn")) {
         const totalArmsCount = (classInfo.arms || []).length;
         const selArmsCount = checkedArms.length;
         const armsPill = (totalArmsCount > 0 && selArmsCount >= totalArmsCount) ? "All Arms" : `${selArmsCount} Arm${selArmsCount === 1 ? '' : 's'}`;
-        $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD} · 🎯 ${armsPill}`;
+        $("cbtScheduleSummaryPill").textContent = `📅 ${displayLaunch} · ${timeD} · ${shufD} · ⏳ ${newDuration}m · 🎯 ${armsPill}`;
       }
       btn.textContent = "✓ Saved!";
       setTimeout(() => {
-        btn.textContent = "💾 Save Schedule & Arms";
+        btn.textContent = "💾 Save Settings & Arms";
         btn.disabled = false;
       }, 1500);
       renderCBTSubmissions();
     } catch (err) {
       alert("Could not update schedule and arms in cloud: " + err.message);
-      btn.textContent = "💾 Save Schedule & Arms";
+      btn.textContent = "💾 Save Settings & Arms";
       btn.disabled = false;
     }
   };

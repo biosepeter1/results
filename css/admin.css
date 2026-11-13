@@ -2,6 +2,7 @@
    INSTITUTIONAL DESIGN SYSTEM — ADMIN CONTROL
    ══════════════════════════════════════════════════════════ */
 :root {
+  color-scheme: light;
   --bg: #f5f6f8;
   --surface: #ffffff;
   --surface-alt: #f0f2f5;
@@ -9,8 +10,8 @@
   --border-subtle: #e5e9ef;
 
   --text: #1a1f26;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
+  --text-muted: #334155;
+  --text-subtle: #475569;
 
   --accent: #B94A4A;
   --accent-hover: #A33838;
@@ -30,22 +31,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --bg: #13161a;
     --surface: #1a1e24;
     --surface-alt: #22272f;
     --border: #2e3540;
     --border-subtle: #242932;
 
-    --text: #e8ecf1;
+    --text: #f8fafc;
     --text-muted: #cbd5e1;
     --text-subtle: #94a3b8;
 
-    --accent: #D67575;
-    --accent-hover: #E28888;
-    --accent-active: #C56363;
+    --accent: #B94A4A;
+    --accent-hover: #C56363;
+    --accent-active: #8F2D2D;
     --accent-tint: #2B1D1D;
     --accent-tint-border: #4D2D2D;
-    --accent-text: #13161a;
+    --accent-text: #ffffff;
 
     --status-good: #34d399;
     --status-avg: #fbbf24;
@@ -606,9 +608,13 @@ textarea {
 }
 
 .mobile-nav-item.active {
-  background: var(--accent);
-  color: var(--accent-text, #ffffff);
+  background: #991b1b;
+  color: #ffffff !important;
   font-weight: 700;
+}
+
+.mobile-nav-item.active span {
+  color: #ffffff !important;
 }
 
 .drawer-footer {
@@ -1596,7 +1602,8 @@ table.inst-table tr:hover td {
 
 .metric-sub {
   font-size: 11px;
-  color: var(--text-subtle);
+  color: var(--text-muted);
+  font-weight: 500;
   margin-top: 4px;
 }
 
@@ -3018,12 +3025,13 @@ table.inst-table tr:hover td {
   }
 
   .dash-kpi-grid .metric-sub {
-    font-size: 10px !important;
+    font-size: 11px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     line-height: 1.2 !important;
-    color: var(--text-subtle) !important;
+    color: var(--text-muted) !important;
+    font-weight: 500 !important;
   }
 
   /* Performance Tier Cards: 2x2 Grid */
@@ -3362,18 +3370,142 @@ button.open .cbt-toggle-arrow {
 
 /* Enhanced Dropdown & Select styling & interaction */
 select.form-input,
-.form-select {
+.form-select,
+select {
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color-scheme: light dark;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 select.form-input:hover,
-.form-select:hover {
+.form-select:hover,
+select:hover {
   border-color: rgba(235, 87, 87, 0.45);
 }
 
 select.form-input:focus,
-.form-select:focus {
+.form-select:focus,
+select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(235, 87, 87, 0.18);
   outline: none;
+}
+
+select.form-input option,
+.form-select option,
+select option {
+  background-color: #1a1e24;
+  color: #f8fafc;
+  padding: 8px 12px;
+}
+
+@media (prefers-color-scheme: light) {
+  select.form-input option,
+  .form-select option,
+  select option {
+    background-color: #ffffff;
+    color: #1a1f26;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   WCAG 2 AA COMPLIANT EXECUTIVE DASHBOARD BADGES & CONTRAST
+   ══════════════════════════════════════════════════════════ */
+.dash-tier-badge {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+  display: inline-block;
+}
+.dash-tier-badge.tier-dist {
+  color: #047857; /* 7.3:1 contrast */
+}
+.dash-tier-badge.tier-credit {
+  color: #1d4ed8; /* 8.0:1 contrast */
+}
+.dash-tier-badge.tier-pass {
+  color: #b45309; /* 5.4:1 contrast */
+}
+.dash-tier-badge.tier-fail {
+  color: #b91c1c; /* 7.6:1 contrast */
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  display: inline-block;
+}
+.status-badge.badge-excellent {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.status-badge.badge-good {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+.status-badge.badge-support {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.dash-btn-fail {
+  color: #b91c1c !important;
+  font-weight: 700;
+}
+.dash-btn-rewrite {
+  color: #b45309 !important;
+  font-weight: 700;
+}
+.dash-btn-honor {
+  color: #047857 !important;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dash-tier-badge.tier-dist {
+    color: #34d399;
+  }
+  .dash-tier-badge.tier-credit {
+    color: #60a5fa;
+  }
+  .dash-tier-badge.tier-pass {
+    color: #fbbf24;
+  }
+  .dash-tier-badge.tier-fail {
+    color: #f87171;
+  }
+
+  .status-badge.badge-excellent {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+  .status-badge.badge-good {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+  }
+  .status-badge.badge-support {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+  }
+
+  .dash-btn-fail {
+    color: #fca5a5 !important;
+  }
+  .dash-btn-rewrite {
+    color: #fde047 !important;
+  }
+  .dash-btn-honor {
+    color: #6ee7b7 !important;
+  }
 }

@@ -422,6 +422,19 @@ const dbClient = {
   },
 
   async getLiveTerms(knownRows) {
+    const sb = getSupabase();
+    if (sb) {
+      try {
+        // 1. Instant read from live_terms registry in exam_meta (authoritative source of truth)
+        const { data: metaDoc } = await sb.from("exam_meta").select("meta").eq("key", "live_terms").maybeSingle();
+        if (metaDoc && metaDoc.meta && Object.keys(metaDoc.meta).length > 0) {
+          return Object.values(metaDoc.meta);
+        }
+      } catch (err) {
+        console.warn("Supabase live_terms read:", err);
+      }
+    }
+
     if (Array.isArray(knownRows) && knownRows.length > 0) {
       const map = {};
       knownRows.forEach(r => {
@@ -438,14 +451,8 @@ const dbClient = {
       }));
     }
 
-    const sb = getSupabase();
     if (!sb) return [];
     try {
-      // 1. Instant read from live_terms registry
-      const { data: metaDoc } = await sb.from("exam_meta").select("meta").eq("key", "live_terms").maybeSingle();
-      if (metaDoc && metaDoc.meta && Object.keys(metaDoc.meta).length > 0) {
-        return Object.values(metaDoc.meta);
-      }
 
       // 2. Parallel fast exact count across known terms
       const standardTerms = ["First Test", "Mid Term Test", "Third Term Examination", "Third Term Test"];

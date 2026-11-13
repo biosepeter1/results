@@ -504,28 +504,28 @@
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Distinction
                 (&ge;75%)</div>
               <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashTierCountDist">0</div>
-              <div style="font-size:11px;color:#34d399;font-weight:600;" id="dashTierPctDist">0% of total</div>
+              <div class="dash-tier-badge tier-dist" id="dashTierPctDist">0% of total</div>
             </div>
             <div
               style="padding:12px;background:var(--surface-alt);border-radius:var(--radius);border-left:4px solid #3b82f6;">
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Credit (60%
                 - 74%)</div>
               <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashTierCountCredit">0</div>
-              <div style="font-size:11px;color:#60a5fa;font-weight:600;" id="dashTierPctCredit">0% of total</div>
+              <div class="dash-tier-badge tier-credit" id="dashTierPctCredit">0% of total</div>
             </div>
             <div
               style="padding:12px;background:var(--surface-alt);border-radius:var(--radius);border-left:4px solid #f59e0b;">
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Pass (50% -
                 59%)</div>
               <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashTierCountPass">0</div>
-              <div style="font-size:11px;color:#fbbf24;font-weight:600;" id="dashTierPctPass">0% of total</div>
+              <div class="dash-tier-badge tier-pass" id="dashTierPctPass">0% of total</div>
             </div>
             <div
               style="padding:12px;background:var(--surface-alt);border-radius:var(--radius);border-left:4px solid #ef4444;">
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Critical
                 Fail (&lt;50%)</div>
               <div style="font-size:20px;font-weight:700;color:var(--text);" id="dashTierCountFail">0</div>
-              <div style="font-size:11px;color:#f87171;font-weight:600;" id="dashTierPctFail">0% of total</div>
+              <div class="dash-tier-badge tier-fail" id="dashTierPctFail">0% of total</div>
             </div>
           </div>
         </div>
@@ -616,8 +616,8 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-secondary btn-sm active" id="dashStudentsTabFail"
-                  style="color:#f87171;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                <button type="button" class="btn btn-secondary btn-sm active dash-btn-fail" id="dashStudentsTabFail"
+                  style="display:inline-flex;align-items:center;gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="10" r="10" />
@@ -626,8 +626,8 @@
                   </svg>
                   Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabRewrite"
-                  style="color:#fbbf24;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                <button type="button" class="btn btn-secondary btn-sm dash-btn-rewrite" id="dashStudentsTabRewrite"
+                  style="display:inline-flex;align-items:center;gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="1 4 1 10 7 10" />
@@ -636,8 +636,8 @@
                   </svg>
                   Students That Need to Rewrite (<span id="dashBadgeRewriteCount">0</span>)
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="dashStudentsTabHonor"
-                  style="color:#34d399;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                <button type="button" class="btn btn-secondary btn-sm dash-btn-honor" id="dashStudentsTabHonor"
+                  style="display:inline-flex;align-items:center;gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="8" r="7" />
@@ -1083,6 +1083,37 @@
                 <div>
                   <h2 class="card-title">Step 2 — Select CSV File</h2>
                   <p class="card-sub">Drop the daily Academic_Records.csv export</p>
+                </div>
+              </div>
+
+              <div class="form-field" style="margin-bottom:14px">
+                <label class="form-label" for="uploadSubjectSelect" style="font-weight:700">Subject Assignment / Override</label>
+                <select class="form-select form-input" id="uploadSubjectSelect" style="width:100%;cursor:pointer;">
+                  <option value="">Auto-detect from CSV columns or filename</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English Language">English Language</option>
+                  <option value="Basic Science">Basic Science</option>
+                  <option value="Basic Technology">Basic Technology</option>
+                  <option value="Agricultural Science">Agricultural Science</option>
+                  <option value="Civic Education">Civic Education</option>
+                  <option value="Christian Religious Studies">Christian Religious Studies</option>
+                  <option value="Computer Studies">Computer Studies</option>
+                  <option value="Social Studies">Social Studies</option>
+                  <option value="Physical Health Education">Physical Health Education</option>
+                  <option value="Business Studies">Business Studies</option>
+                  <option value="French Language">French Language</option>
+                  <option value="Home Economics">Home Economics</option>
+                  <option value="Cultural and Creative Arts">Cultural and Creative Arts</option>
+                  <option value="History">History</option>
+                  <option value="Digital Technologies">Digital Technologies</option>
+                  <option value="Visual Arts">Visual Arts</option>
+                  <option value="Music">Music</option>
+                  <option value="Security Education">Security Education</option>
+                  <option value="Fashion Design and Garment making">Fashion Design and Garment making</option>
+                  <option value="Literature in English">Literature in English</option>
+                </select>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+                  💡 <em>If your CSV is for a single subject without a "Subject" column, choose it here so teachers of that subject see the scores immediately.</em>
                 </div>
               </div>
 
@@ -1618,13 +1649,18 @@
             <input type="time" class="form-input" id="cbtPreviewGateClose" value="20:00"
               style="padding:5px 8px;font-size:12px">
           </div>
+          <div>
+            <label class="form-label" style="font-size:11px;color:#3b82f6;font-weight:700">DURATION (MINS)</label>
+            <input type="number" class="form-input" id="cbtPreviewDuration" min="5" max="300" step="5" value="40"
+              style="padding:5px 8px;font-size:12px;width:100%">
+          </div>
           <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px">
             <input type="checkbox" id="cbtPreviewShuffle" checked style="width:16px;height:16px;cursor:pointer">
             <label for="cbtPreviewShuffle" style="font-size:12px;font-weight:600;cursor:pointer">Shuffle</label>
           </div>
           <div>
             <button type="button" class="btn btn-sm" id="cbtPreviewSaveScheduleBtn"
-              style="width:100%;font-size:12px;min-height:30px">💾 Save Schedule &amp; Arms</button>
+              style="width:100%;font-size:12px;min-height:30px">💾 Save Settings &amp; Arms</button>
           </div>
 
           <!-- Cohort Arms Manager (Admin Exclusive) -->
