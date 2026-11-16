@@ -2711,3 +2711,195 @@ tbody td.muted-cell {
   background: #6d28d9;
   border-color: #a78bfa;
 }
+
+/* ══════════════════════════════════════════════════════════
+   ADMINISTRATIVE ANNOUNCEMENTS & BROADCASTS SYSTEM
+   ══════════════════════════════════════════════════════════ */
+.menu-notif-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+.menu-notif-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.menu-notif-btn:active {
+  transform: scale(0.96);
+}
+
+.notif-badge-pill {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #1a1e24;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  animation: pulseNotif 2.2s infinite;
+}
+@keyframes pulseNotif {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5); }
+  50% { transform: scale(1.15); box-shadow: 0 0 14px rgba(239, 68, 68, 0.8); }
+}
+
+.teacher-announcements-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+  animation: bannerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bannerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.teacher-announcement-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 6px solid #3b82f6;
+  border-radius: 10px;
+  padding: 18px 22px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.teacher-announcement-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.09);
+}
+
+.teacher-announcement-card.category-locked_server {
+  border-left-color: #dc2626;
+  background: linear-gradient(90deg, rgba(220, 38, 38, 0.08) 0%, var(--surface) 100%);
+}
+
+.teacher-announcement-card.category-urgent {
+  border-left-color: #ef4444;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.07) 0%, var(--surface) 100%);
+}
+
+.teacher-announcement-card.category-missing_class {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.07) 0%, var(--surface) 100%);
+}
+
+.teacher-announcement-card.category-exam_upload {
+  border-left-color: #3b82f6;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.07) 0%, var(--surface) 100%);
+}
+
+.teacher-announcement-card.category-general {
+  border-left-color: #8b5cf6;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.07) 0%, var(--surface) 100%);
+}
+
+.teacher-announcement-card.category-portal {
+  border-left-color: #06b6d4;
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.07) 0%, var(--surface) 100%);
+}
+
+.notif-category-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.02em;
+}
+
+.notif-audience-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.notif-dismiss-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  min-height: 32px;
+}
+.notif-dismiss-btn:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.notif-dismiss-btn:active {
+  transform: scale(0.96);
+}
+
+/* Mobile Responsiveness for Teacher Portal */
+@media (max-width: 680px) {
+  .teacher-announcements-feed {
+    margin-bottom: 18px;
+    gap: 10px;
+  }
+  .teacher-announcement-card {
+    padding: 14px 14px;
+    border-radius: 8px;
+  }
+  .notif-card-header-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .notif-chips-group {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .notif-dismiss-btn {
+    align-self: flex-end;
+    font-size: 11.5px;
+    padding: 3px 10px;
+  }
+}

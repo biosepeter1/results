@@ -749,6 +749,72 @@ const dbClient = {
       console.error("Supabase saveScoreConversion error:", err);
       throw err;
     }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // 6. TEACHER ANNOUNCEMENTS & BROADCASTS
+  // ══════════════════════════════════════════════════════════
+  async getTeacherAnnouncements() {
+    const sb = getSupabase();
+    if (!sb) return [];
+    try {
+      const { data, error } = await sb.from("exam_meta").select("meta").eq("key", "teacher_announcements").maybeSingle();
+      if (error) {
+        console.warn("Supabase getTeacherAnnouncements error:", error);
+        return [];
+      }
+      if (data && Array.isArray(data.meta)) {
+        return data.meta;
+      }
+      return [];
+    } catch (err) {
+      console.warn("Supabase getTeacherAnnouncements error:", err);
+      return [];
+    }
+  },
+
+  async saveTeacherAnnouncements(list) {
+    const sb = getSupabase();
+    if (!sb) return false;
+    try {
+      const cleanList = Array.isArray(list) ? list : [];
+      const { error } = await sb.from("exam_meta").upsert({
+        key: "teacher_announcements",
+        last_updated: new Date().toISOString(),
+        meta: cleanList
+      }, { onConflict: "key" });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Supabase saveTeacherAnnouncements error:", err);
+      throw err;
+    }
+  },
+
+  async addTeacherAnnouncement(announcement) {
+    const current = await this.getTeacherAnnouncements();
+    const item = {
+      id: "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      title: announcement.title || "Announcement",
+      category: announcement.category || "general",
+      target: announcement.target || "all",
+      targetSubject: announcement.targetSubject || "",
+      targetClass: announcement.targetClass || "",
+      message: announcement.message || "",
+      createdAt: new Date().toISOString(),
+      author: announcement.author || "Exam Committee",
+      pinned: !!announcement.pinned
+    };
+    const updated = [item, ...current];
+    await this.saveTeacherAnnouncements(updated);
+    return item;
+  },
+
+  async deleteTeacherAnnouncement(id) {
+    const current = await this.getTeacherAnnouncements();
+    const updated = current.filter(item => item.id !== id);
+    await this.saveTeacherAnnouncements(updated);
+    return true;
   }
 };
 

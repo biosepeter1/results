@@ -141,9 +141,10 @@ function performAdminSignIn() {
   $("viewLogin").style.display = "none";
   $("viewApp").style.display = "block";
   const activeTab = localStorage.getItem("admin_active_tab_v1") || "dashboard";
+  initAdminAnnouncementsEvents();
   switchTab(activeTab);
-  // Run teachers and live-terms in parallel — don't block the scores tab
-  Promise.all([loadTeachers(), loadLiveTerms()]).catch(() => { });
+  // Run teachers, live-terms, and announcements in parallel — don't block the scores tab
+  Promise.all([loadTeachers(), loadLiveTerms(), loadAdminAnnouncements()]).catch(() => { });
 }
 
 $("loginForm").onsubmit = (e) => {
@@ -178,9 +179,9 @@ function switchTab(target) {
   try {
     localStorage.setItem("admin_active_tab_v1", target);
   } catch (err) { }
-  const TABS = ["dashboard", "scores", "teachers", "upload", "cbt"];
-  const BTNS = { dashboard: "tabDashboard", scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT" };
-  const PANES = { dashboard: "paneDashboard", scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT" };
+  const TABS = ["dashboard", "scores", "teachers", "upload", "cbt", "notifs"];
+  const BTNS = { dashboard: "tabDashboard", scores: "tabScores", teachers: "tabTeachers", upload: "tabUpload", cbt: "tabCBT", notifs: "tabNotifs" };
+  const PANES = { dashboard: "paneDashboard", scores: "paneScores", teachers: "paneTeachers", upload: "paneUpload", cbt: "paneCBT", notifs: "paneNotifs" };
   TABS.forEach(t => {
     if ($(BTNS[t])) $(BTNS[t]).classList.toggle("active", t === target);
     if ($(PANES[t])) $(PANES[t]).style.display = (t === target) ? "block" : "none";
@@ -212,12 +213,17 @@ function switchTab(target) {
     initCbtTermsManager();
   }
   if (target === "scores") { initConversionPanel(); loadStudentScores(); }
+  if (target === "notifs") {
+    populateAdminNotifSubjects();
+    loadAdminAnnouncements();
+  }
 }
 if ($("tabDashboard")) $("tabDashboard").onclick = () => switchTab("dashboard");
 if ($("tabScores")) $("tabScores").onclick = () => switchTab("scores");
 if ($("tabTeachers")) $("tabTeachers").onclick = () => switchTab("teachers");
 if ($("tabUpload")) $("tabUpload").onclick = () => switchTab("upload");
 if ($("tabCBT")) $("tabCBT").onclick = () => switchTab("cbt");
+if ($("tabNotifs")) $("tabNotifs").onclick = () => switchTab("notifs");
 
 // Mobile Drawer & Bottom Navigation Wiring
 function closeAdminMobileDrawer() {
@@ -6191,6 +6197,384 @@ function esc(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ══════════════════════════════════════════════════════════
+// TEACHER ANNOUNCEMENTS & BROADCASTS MANAGEMENT
+// ══════════════════════════════════════════════════════════
+
+let adminAnnouncementsList = [];
+let adminNotifEventsInitialized = false;
+
+function populateAdminNotifSubjects() {
+  const sel = $("adminNotifSubjectSelect");
+  if (!sel) return;
+  const currentVal = sel.value;
+  const subjects = getAdminAllSubjects();
+  sel.innerHTML = `<option value="">-- Choose Subject --</option>` +
+    subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (currentVal && subjects.includes(currentVal)) {
+    sel.value = currentVal;
+  }
+}
+
+// Helper to normalize author display (defaults legacy / administration notices to Exam Committee)
+function getAuthorDisplay(author) {
+  if (!author || author === "Academic Administration" || author === "School Administrator") {
+    return "Exam Committee";
+  }
+  return author;
+}
+
+// Pre-set templates
+const NOTIF_TEMPLATES = {
+  locked_class: {
+    category: "locked_server",
+    title: "Urgent: Locked Classroom / Server Inaccessible - [Class Arm]",
+    target: "all",
+    message: "Dear Teachers / Class Supervisors,\n\nThe Exam Committee is currently going round to collect examination results from the local classroom servers for upload to the portal.\n\nHowever, [e.g. Year 8 Ivy Classroom / Lab Server] is currently locked, preventing us from accessing the server to harvest and upload your students' results.\n\nKindly unlock the classroom/lab or ensure the server is accessible immediately so the scores can be collected and uploaded to the portal without delay.\n\nThank you,\nExam Committee"
+  },
+  server_harvest: {
+    category: "urgent",
+    title: "Notice: CBT Server Results Harvest In Progress (Keep Rooms & Servers Open)",
+    target: "all",
+    message: "Dear Academic Staff & Class Tutors,\n\nPlease be informed that the Exam Committee is currently going round all classrooms and computer labs to harvest and collect examination results from local servers for upload to the portal.\n\nPlease DO NOT lock any classrooms or shut down the server computers until the Exam Committee has completed harvesting results for all class arms.\n\nThank you for your cooperation,\nExam Committee"
+  },
+  missing_class: {
+    category: "missing_class",
+    title: "Missing Class Scores Notice: [Subject / Class]",
+    target: "all",
+    message: "Dear Subject Teacher / Academic Staff,\n\nPlease note that the score records currently compiled for [Subject] are missing results for [e.g. Year 8 Ivy].\n\nKindly forward or submit your assessment score sheet for this class arm to the Exam Committee immediately so it can be uploaded and published to the portal.\n\nThank you,\nExam Committee"
+  },
+  missing_cbt_class: {
+    category: "missing_class",
+    title: "CBT Exam Question Paper Missing Class: [Subject / Class]",
+    target: "all",
+    message: "Dear Teacher,\n\nYour CBT examination questions submitted for [Subject] currently do not include questions or arm assignments for [e.g. Year 8].\n\nKindly log in to your Teacher Portal, click 'Set CBT Exam', and submit the questions for the missing class as soon as possible so the exam can be scheduled.\n\nThank you,\nExam Committee"
+  },
+  deadline: {
+    category: "exam_upload",
+    title: "Reminder: Score Submission Deadline to Exam Committee",
+    target: "all",
+    message: "Dear Teachers,\n\nThis is a gentle reminder that the deadline for submitting all examination scores, continuous assessments, and broadsheets to the Exam Committee is [Date/Time, e.g. Friday by 4:00 PM].\n\nPlease ensure all subject score sheets across all your assigned class arms are handed in on time so results can be compiled and uploaded to the portal.\n\nThank you,\nExam Committee"
+  },
+  scores_published: {
+    category: "exam_upload",
+    title: "Examination Scores Successfully Uploaded & Published",
+    target: "all",
+    message: "Dear Academic Staff,\n\nThe examination scores for [Term, e.g. First Term Examination] have now been uploaded and published to the portal.\n\nPlease log in to your Teacher Dashboard to inspect your students' scores, verify averages, and review candidates requiring rewrites (≤25%).\n\nThank you,\nExam Committee"
+  },
+  cbt_review: {
+    category: "urgent",
+    title: "Urgent: CBT Exam Questions Submission & Review",
+    target: "all",
+    message: "Dear Teachers,\n\nAll teachers who have not yet submitted their CBT examination questions for the upcoming assessment period must upload them via the 'Set CBT Exam' tab as soon as possible for Exam Committee review and gate scheduling.\n\nThank you,\nExam Committee"
+  },
+  moderation: {
+    category: "general",
+    title: "Examination Results Moderation In Progress",
+    target: "all",
+    message: "Dear Teachers,\n\nScore verification and grade moderation are currently in progress. Please review your class student score tables on your dashboard and report any discrepancies or students requiring rewrite to the Exam Committee.\n\nThank you,\nExam Committee"
+  },
+  general: {
+    category: "general",
+    title: "Notice: Academic Staff Briefing - Exam Committee",
+    target: "all",
+    message: "Dear Teachers,\n\nPlease be informed that an academic briefing will be held on [Day/Date] at [Time] regarding the examination schedule and student score assessments.\n\nAttendance is mandatory.\n\nExam Committee"
+  },
+  portal: {
+    category: "portal",
+    title: "System Notice: Cloud Database Synchronization",
+    target: "all",
+    message: "Dear Academic Staff,\n\nPlease note that scheduled portal database maintenance and cloud synchronization are scheduled for [Date & Time]. All teacher scores and CBT questions will remain safely backed up in the cloud.\n\nThank you,\nExam Committee & Technical Support"
+  }
+};
+
+function initAdminAnnouncementsEvents() {
+  if (adminNotifEventsInitialized) return;
+  adminNotifEventsInitialized = true;
+
+  const tplSelect = $("adminNotifTemplateSelect");
+  if (tplSelect) {
+    tplSelect.onchange = () => {
+      const val = tplSelect.value;
+      if (!val || !NOTIF_TEMPLATES[val]) return;
+      const t = NOTIF_TEMPLATES[val];
+      if ($("adminNotifCategory")) $("adminNotifCategory").value = t.category;
+      if ($("adminNotifTitle")) $("adminNotifTitle").value = t.title;
+      if ($("adminNotifMessage")) {
+        $("adminNotifMessage").value = t.message;
+        const countEl = $("adminNotifCharCount");
+        if (countEl) countEl.textContent = `${t.message.length} characters`;
+      }
+      if ($("adminNotifTarget")) {
+        $("adminNotifTarget").value = t.target;
+        $("adminNotifTarget").dispatchEvent(new Event("change"));
+      }
+    };
+  }
+
+  const targetSelect = $("adminNotifTarget");
+  if (targetSelect) {
+    targetSelect.onchange = () => {
+      const mode = targetSelect.value;
+      const subWrap = $("adminNotifSubjectWrap");
+      const clsWrap = $("adminNotifClassWrap");
+      if (subWrap) subWrap.style.display = (mode === "subject") ? "block" : "none";
+      if (clsWrap) clsWrap.style.display = (mode === "class") ? "block" : "none";
+      if (mode === "subject") populateAdminNotifSubjects();
+    };
+  }
+
+  const clearBtn = $("adminClearNotifBtn");
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      if ($("adminNotifForm")) $("adminNotifForm").reset();
+      if ($("adminNotifTemplateSelect")) $("adminNotifTemplateSelect").value = "";
+      if ($("adminNotifTarget")) $("adminNotifTarget").dispatchEvent(new Event("change"));
+      const countEl = $("adminNotifCharCount");
+      if (countEl) countEl.textContent = "0 characters";
+    };
+  }
+
+  const msgInput = $("adminNotifMessage");
+  const countEl = $("adminNotifCharCount");
+  if (msgInput && countEl) {
+    msgInput.addEventListener("input", () => {
+      const len = msgInput.value.length;
+      countEl.textContent = `${len} character${len === 1 ? '' : 's'}`;
+    });
+  }
+
+  const sendBtn = $("adminSendNotifBtn");
+  if (sendBtn) {
+    sendBtn.onclick = handleSendAdminAnnouncement;
+  }
+
+  const refreshBtn = $("adminRefreshNotifsBtn");
+  if (refreshBtn) {
+    refreshBtn.onclick = () => {
+      loadAdminAnnouncements(true);
+      showToast({ type: "info", title: "Refreshed", message: "Announcements synchronized with cloud." });
+    };
+  }
+}
+
+async function handleSendAdminAnnouncement() {
+  const title = $("adminNotifTitle")?.value.trim();
+  const message = $("adminNotifMessage")?.value.trim();
+  const category = $("adminNotifCategory")?.value || "general";
+  const target = $("adminNotifTarget")?.value || "all";
+  const targetSubject = (target === "subject") ? ($("adminNotifSubjectSelect")?.value || "").trim() : "";
+  const targetClass = (target === "class") ? ($("adminNotifClassSelect")?.value || "").trim() : "";
+  const pinned = !!$("adminNotifPinned")?.checked;
+
+  if (!title) {
+    showToast({ type: "warning", title: "Missing Title", message: "Please enter a broadcast title or subject." });
+    $("adminNotifTitle")?.focus();
+    return;
+  }
+
+  if (target === "subject" && !targetSubject) {
+    showToast({ type: "warning", title: "Select Subject", message: "Please choose the target subject for this notice." });
+    $("adminNotifSubjectSelect")?.focus();
+    return;
+  }
+
+  if (!message) {
+    showToast({ type: "warning", title: "Missing Message", message: "Please enter your announcement message instructions." });
+    $("adminNotifMessage")?.focus();
+    return;
+  }
+
+  const sendBtn = $("adminSendNotifBtn");
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = "<span>Sending Broadcast...</span>";
+  }
+
+  try {
+    const authorInput = $("adminNotifAuthor");
+    const author = (authorInput && authorInput.value.trim()) ? authorInput.value.trim() : "Exam Committee";
+
+    const notif = {
+      title,
+      category,
+      target,
+      targetSubject,
+      targetClass,
+      message,
+      pinned,
+      author: author
+    };
+
+    if (window.dbClient && window.dbClient.addTeacherAnnouncement) {
+      await window.dbClient.addTeacherAnnouncement(notif);
+    } else {
+      throw new Error("Database client not available");
+    }
+
+    showToast({
+      type: "success",
+      title: "Broadcast Published",
+      message: "Announcement successfully dispatched to teacher dashboards."
+    });
+
+    // Reset form
+    if ($("adminNotifForm")) $("adminNotifForm").reset();
+    if ($("adminNotifTemplateSelect")) $("adminNotifTemplateSelect").value = "";
+    if ($("adminNotifTarget")) $("adminNotifTarget").dispatchEvent(new Event("change"));
+
+    // Reload list
+    await loadAdminAnnouncements(true);
+  } catch (err) {
+    console.error("handleSendAdminAnnouncement error:", err);
+    showToast({ type: "error", title: "Broadcast Failed", message: err.message || "Failed to publish announcement to cloud." });
+  } finally {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = "<span>🚀 Send Broadcast to Teachers</span>";
+    }
+  }
+}
+
+async function loadAdminAnnouncements(force = false) {
+  try {
+    if (window.dbClient && window.dbClient.getTeacherAnnouncements) {
+      adminAnnouncementsList = await window.dbClient.getTeacherAnnouncements();
+    } else {
+      adminAnnouncementsList = [];
+    }
+
+    renderAdminAnnouncementsList();
+  } catch (err) {
+    console.error("loadAdminAnnouncements error:", err);
+    const container = $("adminNotifsList");
+    if (container) {
+      container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--status-fail);">Failed to load announcements from cloud.</div>`;
+    }
+  }
+}
+
+function cleanNotifMessage(msg) {
+  if (!msg) return "";
+  return msg
+    .replace(/Academic Administration/g, "Exam Committee")
+    .replace(/administrative review/gi, "Exam Committee review")
+    .replace(/Administrative Office/g, "Exam Committee")
+    .replace(/Administration team/g, "Exam Committee");
+}
+
+function renderAdminAnnouncementsList() {
+  const countEl = $("adminNotifCount");
+  const badgeEl = $("adminNotifsCountBadge");
+  const container = $("adminNotifsList");
+
+  const total = adminAnnouncementsList.length;
+  if (countEl) countEl.textContent = total;
+  if (badgeEl) {
+    badgeEl.textContent = total;
+    badgeEl.style.display = total > 0 ? "inline-block" : "none";
+  }
+
+  if (!container) return;
+
+  if (total === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:36px 16px;background:var(--surface-alt);border:1px dashed var(--border);border-radius:var(--radius);color:var(--text-muted);">
+        <div style="font-size:24px;margin-bottom:8px;">📢</div>
+        <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">No Broadcasts Sent Yet</div>
+        <div style="font-size:12.5px;">Announcements you send from the composer above will appear here and on teacher dashboards instantly.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const categoryLabels = {
+    locked_server: { label: "🔒 Locked Room / Server Inaccessible", color: "#dc2626", bg: "rgba(220, 38, 38, 0.12)", border: "rgba(220, 38, 38, 0.35)" },
+    missing_class: { label: "⚠️ Missing Class / Incomplete Upload", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.3)" },
+    exam_upload: { label: "📝 Exam Upload Notice", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.3)" },
+    urgent: { label: "🚨 Urgent Notice", color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)", border: "rgba(239, 68, 68, 0.3)" },
+    general: { label: "📢 General Staff Notice", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.12)", border: "rgba(139, 92, 246, 0.3)" },
+    portal: { label: "🛠️ Portal Maintenance", color: "#06b6d4", bg: "rgba(6, 182, 212, 0.12)", border: "rgba(6, 182, 212, 0.3)" }
+  };
+
+  container.innerHTML = adminAnnouncementsList.map(item => {
+    const cat = categoryLabels[item.category] || categoryLabels.general;
+    let targetLabel = "👥 All Teachers";
+    if (item.target === "subject" && item.targetSubject) {
+      targetLabel = `🎯 Subject: ${esc(item.targetSubject)}`;
+    } else if (item.target === "class" && item.targetClass) {
+      targetLabel = `🏫 Class: ${esc(item.targetClass)}`;
+    }
+
+    const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
+    }) : "Recent";
+
+    return `
+      <div class="admin-notif-card category-${esc(item.category || 'general')}" id="adminNotifCard_${item.id}">
+        <div class="admin-notif-topbar">
+          <div class="admin-notif-chips">
+            <span class="admin-notif-pill" style="color:${cat.color};background:${cat.bg};border:1px solid ${cat.border};">
+              ${cat.label}
+            </span>
+            <span class="admin-notif-pill" style="color:var(--text);background:var(--surface-alt);border:1px solid var(--border);">
+              ${targetLabel}
+            </span>
+            ${item.pinned ? `<span class="admin-notif-pill" style="color:#ef4444;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);">📌 PINNED</span>` : ""}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:11.5px;color:var(--text-muted);font-weight:500;">${dateStr}</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="handleDeleteAdminAnnouncement('${item.id}')" style="color:var(--status-fail);border-color:var(--status-fail);padding:4px 10px;font-size:12px;font-weight:600;min-height:30px;">
+              🗑️ Delete / Retract
+            </button>
+          </div>
+        </div>
+
+        <h4 style="font-size:15.5px;font-weight:800;color:var(--text);margin-bottom:8px;line-height:1.35;">${esc(item.title)}</h4>
+        <div class="admin-notif-message-box">
+          ${esc(cleanNotifMessage(item.message))}
+        </div>
+        <div class="admin-notif-footer">
+          <span>Author: <strong>${esc(getAuthorDisplay(item.author))}</strong></span>
+          <span style="color:var(--status-good);font-weight:700;display:inline-flex;align-items:center;gap:5px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--status-good);box-shadow:0 0 6px var(--status-good);"></span>
+            Live on Teacher Dashboard
+          </span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.handleDeleteAdminAnnouncement = async function(id) {
+  if (!confirm("Are you sure you want to retract and delete this announcement? Teachers will no longer see it.")) {
+    return;
+  }
+
+  // Optimistic UI update
+  const card = $("adminNotifCard_" + id);
+  if (card) card.remove();
+  adminAnnouncementsList = adminAnnouncementsList.filter(x => x.id !== id);
+  const countEl = $("adminNotifCount");
+  const badgeEl = $("adminNotifsCountBadge");
+  if (countEl) countEl.textContent = adminAnnouncementsList.length;
+  if (badgeEl) {
+    badgeEl.textContent = adminAnnouncementsList.length;
+    badgeEl.style.display = adminAnnouncementsList.length > 0 ? "inline-block" : "none";
+  }
+
+  try {
+    if (window.dbClient && window.dbClient.deleteTeacherAnnouncement) {
+      await window.dbClient.deleteTeacherAnnouncement(id);
+    }
+    showToast({ type: "success", title: "Announcement Deleted", message: "Notice was removed from teacher portals." });
+  } catch (err) {
+    console.error("handleDeleteAdminAnnouncement error:", err);
+    showToast({ type: "error", title: "Delete Error", message: "Could not remove notice from database." });
+    await loadAdminAnnouncements(true);
+  }
+};
 
 // ══════════════════════════════════════════════════════════
 // AUTO-RESTORE ADMIN SESSION (RUNS ONCE ALL SCRIPTS LOAD)

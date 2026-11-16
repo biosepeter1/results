@@ -663,6 +663,7 @@ function switchTeacherPortalTab(target) {
     loadTeacherSubmissions();
   }
 }
+window.switchTeacherPortalTab = switchTeacherPortalTab;
 
 // Mobile Drawer & Bottom Navigation Wiring
 function closeTeacherMobileDrawer() {
@@ -802,6 +803,8 @@ function showApp() {
   const activeTab = localStorage.getItem("teacher_active_tab_v1") || "scores";
   switchTeacherPortalTab(activeTab);
   buildTermTabs();
+  initTeacherAnnouncements();
+  loadTeacherAnnouncements();
 }
 
 // ── Sign Out ──
@@ -4411,6 +4414,361 @@ async function autoRestoreTeacherSession() {
     console.warn("Background teacher account validation error:", err);
   }
 }
+
+// ══════════════════════════════════════════════════════════
+// ADMINISTRATIVE ANNOUNCEMENTS & BROADCASTS SYSTEM (TEACHER)
+// ══════════════════════════════════════════════════════════
+
+let teacherRawAnnouncements = [];
+let teacherNotifEventsInitialized = false;
+
+function getTeacherDismissedNotifKey() {
+  const u = (teacher && teacher.username) ? teacher.username.toLowerCase().replace(/[^a-z0-9]/g, "") : "guest";
+  return "honeyland_teacher_dismissed_notifs_" + u;
+}
+
+function getDismissedNotifIds() {
+  try {
+    const raw = localStorage.getItem(getTeacherDismissedNotifKey());
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function setDismissedNotifIds(idSet) {
+  try {
+    localStorage.setItem(getTeacherDismissedNotifKey(), JSON.stringify([...idSet]));
+  } catch (e) { }
+}
+
+function isNotifForCurrentTeacher(notif) {
+  if (!notif) return false;
+  if (!notif.target || notif.target === "all") return true;
+
+  // Subject targeting
+  if (notif.target === "subject") {
+    if (!notif.targetSubject) return true;
+    if (!teacher || !Array.isArray(teacher.subjects) || teacher.subjects.length === 0) return true;
+    const sNorm = notif.targetSubject.trim().toLowerCase();
+    return teacher.subjects.some(s => s && s.trim().toLowerCase() === sNorm);
+  }
+
+  // Class targeting
+  if (notif.target === "class") {
+    if (!notif.targetClass) return true;
+    if (!teacher || !Array.isArray(teacher.classes) || teacher.classes.length === 0) return true;
+    const cNorm = notif.targetClass.trim().toLowerCase();
+    return teacher.classes.some(c => c && c.trim().toLowerCase() === cNorm);
+  }
+
+  return true;
+}
+
+function initTeacherAnnouncements() {
+  if (teacherNotifEventsInitialized) return;
+  teacherNotifEventsInitialized = true;
+
+  const bellBtn = $("teacherNotifBellBtn");
+  if (bellBtn) {
+    bellBtn.onclick = () => openTeacherNotifModal();
+  }
+
+  const mobBtn = $("teacherMobileNotifBtn");
+  if (mobBtn) {
+    mobBtn.onclick = () => {
+      closeTeacherMobileDrawer();
+      openTeacherNotifModal();
+    };
+  }
+
+  const modalCloseBtn = $("teacherNotifModalCloseBtn");
+  if (modalCloseBtn) modalCloseBtn.onclick = closeTeacherNotifModal;
+
+  const modalCloseBottomBtn = $("teacherNotifModalCloseBottomBtn");
+  if (modalCloseBottomBtn) modalCloseBottomBtn.onclick = closeTeacherNotifModal;
+
+  const modalOverlay = $("teacherNotifModal");
+  if (modalOverlay) {
+    modalOverlay.onclick = (e) => {
+      if (e.target === modalOverlay) closeTeacherNotifModal();
+    };
+  }
+
+  const resetDismissedBtn = $("teacherClearDismissedBtn");
+  if (resetDismissedBtn) {
+    resetDismissedBtn.onclick = () => {
+      setDismissedNotifIds(new Set());
+      loadTeacherAnnouncements();
+      showToast({ type: "info", title: "Alerts Restored", message: "All dismissed alerts have been restored to your dashboard." });
+    };
+  }
+
+  // Periodic polling for new announcements every 30 seconds
+  setInterval(() => {
+    const appEl = $("app");
+    if (appEl && appEl.style.display !== "none" && teacher) {
+      loadTeacherAnnouncements();
+    }
+  }, 30000);
+}
+
+function openTeacherNotifModal() {
+  const modal = $("teacherNotifModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  renderTeacherNotifModal();
+}
+
+function closeTeacherNotifModal() {
+  const modal = $("teacherNotifModal");
+  if (!modal) return;
+  modal.style.display = "none";
+}
+
+async function loadTeacherAnnouncements() {
+  try {
+    if (window.dbClient && window.dbClient.getTeacherAnnouncements) {
+      teacherRawAnnouncements = await window.dbClient.getTeacherAnnouncements();
+    } else {
+      teacherRawAnnouncements = [];
+    }
+
+    const relevant = teacherRawAnnouncements.filter(isNotifForCurrentTeacher);
+    const dismissedIds = getDismissedNotifIds();
+    const undismissed = relevant.filter(item => !dismissedIds.has(item.id));
+
+    // Update unread badge on bell
+    const badge = $("teacherNotifBadge");
+    if (badge) {
+      badge.textContent = undismissed.length;
+      badge.style.display = undismissed.length > 0 ? "flex" : "none";
+    }
+
+    const mobBadge = $("teacherMobileNotifBadge");
+    if (mobBadge) {
+      mobBadge.textContent = undismissed.length;
+      mobBadge.style.display = undismissed.length > 0 ? "inline-block" : "none";
+    }
+
+    // Render alert banner feed at top of container
+    renderTeacherAnnouncementsFeed(undismissed);
+
+    // If modal is open, sync modal body too
+    const modal = $("teacherNotifModal");
+    if (modal && modal.style.display === "flex") {
+      renderTeacherNotifModal();
+    }
+  } catch (err) {
+    console.warn("loadTeacherAnnouncements error:", err);
+  }
+}
+
+// Helper to normalize author display (defaults legacy / administration notices to Exam Committee)
+function getAuthorDisplay(author) {
+  if (!author || author === "Academic Administration" || author === "School Administrator") {
+    return "Exam Committee";
+  }
+  return author;
+}
+
+function cleanNotifMessage(msg) {
+  if (!msg) return "";
+  return msg
+    .replace(/Academic Administration/g, "Exam Committee")
+    .replace(/administrative review/gi, "Exam Committee review")
+    .replace(/Administrative Office/g, "Exam Committee")
+    .replace(/Administration team/g, "Exam Committee");
+}
+
+function renderTeacherAnnouncementsFeed(activeList) {
+  const feed = $("teacherAnnouncementsFeed");
+  if (!feed) return;
+
+  if (!activeList || activeList.length === 0) {
+    feed.style.display = "none";
+    feed.innerHTML = "";
+    return;
+  }
+
+  // Sort pinned first
+  const sorted = [...activeList].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
+  const categoryLabels = {
+    locked_server: { label: "🔒 Locked Room / Server Inaccessible", color: "#dc2626", bg: "rgba(220, 38, 38, 0.12)", border: "rgba(220, 38, 38, 0.35)" },
+    missing_class: { label: "⚠️ Missing Class / Incomplete Upload", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.3)" },
+    exam_upload: { label: "📝 Exam Upload Notice", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.3)" },
+    urgent: { label: "🚨 Urgent Attention", color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)", border: "rgba(239, 68, 68, 0.3)" },
+    general: { label: "📢 Academic Announcement", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.12)", border: "rgba(139, 92, 246, 0.3)" },
+    portal: { label: "🛠️ System Notice", color: "#06b6d4", bg: "rgba(6, 182, 212, 0.12)", border: "rgba(6, 182, 212, 0.3)" }
+  };
+
+  feed.innerHTML = sorted.map(item => {
+    const cat = categoryLabels[item.category] || categoryLabels.general;
+    let targetLabel = "👥 All Teachers";
+    if (item.target === "subject" && item.targetSubject) {
+      targetLabel = `🎯 Department: ${esc(item.targetSubject)}`;
+    } else if (item.target === "class" && item.targetClass) {
+      targetLabel = `🏫 ${esc(item.targetClass)}`;
+    }
+
+    const timeStr = item.createdAt ? new Date(item.createdAt).toLocaleString("en-US", {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+    }) : "Recent Notice";
+
+    return `
+      <div class="teacher-announcement-card category-${esc(item.category || 'general')}" id="tNotifCard_${item.id}">
+        <div class="notif-card-header-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+          <div class="notif-chips-group">
+            <span class="notif-category-pill" style="color:${cat.color};background:${cat.bg};border:1px solid ${cat.border};">
+              ${cat.label}
+            </span>
+            <span class="notif-audience-pill">
+              ${targetLabel}
+            </span>
+            ${item.pinned ? `<span class="notif-category-pill" style="color:#ef4444;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);">📌 PINNED</span>` : ""}
+            <span style="font-size:11.5px;color:var(--text-muted);font-weight:500;">${timeStr}</span>
+          </div>
+          <button type="button" class="notif-dismiss-btn" onclick="dismissTeacherAnnouncement('${item.id}')" title="Mark as read & dismiss from top dashboard">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Dismiss</span>
+          </button>
+        </div>
+
+        <h4 style="font-size:15.5px;font-weight:800;color:var(--text);margin-bottom:8px;line-height:1.35;">
+          ${esc(item.title)}
+        </h4>
+
+        <div style="font-size:13.5px;line-height:1.65;color:var(--text);white-space:pre-wrap;background:var(--surface-alt);padding:12px 16px;border-radius:8px;border:1px solid var(--border-subtle);margin-bottom:10px;word-break:break-word;">
+          ${esc(cleanNotifMessage(item.message))}
+        </div>
+
+        <div style="font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:6px;border-top:1px solid var(--border-subtle);">
+          <span>From: <strong>${esc(getAuthorDisplay(item.author))}</strong></span>
+          <span style="cursor:pointer;color:var(--text-muted);font-weight:600;text-decoration:underline;" onclick="openTeacherNotifModal()">All notices &raquo;</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  feed.style.display = "flex";
+}
+
+function renderTeacherNotifModal() {
+  const container = $("teacherNotifModalBody");
+  if (!container) return;
+
+  const relevant = teacherRawAnnouncements.filter(isNotifForCurrentTeacher);
+  const dismissedIds = getDismissedNotifIds();
+
+  if (relevant.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:36px 16px;color:var(--text-muted);">
+        <div style="font-size:24px;margin-bottom:8px;">📢</div>
+        <div style="font-weight:700;font-size:14px;color:var(--text);">No Announcements Available</div>
+        <div style="font-size:12px;margin-top:4px;">No directives or notices have been posted by the Exam Committee for your subjects or classes yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const categoryLabels = {
+    locked_server: { label: "🔒 Locked Room / Server Inaccessible", color: "#dc2626" },
+    missing_class: { label: "⚠️ Missing Class / Incomplete Upload", color: "#f59e0b" },
+    exam_upload: { label: "📝 Exam Upload Notice", color: "#3b82f6" },
+    urgent: { label: "🚨 Urgent Attention", color: "#ef4444" },
+    general: { label: "📢 Academic Announcement", color: "#8b5cf6" },
+    portal: { label: "🛠️ System Notice", color: "#06b6d4" }
+  };
+
+  container.innerHTML = relevant.map(item => {
+    const isDismissed = dismissedIds.has(item.id);
+    const cat = categoryLabels[item.category] || categoryLabels.general;
+    const timeStr = item.createdAt ? new Date(item.createdAt).toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
+    }) : "";
+
+    return `
+      <div style="border:1px solid var(--border);border-left:4px solid ${cat.color};border-radius:8px;padding:14px 16px;background:var(--surface);opacity:${isDismissed ? 0.72 : 1};box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;font-weight:700;color:${cat.color};">${cat.label}</span>
+            ${item.pinned ? `<span style="font-size:10px;font-weight:800;color:#ef4444;background:rgba(239,68,68,0.1);padding:1px 6px;border-radius:4px;">📌 PINNED</span>` : ""}
+            ${isDismissed ? `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface-alt);color:var(--text-muted);font-weight:600;">Read / Dismissed</span>` : `<span style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,0.12);color:#ef4444;font-weight:800;">● Unread</span>`}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11.5px;color:var(--text-muted);">${timeStr}</span>
+            <button type="button" class="btn-text" style="font-size:11.5px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:4px;border:1px solid var(--border);" onclick="toggleDismissTeacherAnnouncement('${item.id}')">
+              ${isDismissed ? "↩ Restore to Feed" : "✓ Dismiss"}
+            </button>
+          </div>
+        </div>
+
+        <div style="font-weight:800;font-size:14.5px;color:var(--text);margin-bottom:6px;line-height:1.35;">
+          ${esc(item.title)}
+        </div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap;background:var(--surface-alt);padding:10px 14px;border-radius:6px;border:1px solid var(--border-subtle);word-break:break-word;">
+          ${esc(cleanNotifMessage(item.message))}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">
+          Author: <strong>${esc(getAuthorDisplay(item.author))}</strong>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.dismissTeacherAnnouncement = function(id) {
+  const dismissed = getDismissedNotifIds();
+  dismissed.add(id);
+  setDismissedNotifIds(dismissed);
+
+  // Optimistically animate & remove from banner feed
+  const card = $("tNotifCard_" + id);
+  if (card) {
+    card.style.transition = "all 0.25s ease";
+    card.style.opacity = "0";
+    card.style.transform = "translateY(-8px)";
+    setTimeout(() => {
+      card.remove();
+      const feed = $("teacherAnnouncementsFeed");
+      if (feed && feed.children.length === 0) {
+        feed.style.display = "none";
+      }
+    }, 250);
+  }
+
+  // Recalculate badge
+  const relevant = teacherRawAnnouncements.filter(isNotifForCurrentTeacher);
+  const remaining = relevant.filter(item => !dismissed.has(item.id));
+  const badge = $("teacherNotifBadge");
+  if (badge) {
+    badge.textContent = remaining.length;
+    badge.style.display = remaining.length > 0 ? "flex" : "none";
+  }
+  const mobBadge = $("teacherMobileNotifBadge");
+  if (mobBadge) {
+    mobBadge.textContent = remaining.length;
+    mobBadge.style.display = remaining.length > 0 ? "inline-block" : "none";
+  }
+};
+
+window.toggleDismissTeacherAnnouncement = function(id) {
+  const dismissed = getDismissedNotifIds();
+  if (dismissed.has(id)) {
+    dismissed.delete(id);
+  } else {
+    dismissed.add(id);
+  }
+  setDismissedNotifIds(dismissed);
+  loadTeacherAnnouncements();
+};
 
 // Kick off auto-restore
 autoRestoreTeacherSession();

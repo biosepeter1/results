@@ -91,6 +91,16 @@
               <span class="status-text">Online</span>
             </div>
 
+            <!-- Administrative Announcements Bell Button -->
+            <button class="menu-notif-btn" id="teacherNotifBellBtn" type="button" title="View Administrative Announcements" aria-label="View Administrative Announcements">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span class="notif-badge-pill" id="teacherNotifBadge" style="display:none">0</span>
+            </button>
+
             <div class="menu-user-profile">
               <div class="menu-avatar" id="teacherAvatar">TC</div>
               <div class="menu-user-details">
@@ -183,6 +193,15 @@
           </svg>
           <span>Set CBT Exam</span>
         </button>
+        <button class="mobile-nav-item" id="teacherMobileNotifBtn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span>Announcements</span>
+          <span class="tab-badge" id="teacherMobileNotifBadge" style="display:none;background:#ef4444;color:#fff;margin-left:auto;">0</span>
+        </button>
       </div>
 
       <div class="drawer-footer">
@@ -218,6 +237,11 @@
     </nav>
 
     <div class="container">
+
+      <!-- ══════════════════════════════════════════════════════════
+         ADMINISTRATIVE ANNOUNCEMENTS FEED (PROMINENT ALERT BANNER)
+         ══════════════════════════════════════════════════════════ -->
+      <section id="teacherAnnouncementsFeed" class="teacher-announcements-feed" style="display:none;" aria-label="Administrative Announcements"></section>
 
       <!-- ══════════════════════════════════════════════════════════
          PANE 1: SCORES DASHBOARD
@@ -897,6 +921,38 @@
     </div>
   </div>
 
+  <!-- Administrative Announcements Full Modal / History -->
+  <div class="modal-overlay" id="teacherNotifModal">
+    <div class="modal-box modal-wide" style="max-width:680px;">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title" style="display:flex;align-items:center;gap:8px;">
+            <span>📢</span> Exam Committee Announcements
+          </h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+            Official notices, reminders, and broadcast directives from the Exam Committee.
+          </p>
+        </div>
+        <button class="btn-close" id="teacherNotifModalCloseBtn" type="button">Close</button>
+      </div>
+
+      <div id="teacherNotifModalBody" style="display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;padding-right:4px;">
+        <div style="text-align:center;padding:24px;color:var(--text-muted);">
+          Loading announcements...
+        </div>
+      </div>
+
+      <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
+        <button class="btn-text" id="teacherClearDismissedBtn" type="button" style="font-size:12px;color:var(--text-muted);cursor:pointer;background:none;border:none;text-decoration:underline;">
+          🔄 Restore Dismissed Alerts
+        </button>
+        <button class="btn-primary" id="teacherNotifModalCloseBottomBtn" type="button">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modern App Toast Notification Container -->
   <div id="appToastContainer" class="app-toast-container" aria-live="polite"></div>
 
@@ -905,7 +961,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/teacher.js?v=3.5"></script>
+  <script src="js/teacher.js?v=3.6"></script>
 </body>
 
 </html>

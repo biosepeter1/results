@@ -175,6 +175,15 @@
             <span>CBT Exams &amp; Offline JSON</span>
             <span class="tab-badge" id="cbtSubCountBadge" style="display:none">0</span>
           </button>
+          <button class="nav-tab" id="tabNotifs" type="button" data-tab="notifs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span>Announcements</span>
+            <span class="tab-badge" id="adminNotifsCountBadge" style="display:none">0</span>
+          </button>
         </div>
       </nav>
     </header>
@@ -245,6 +254,14 @@
           </svg>
           <span>CBT Exams &amp; Offline JSON</span>
         </button>
+        <button class="mobile-nav-item" data-tab="notifs" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span>Announcements &amp; Broadcasts</span>
+        </button>
 
         <div class="drawer-section-label" style="margin-top:12px">Quick Links</div>
         <a href="index.html" class="mobile-nav-item" target="_blank">
@@ -312,6 +329,14 @@
           <line x1="8" y1="21" x2="16" y2="21" />
         </svg>
         <span>CBT</span>
+      </button>
+      <button class="mobile-bottom-tab" data-tab="notifs" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span>Broadcast</span>
       </button>
     </nav>
 
@@ -1605,6 +1630,184 @@
         </div>
       </section>
 
+      <!-- ══════════════════════════════════════════════════════
+         SECTION 5: TEACHER ANNOUNCEMENTS & BROADCASTS
+         ══════════════════════════════════════════════════════ -->
+      <section id="paneNotifs" style="display:none">
+        <!-- Section Header Banner -->
+        <div class="notif-section-header">
+          <div>
+            <h2>
+              <span>📢</span> Teacher Announcements &amp; Exam Committee Broadcast Center
+            </h2>
+            <p>
+              Instantly broadcast alerts, locked classroom / server notices, missing class reminders, and official directives from the Exam Committee to teacher dashboards.
+            </p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="menu-status-pill" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#60a5fa;" title="Live Teacher Sync Ready">
+              <span class="pulse-dot" style="background:#3b82f6;box-shadow:0 0 8px #3b82f6;"></span>
+              <span>Cloud Sync Live</span>
+            </div>
+            <button class="btn btn-secondary" id="adminRefreshNotifsBtn" type="button" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+              </svg>
+              <span>Refresh Broadcasts</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modern Composer Card -->
+        <div class="notif-composer-card">
+          <div class="notif-composer-titlebar">
+            <h3>
+              <span>✍️</span> Compose New Teacher Broadcast
+            </h3>
+            <span style="font-size:12px;font-weight:600;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
+              Direct Delivery to Teacher Screens
+            </span>
+          </div>
+
+          <form id="adminNotifForm" onsubmit="return false;">
+            <!-- Pre-set Templates Dropdown Box -->
+            <div class="notif-template-box">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                <label for="adminNotifTemplateSelect" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em;text-transform:uppercase;">
+                  ⚡ Quick Notice Template (Select to Auto-Fill)
+                </label>
+                <span style="font-size:11px;color:var(--text-muted);">Auto-fills subject, category, and directives</span>
+              </div>
+              <select id="adminNotifTemplateSelect" class="form-input" style="width:100%;font-size:13px;font-weight:600;min-height:40px;">
+                <option value="">-- Choose a pre-built template or write custom notice --</option>
+                <option value="locked_class">🔒 Locked Classroom / Inaccessible Server (Unable to Collect Scores)</option>
+                <option value="server_harvest">💻 Server Results Harvest Ongoing (Do NOT Lock Classrooms)</option>
+                <option value="missing_class">⚠️ Missing Class Scores / Unsubmitted Class Arm (e.g. Year 8 Ivy)</option>
+                <option value="missing_cbt_class">📝 CBT Exam Questions Missing a Class (Set CBT Tab)</option>
+                <option value="deadline">⏰ Teacher Score Submission Deadline Reminder (To Exam Committee)</option>
+                <option value="scores_published">🎉 Scores Uploaded &amp; Published Notice (Check Dashboards)</option>
+                <option value="cbt_review">🚨 CBT Exam Questions Submission &amp; Review Required</option>
+                <option value="moderation">🔍 Examination Results Moderation In Progress</option>
+                <option value="general">📢 General Staff Announcement / Meeting</option>
+                <option value="portal">🛠️ Portal Maintenance &amp; Cloud Sync Notice</option>
+              </select>
+            </div>
+
+            <!-- Form Row 1: Title, Category, and Sender -->
+            <div class="notif-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+              <div>
+                <label for="adminNotifTitle" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Broadcast Title / Subject <span style="color:var(--status-fail)">*</span>
+                </label>
+                <input type="text" id="adminNotifTitle" class="form-input" placeholder="e.g. Locked Room: Year 8 Ivy - Server Inaccessible" required style="width:100%;font-weight:600;min-height:40px;">
+              </div>
+
+              <div>
+                <label for="adminNotifCategory" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Notice Category / Urgency <span style="color:var(--status-fail)">*</span>
+                </label>
+                <select id="adminNotifCategory" class="form-input" style="width:100%;min-height:40px;font-weight:600;">
+                  <option value="locked_server">🔒 Locked Room / Server Inaccessible</option>
+                  <option value="missing_class">⚠️ Missing Class / Incomplete Upload</option>
+                  <option value="exam_upload">📝 Exam Upload Notice</option>
+                  <option value="urgent">🚨 Urgent Attention Required</option>
+                  <option value="general">📢 General Announcement</option>
+                  <option value="portal">🛠️ System / Portal Maintenance</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="adminNotifAuthor" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Broadcast Sender / Sign-off
+                </label>
+                <input type="text" id="adminNotifAuthor" class="form-input" value="Exam Committee" placeholder="Exam Committee" style="width:100%;font-weight:600;min-height:40px;">
+              </div>
+            </div>
+
+            <!-- Form Row 2: Target Audience -->
+            <div class="notif-form-grid">
+              <div>
+                <label for="adminNotifTarget" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Target Audience <span style="color:var(--status-fail)">*</span>
+                </label>
+                <select id="adminNotifTarget" class="form-input" style="width:100%;min-height:40px;font-weight:600;">
+                  <option value="all">👥 All Teachers (School-Wide)</option>
+                  <option value="subject">🎯 Specific Subject (Filter by Subject)</option>
+                  <option value="class">🏫 Specific Class (e.g. Year 7, Year 8, Year 9)</option>
+                </select>
+              </div>
+
+              <div id="adminNotifSubjectWrap" style="display:none;">
+                <label for="adminNotifSubjectSelect" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Select Target Subject
+                </label>
+                <select id="adminNotifSubjectSelect" class="form-input" style="width:100%;min-height:40px;">
+                  <option value="">-- Choose Subject --</option>
+                </select>
+              </div>
+
+              <div id="adminNotifClassWrap" style="display:none;">
+                <label for="adminNotifClassSelect" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Select Target Class
+                </label>
+                <select id="adminNotifClassSelect" class="form-input" style="width:100%;min-height:40px;">
+                  <option value="Year 7">Year 7</option>
+                  <option value="Year 8">Year 8</option>
+                  <option value="Year 9">Year 9</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Form Row 3: Message Body -->
+            <div style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <label for="adminNotifMessage" class="form-label" style="font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin:0;">
+                  Broadcast Message &amp; Instructions <span style="color:var(--status-fail)">*</span>
+                </label>
+                <span id="adminNotifCharCount" style="font-size:11px;color:var(--text-muted);">0 characters</span>
+              </div>
+              <textarea id="adminNotifMessage" class="form-input" rows="5" placeholder="Enter the announcement, locked room alert, or missing score details for teachers here..." required style="width:100%;line-height:1.6;font-family:inherit;resize:vertical;padding:12px;"></textarea>
+            </div>
+
+            <!-- Options & Submit Bar -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-top:14px;border-top:1px solid var(--border-subtle);">
+              <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none;touch-action:manipulation;">
+                <input type="checkbox" id="adminNotifPinned" style="width:18px;height:18px;cursor:pointer;">
+                <span style="font-weight:700;color:var(--text);">📌 Pin to top of Teacher Dashboard</span>
+              </label>
+
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" id="adminClearNotifBtn" style="min-height:38px;padding:0 16px;">Clear</button>
+                <button type="button" class="btn btn-primary" id="adminSendNotifBtn" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;min-height:38px;padding:0 20px;">
+                  <span>🚀 Send Broadcast to Teachers</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Active Broadcasts History Card -->
+        <div class="card" style="box-shadow:0 4px 16px rgba(0,0,0,0.05);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+            <div>
+              <h3 style="font-size:16px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px;">
+                <span>📡</span> Active Teacher Broadcasts (<span id="adminNotifCount">0</span>)
+              </h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                Notices currently active and visible to teachers on their portal dashboards.
+              </p>
+            </div>
+          </div>
+
+          <div id="adminNotifsList" style="display:flex;flex-direction:column;gap:14px;">
+            <div style="text-align:center;padding:32px 16px;color:var(--text-muted);font-size:14px;">
+              Loading announcements...
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1977,7 +2180,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=4.1"></script>
+  <script src="js/admin.js?v=4.2"></script>
 </body>
 
 </html>
