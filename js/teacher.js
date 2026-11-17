@@ -2822,8 +2822,10 @@ function convertToStandardCbtText(questions) {
       const letter = o.letter || String.fromCharCode(65 + oIdx);
       out += `${letter}. ${o.text}\n`;
     });
-    out += `Answer: ${q.correctLetter || 'A'}`;
-    return out;
+    if (q.correctLetter) {
+      out += `Answer: ${q.correctLetter}`;
+    }
+    return out.trim();
   }).join("\n\n");
 }
 
@@ -3017,11 +3019,27 @@ function handleTeacherFile(file) {
           renderTeacherReviewQuestions();
 
           const val = validateTeacherQuestions();
+          const unansweredCount = (teacherParsedQuestions || []).filter(q => {
+            const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+            const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+            return !(
+              (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+              (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+            );
+          }).length;
+
           if (val.valid) {
             showToast({
               type: "success",
               title: "Exam Questions Successfully Extracted!",
               message: `Extracted exactly ${val.detectedCount} of ${val.targetCount || val.detectedCount} complete questions. All options & answers ready!`
+            });
+          } else if (unansweredCount > 0) {
+            showToast({
+              type: "info",
+              title: "Teacher Review Required",
+              message: `Extracted ${val.detectedCount} questions. Please review below and click the correct answer for each question before submitting.`,
+              duration: 7500
             });
           } else {
             showToast({
@@ -3087,20 +3105,16 @@ function parseExamText(rawText, rawImages = []) {
     if (q.correctLetter) {
       const opt = q.options.find(o => o.letter === q.correctLetter);
       if (opt) q.correctAnswer = opt.text;
+    } else if (q.correctAnswer && q.options.length) {
+      const matched = q.options.find(o => o.text.toLowerCase() === (q.correctAnswer || "").toLowerCase());
+      if (matched) {
+        q.correctAnswer = matched.text;
+        q.correctLetter = matched.letter;
+      }
     }
     q.optionStrings = q.options.map(o => o.text);
-
-    // Auto-assign starter answer (default Option A) so real school papers without answer keys pass CBT rules
-    if (!q.correctAnswer && !q.correctLetter && q.options.length) {
-      q.correctLetter = q.options[0].letter || "A";
-      q.correctAnswer = q.options[0].text;
-      q.isDefaultAnswer = true;
-      defaultedAnswersCount++;
-    } else if (!q.correctAnswer && q.options.length) {
-      const matched = q.options.find(o => o.text.toLowerCase() === (q.correctAnswer || "").toLowerCase());
-      if (matched) q.correctAnswer = matched.text;
-      else q.correctAnswer = q.options[0].text;
-    }
+    // If no answer was specified in the exam paper, leave both correctLetter and correctAnswer empty
+    // so the teacher is required to review each question and pick the correct answer in Step 3 Review.
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -3310,11 +3324,27 @@ function parseTeacherCbtText() {
   renderTeacherReviewQuestions();
 
   const val = validateTeacherQuestions();
+  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+    return !(
+      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+    );
+  }).length;
+
   if (val.valid) {
     showToast({
       type: "success",
       title: "Questions Successfully Parsed!",
       message: `Parsed exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options & answers ready!`
+    });
+  } else if (unansweredCount > 0) {
+    showToast({
+      type: "info",
+      title: "Teacher Review Required",
+      message: `Parsed ${val.detectedCount} questions. Please review below and click the correct answer for each question before submitting.`,
+      duration: 7500
     });
   } else {
     showToast({
@@ -3391,12 +3421,30 @@ function smartConvertAndPassExam(options = {}) {
   renderTeacherReviewQuestions();
 
   const val = validateTeacherQuestions();
+  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+    return !(
+      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+    );
+  }).length;
+
   if (!options.silent) {
-    showToast({
-      type: "success",
-      title: "✨ Converted & Passed to CBT Rules!",
-      message: `Successfully converted ${val.detectedCount} questions to official standard format! All checks passed and ready to submit.`
-    });
+    if (unansweredCount > 0) {
+      showToast({
+        type: "info",
+        title: "✨ Questions Converted!",
+        message: `Extracted ${val.detectedCount} questions cleanly. Please review each question below and click the correct answer before submitting.`,
+        duration: 7500
+      });
+    } else {
+      showToast({
+        type: "success",
+        title: "✨ All Questions Ready!",
+        message: `Successfully converted ${val.detectedCount} questions with verified answers! Ready to submit.`
+      });
+    }
   }
 
   $("tCbtReviewCard").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3586,36 +3634,50 @@ function renderTeacherReviewQuestions() {
 
   // Update Real-Time Quality & Question Count Banner
   const statusCard = $("tCbtValidationStatusCard");
-  const hasDefaulted = (teacherParsedQuestions || []).some(q => q.isDefaultAnswer);
+  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+    return !(
+      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+    );
+  }).length;
+
   if (statusCard) {
     statusCard.style.display = "block";
     if (!val.valid) {
-      statusCard.innerHTML = `
-        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:12px 16px;">
-          <div style="font-weight:700;color:#ef4444;display:flex;align-items:center;gap:8px;font-size:13px">
-            <span>⚠️ Question Quality &amp; Count Alert — ${val.issues.length} Issue${val.issues.length !== 1 ? 's' : ''} Must Be Fixed Before Submitting:</span>
+      const answerReviewNotice = unansweredCount > 0 ? `
+        <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.35);border-radius:6px;padding:12px 16px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span style="font-weight:700;color:#f59e0b;font-size:13.5px">
+              ✍️ Teacher Answer Review: ${unansweredCount} of ${val.detectedCount} Question${val.detectedCount !== 1 ? 's' : ''} Need an Answer
+            </span>
+            <span style="font-size:11px;background:rgba(245,158,11,0.2);color:#d97706;padding:2px 8px;border-radius:10px;font-weight:700">Must Select Before Submitting</span>
           </div>
-          <ul style="margin:8px 0 0 18px;font-size:12px;color:var(--text);line-height:1.6">
-            ${val.issues.map(iss => `<li style="margin-bottom:2px"><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
-          </ul>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
-            💡 <em>Ensure question count matches your target, no options are left empty, and every question has its correct answer marked.</em>
-          </div>
-        </div>
-      `;
-    } else {
-      const convertNotice = hasDefaulted ? `
-        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(16,185,129,0.3);font-size:12px;font-weight:400;color:var(--text);line-height:1.5">
-          ⚡ <strong>Official School Exam Converted:</strong> Questions have been converted to CBT rules. Because student exam papers do not include answer keys, correct answers have been temporarily marked as <strong>Option A</strong> so you can pass immediately. Click any option below to change the answer.
+          <p style="margin:6px 0 0 0;font-size:12px;color:var(--text);line-height:1.5">
+            Questions and options are formatted cleanly. As the teacher, please review each question card below and <strong>click the correct option (A, B, C, or D)</strong> to designate the right answer before submitting.
+          </p>
         </div>
       ` : "";
+
+      const otherIssues = val.issues.filter(i => i.type !== "question_incomplete" || !i.message.includes("Correct answer not selected"));
+      const otherIssuesHtml = otherIssues.length > 0 ? `
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 14px;">
+          <div style="font-weight:700;color:#ef4444;font-size:12.5px;margin-bottom:4px">⚠️ Additional Issues to Fix:</div>
+          <ul style="margin:0 0 0 16px;font-size:12px;color:var(--text);line-height:1.5">
+            ${otherIssues.map(iss => `<li><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
+          </ul>
+        </div>
+      ` : "";
+
+      statusCard.innerHTML = answerReviewNotice + otherIssuesHtml;
+    } else {
       statusCard.innerHTML = `
         <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:12px 14px;color:#10b981;font-size:13px;font-weight:600">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <span>✅ Quality Checks Passed: Exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options &amp; answers verified!</span>
+            <span>✅ Quality Checks Passed: All ${val.detectedCount} of ${val.targetCount} questions reviewed with verified answers!</span>
             <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Ready for Admin Submission</span>
           </div>
-          ${convertNotice}
         </div>
       `;
     }
@@ -3635,9 +3697,13 @@ function renderTeacherReviewQuestions() {
     const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
     const qErrors = val.questionIssuesMap[idx] || [];
     const hasError = qErrors.length > 0;
-    const issueBarHtml = hasError ? `
+    const isAnswered = Boolean(
+      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+    );
+    const issueBarHtml = (hasError && !isAnswered && qErrors.length > 1) ? `
       <div class="cbt-q-issue-bar">
-        <span>⚠️ ${qErrors.map(e => esc(e)).join(" · ")}</span>
+        <span>⚠️ ${qErrors.filter(e => !e.includes("Correct answer not selected")).map(e => esc(e)).join(" · ")}</span>
       </div>
     ` : "";
 
@@ -3666,9 +3732,14 @@ function renderTeacherReviewQuestions() {
       `;
 
       return `
-        <div class="cbt-q-card ${hasError ? 'has-validation-error' : ''}">
+        <div class="cbt-q-card ${!isAnswered ? 'needs-answer' : ''} ${hasError && isAnswered ? 'has-validation-error' : ''}">
           <div class="cbt-q-header">
-            <span class="cbt-q-num">Question ${idx + 1}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="cbt-q-num">Question ${idx + 1}</span>
+              ${!isAnswered 
+                ? `<span style="font-size:11px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:4px;font-weight:600">⚠️ Click correct answer below</span>` 
+                : `<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
+            </div>
             <div style="display:flex;align-items:center;gap:12px">
               <span style="font-size:12px;color:var(--text-muted)">Pts: ${q.points || 1.5}</span>
               <button type="button" class="btn-text" data-teacher-edit-review-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
@@ -3683,12 +3754,11 @@ function renderTeacherReviewQuestions() {
         const letter = String.fromCharCode(65 + oIdx);
         const isEmptyOpt = !opt || !opt.trim();
         const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
-        const isDefault = isCorrect && q.isDefaultAnswer;
         return `
-                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}">
+                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}" title="Click to designate ${letter} as the correct answer">
                   <strong>${letter}.</strong>
                   <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : esc(opt)}</span>
-                  ${isDefault ? `<span style="margin-left:auto;font-size:11px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.15);padding:1px 6px;border-radius:4px" title="Starter answer assigned from document - click any option to change">✓ DEFAULT (A)</span>` : (isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : '')}
+                  ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </button>
               `;
       }).join("")}
@@ -3999,15 +4069,27 @@ $("tCbtSubmitBtn").onclick = async () => {
   // Strict Question Count & Completeness Validation
   const val = validateTeacherQuestions();
   if (!val.valid) {
+    const unansweredCount = (teacherParsedQuestions || []).filter(q => {
+      const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+      const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+      return !(
+        (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+        (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+      );
+    }).length;
+
+    const errMsg = unansweredCount > 0
+      ? `${unansweredCount} question${unansweredCount !== 1 ? 's do' : ' does'} not have an answer selected. Please review each question in Step 3 and click the correct option (A, B, C, or D) before submitting.`
+      : "Please fix the question count and completeness issues before submitting to the administrator:";
+
     showToast({
       type: "error",
-      title: "Cannot Submit Exam",
-      message: "Please fix the question count and completeness issues before submitting to the administrator:",
-      list: val.issues.slice(0, 6).map(i => i.message).concat(val.issues.length > 6 ? [`...and ${val.issues.length - 6} more issue(s)`] : []),
+      title: "Teacher Review Required",
+      message: errMsg,
       duration: 8500
     });
 
-    const firstErr = document.querySelector(".cbt-q-card.has-validation-error");
+    const firstErr = document.querySelector(".cbt-q-card.needs-answer, .cbt-q-card.has-validation-error");
     if (firstErr) {
       firstErr.scrollIntoView({ behavior: "smooth", block: "center" });
     } else if ($("tCbtValidationStatusCard")) {

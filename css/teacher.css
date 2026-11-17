@@ -2606,6 +2606,11 @@ tbody td.muted-cell {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.03) 0%, var(--surface) 100%) !important;
 }
 
+.cbt-q-card.needs-answer {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25), 0 2px 8px rgba(245, 158, 11, 0.05) !important;
+}
+
 .cbt-q-issue-bar {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
