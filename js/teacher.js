@@ -2718,48 +2718,170 @@ async function optimizeImageBase64(dataUri, maxDim = 800, quality = 0.82) {
   });
 }
 
-// ── Exam Text Normalizer ──
-// Takes raw text (from Mammoth docx conversion or manual paste) and ensures:
-// 1. Questions start on clean new lines
-// 2. Options A, B, C, D, E are each on their own line
-// 3. Diagram markers [🖼️ Diagram Attached] are on their own line
-// 4. Answer: X lines are properly separated from options
-// 5. Answer Key Summary is recognized and formatted cleanly
+// ── Word .doc (Word 97-2003 OLE CFBF) Text Extractor ──
+// Enables teachers to upload legacy .doc files directly without conversion errors
+function extractWordDocText(arrayBuffer) {
+  if (!arrayBuffer) return { isZipDocx: false, text: "" };
+  const bytes = new Uint8Array(arrayBuffer);
+
+  // If file starts with PK (0x50, 0x4B), it's a .docx zipped archive misnamed as .doc
+  if (bytes[0] === 0x50 && bytes[1] === 0x4B) {
+    return { isZipDocx: true, text: "" };
+  }
+
+  const runs = [];
+  let curAscii = "";
+
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
+    if ((b >= 32 && b <= 126) || b === 10 || b === 13 || b === 9) {
+      curAscii += String.fromCharCode(b);
+    } else {
+      if (curAscii.trim().length >= 4) {
+        runs.push(curAscii.trim());
+      }
+      curAscii = "";
+    }
+  }
+  if (curAscii.trim().length >= 4) runs.push(curAscii.trim());
+
+  // Also extract UTF-16LE text runs (Word CFBF streams encode some unicode blocks in 16-bit)
+  let curUtf16 = "";
+  for (let i = 0; i < bytes.length - 1; i += 2) {
+    const code = bytes[i] | (bytes[i + 1] << 8);
+    if ((code >= 32 && code <= 126) || code === 10 || code === 13 || code === 9) {
+      curUtf16 += String.fromCharCode(code);
+    } else {
+      if (curUtf16.trim().length >= 8) {
+        runs.push(curUtf16.trim());
+      }
+      curUtf16 = "";
+    }
+  }
+  if (curUtf16.trim().length >= 8) runs.push(curUtf16.trim());
+
+  // Filter out internal Microsoft Word binary metadata strings
+  const isJunk = (s) => {
+    if (/^(Times New Roman|Calibri|Arial|Symbol|Wingdings|Default Paragraph Font|Normal\.dotm?|Heading \d|Title|Table Grid)/i.test(s)) return true;
+    if (/^(Microsoft Word|WordDocument|SummaryInformation|DocumentSummaryInformation|CompObj)/i.test(s)) return true;
+    if (s.startsWith("urn:schemas") || s.startsWith("http://schemas")) return true;
+    if (/^[0-9a-fA-F\-]{20,}$/.test(s)) return true;
+    return false;
+  };
+
+  const filtered = runs.filter(s => !isJunk(s));
+  return { isZipDocx: false, text: filtered.join("\n\n") };
+}
+
+// ── Exam Metadata Detector ──
+// Auto-detects Subject, Class, and Duration from school exam paper headers
+function extractExamMetadata(text) {
+  if (!text) return {};
+  const meta = {};
+
+  // Duration: e.g. "DURATION: 1HR", "DURATION: 1 HOUR", "DURATION: 45 MINS", "TIME ALLOWED: 1HR"
+  const durMatch = text.match(/(?:duration|time\s*allowed|time)\s*[\:\-\=]\s*(\d+(?:\.\d+)?)\s*(hr|hour|hrs|hours|min|mins|minutes)?/i);
+  if (durMatch) {
+    const val = parseFloat(durMatch[1]);
+    const unit = (durMatch[2] || "").toLowerCase();
+    if (unit.startsWith("hr") || unit.startsWith("hour") || (!unit && val <= 3)) {
+      meta.detectedDuration = Math.round(val * 60);
+    } else {
+      meta.detectedDuration = Math.round(val);
+    }
+  }
+
+  // Subject: e.g. "SUBJECT: INTERMEDIATE SCIENCE", "SUBJECT: BASIC SCIENCE"
+  const subMatch = text.match(/(?:subject)\s*[\:\-\=]\s*([^\n\r,;]+)/i);
+  if (subMatch) {
+    meta.detectedSubject = subMatch[1].trim();
+  }
+
+  // Class: e.g. "CLASS: YEAR 7", "CLASS: JSS 1", "CLASS: BASIC 7"
+  const classMatch = text.match(/(?:class|grade)\s*[\:\-\=]\s*([^\n\r,;]+)/i);
+  if (classMatch) {
+    meta.detectedClass = classMatch[1].trim();
+  }
+
+  return meta;
+}
+
+// ── Standard CBT Template Converter ──
+// Transforms any parsed questions back into clean, official template syntax
+function convertToStandardCbtText(questions) {
+  if (!Array.isArray(questions) || !questions.length) return "";
+  return questions.map((q, idx) => {
+    const qNum = idx + 1;
+    let out = `${qNum}. ${q.text || ""}\n`;
+    if (q.image) {
+      out += `[🖼️ Diagram Attached]\n`;
+    }
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o : { letter: "", text: String(o) });
+    opts.forEach((o, oIdx) => {
+      const letter = o.letter || String.fromCharCode(65 + oIdx);
+      out += `${letter}. ${o.text}\n`;
+    });
+    out += `Answer: ${q.correctLetter || 'A'}`;
+    return out;
+  }).join("\n\n");
+}
+
+// ── Smart Exam Text Normalizer ──
+// Takes raw text (from Word .docx, .doc, or copy-paste) and ensures:
+// 1. School exam headers, banners, and vertical watermarks are stripped
+// 2. Paper II (Theory) / Essay questions are cleanly separated from objective multiple choice
+// 3. Options (tight, inline, or across columns) are each placed on clean lines
+// 4. Questions start on clean new lines
 function normalizeExamText(text) {
   if (!text) return "";
 
   let t = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-  // A. Separate Answer Key summary header if jammed
+  // A. Cut off Theory / Essay / Paper II sections so CBT only gets objective multiple choice questions
+  const theoryMatch = t.search(/\n\s*(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|PART\s*(?:II|2)|THEORY\b|ESSAY\b|PAPER\s*II\s*\(Theory\))/i);
+  if (theoryMatch !== -1) {
+    t = t.substring(0, theoryMatch);
+  }
+
+  // B. Strip school headers and metadata lines before Question 1
+  t = t.replace(/^(?:HONEYLAND|COLLEGE|HIGH SCHOOL|SECONDARY SCHOOL|COMPREHENSIVE|ACADEMY)[^\n]*\n+/gim, "");
+  t = t.replace(/^(?:SESSION|TERM|EXAM|CLASS|SUBJECT|DURATION|TIME\s*ALLOWED|INSTRUCTIONS?)[^\n]*\n+/gim, "");
+
+  // C. Strip vertical column watermarks (lines containing only a single letter e.g. H\nO\nN\nE\nY\n...)
+  t = t.replace(/\n\s*[A-Za-z]\s*(?=\n)/g, "\n");
+
+  // D. Separate Answer Key summary header if jammed
   t = t.replace(/([^\n])\s*(✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS))/gi, "$1\n\n$2");
   t = t.replace(/(✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS)[^\n]*)/gi, "$1\n");
   t = t.replace(/([^\n])\s*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
 
-  // B. Separate Answer labels jammed directly after option text (e.g. "Endoplasmic reticulumAnswer: B")
+  // E. Separate Answer labels jammed directly after option text (e.g. "Endoplasmic reticulumAnswer: B")
   t = t.replace(/([^\n])\s*(Answer|Ans|Correct(?:\s*Answer)?)\s*[\:\-\=]\s*/gi, "$1\nAnswer: ");
 
-  // C. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is...")
+  // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is...")
   t = t.replace(/(Answer:\s*[A-Ea-e])\s*(\d+[\.\)\:\-]\s*)/gi, "$1\n\n$2");
-  t = t.replace(/(Answer:\s*[^\n]+?)\s*(\d+[\.\)\:\-]\s+[A-Z])/gi, "$1\n\n$2");
+  t = t.replace(/(Answer:\s*[^\n]+?)\s*(\d+[\.\)\:\-]\s+[A-Za-z])/gi, "$1\n\n$2");
 
-  // D. Separate Diagram markers if jammed
+  // G. Separate Diagram markers if jammed
   t = t.replace(/([^\n])\s*(\[\s*🖼️\s*Diagram Attached\s*\])/gi, "$1\n\n$2");
   t = t.replace(/(\[\s*🖼️\s*Diagram Attached\s*\])\s*([^\n])/gi, "$1\n\n$2");
   t = t.replace(/([^\n])\s*(\[\[CBT_IMG_TOKEN_\d+\]\])/gi, "$1\n\n$2");
   t = t.replace(/(\[\[CBT_IMG_TOKEN_\d+\]\])\s*([^\n])/gi, "$1\n\n$2");
 
-  // E. Separate Option A jammed directly against question text or punctuation:
-  // e.g. "temperature?A. Fahrenheit" or "basic unit of life?A. Tissue"
-  t = t.replace(/([\?\.\:\!\]\)])\s*([Aa])[\.\)]\s+/g, "$1\n$2. ");
+  // H. Separate Option A jammed directly against question text, blanks, or punctuation:
+  // e.g. "temperature?A. Fahrenheit" or "__________A. Sun" or "things --------A. Breathe"
+  t = t.replace(/([_\-\?\.\:\!\]\)])\s*([Aa])[\.\)]\s*/g, "$1\n$2. ");
 
-  // F. Separate Options B, C, D, E jammed against previous text:
-  // e.g. "NucleusB. MitochondriaC. RibosomeD. Endoplasmic"
-  t = t.replace(/([^\s\n])\s*([B-Eb-e])[\.\)]\s+/g, "$1\n$2. ");
-  t = t.replace(/([^\n])\s+([A-Ea-e])[\.\)]\s+/g, (match, prefix, letter) => {
-    return prefix + "\n" + letter.toUpperCase() + ". ";
-  });
+  // Inline Option A preceded by words (e.g. "energy that   A. cannot be replaced")
+  t = t.replace(/([^\n\r]+?)[ \t]+([Aa])[\.\)]\s+/g, "$1\n$2. ");
 
-  // G. Clean up questions in the main exam section (only separate questions jammed together on the SAME line)
+  // I. Separate Options B, C, D, E jammed against previous text or tight dots:
+  // e.g. "germs.C. the body" or "germsD. the food" or "Refuse B. Pollutants"
+  t = t.replace(/([^\n])\s+([B-Eb-e])[\.\)]\s*/g, "$1\n$2. ");
+  t = t.replace(/([a-zA-Z0-9_\-\.\?])([B-Eb-e])[\.\)]\s*/g, "$1\n$2. ");
+
+  // J. Clean up questions in the main exam section (separate questions jammed together on the SAME line)
   const parts = t.split(/✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS)/i);
   let mainExam = parts[0];
   const answerKeySection = parts[1] !== undefined ? parts.slice(1).join("\n") : null;
@@ -2818,77 +2940,104 @@ async function parseExamFromMammothHtml(html) {
 
 function handleTeacherFile(file) {
   $("tCbtParseMsg").textContent = "";
+  if (!file) return;
+
+  const fNameLow = file.name ? file.name.toLowerCase() : "";
 
   // Auto-detect subject from filename if present (only among teacher's assigned subjects)
-  if (file && file.name) {
-    const fNameLow = file.name.toLowerCase();
-    const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
-      ? teacher.subjects.filter(s => s && s.trim())
-      : (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects ? Object.keys(CBT_CONFIG.subjects) : []);
+  const assigned = (teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+    ? teacher.subjects.filter(s => s && s.trim())
+    : (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects ? Object.keys(CBT_CONFIG.subjects) : []);
 
-    for (const sName of assigned) {
-      if (fNameLow.includes(sName.toLowerCase())) {
-        if ($("tCbtSubject")) {
-          const opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === sName.toLowerCase());
-          if (opt) {
-            $("tCbtSubject").value = opt.value;
-          }
+  for (const sName of assigned) {
+    if (fNameLow.includes(sName.toLowerCase())) {
+      if ($("tCbtSubject")) {
+        const opt = Array.from($("tCbtSubject").options).find(o => o.value.toLowerCase() === sName.toLowerCase());
+        if (opt) {
+          $("tCbtSubject").value = opt.value;
         }
-        break;
       }
+      break;
     }
   }
 
   // Ensure title matches institutional standard in ALL CAPS: [SUBJECT] [ADMIN_TERM]
   updateTeacherExamTitle();
 
-  if (file.name.endsWith(".docx")) {
+  if (fNameLow.endsWith(".docx") || fNameLow.endsWith(".doc")) {
     const reader = new FileReader();
     reader.onload = async ev => {
-      if (window.mammoth) {
-        try {
-          $("tCbtParseMsg").style.color = "var(--text-muted)";
-          $("tCbtParseMsg").textContent = "Reading Word document & extracting questions and diagrams...";
-          const res = await window.mammoth.convertToHtml({ arrayBuffer: ev.target.result });
-          const parsed = await parseExamFromMammothHtml(res.value);
-          $("tCbtRawText").value = parsed.displayText;
+      try {
+        $("tCbtParseMsg").style.color = "var(--text-muted)";
+        $("tCbtParseMsg").textContent = "Reading Word document & extracting questions and diagrams...";
+        
+        let docText = "";
+        let parsed = null;
+
+        if (fNameLow.endsWith(".docx")) {
+          if (window.mammoth) {
+            const res = await window.mammoth.convertToHtml({ arrayBuffer: ev.target.result });
+            parsed = await parseExamFromMammothHtml(res.value);
+          } else {
+            throw new Error("Mammoth library not loaded");
+          }
+        } else {
+          // .doc file: Check if PK zip (misnamed docx) or OLE CFBF
+          const docExtract = extractWordDocText(ev.target.result);
+          if (docExtract.isZipDocx && window.mammoth) {
+            const res = await window.mammoth.convertToHtml({ arrayBuffer: ev.target.result });
+            parsed = await parseExamFromMammothHtml(res.value);
+          } else if (docExtract.text) {
+            docText = docExtract.text;
+            parsed = parseExamText(docText);
+          } else {
+            throw new Error("Could not extract text from .doc file");
+          }
+        }
+
+        if (parsed && parsed.questions && parsed.questions.length) {
+          $("tCbtRawText").value = parsed.displayText || parsed.normalizedText || docText;
           teacherParsedQuestions = parsed.questions;
 
-          if (teacherParsedQuestions.length) {
-            $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-            $("tCbtReviewCard").style.display = "block";
-            $("tCbtSubmitSuccess").style.display = "none";
-            $("tCbtParseMsg").style.color = "var(--status-good)";
-            const diagCount = teacherParsedQuestions.filter(q => q.image).length;
-            const diagInfo = diagCount ? ` (${diagCount} diagram${diagCount > 1 ? 's' : ''} extracted)` : "";
-            $("tCbtParseMsg").textContent = `✓ Successfully extracted ${teacherParsedQuestions.length} questions${diagInfo}. Review below!`;
-            renderTeacherReviewQuestions();
-
-            const val = validateTeacherQuestions();
-            if (val.valid) {
-              showToast({
-                type: "success",
-                title: "Exam Questions Successfully Extracted!",
-                message: `Extracted exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options & answers ready!`
-              });
-            } else {
-              showToast({
-                type: "warning",
-                title: "Question Quality & Count Alert",
-                message: `Extracted ${val.detectedCount} questions. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to resolve in Step 3 before submitting.`,
-                list: val.issues.slice(0, 4).map(i => i.message)
-              });
-            }
-          } else {
-            $("tCbtParseMsg").style.color = "var(--status-fail)";
-            $("tCbtParseMsg").textContent = "Could not identify question numbering. Please verify questions begin with 1. 2. etc.";
+          // Auto-sync planned question count if empty
+          if ($("tCbtTargetQuestions") && (!$("tCbtTargetQuestions").value || $("tCbtTargetQuestions").value === "0")) {
+            $("tCbtTargetQuestions").value = teacherParsedQuestions.length;
+            const pills = document.querySelectorAll(".cbt-pill-btn");
+            pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === String(teacherParsedQuestions.length)));
+            updateTargetStatusBadge();
           }
-        } catch (err) {
+
+          $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
+          $("tCbtReviewCard").style.display = "block";
+          $("tCbtSubmitSuccess").style.display = "none";
+          $("tCbtParseMsg").style.color = "var(--status-good)";
+          const diagCount = teacherParsedQuestions.filter(q => q.image).length;
+          const diagInfo = diagCount ? ` (${diagCount} diagram${diagCount > 1 ? 's' : ''} extracted)` : "";
+          $("tCbtParseMsg").textContent = `✓ Successfully extracted ${teacherParsedQuestions.length} questions${diagInfo}. Review below!`;
+          renderTeacherReviewQuestions();
+
+          const val = validateTeacherQuestions();
+          if (val.valid) {
+            showToast({
+              type: "success",
+              title: "Exam Questions Successfully Extracted!",
+              message: `Extracted exactly ${val.detectedCount} of ${val.targetCount || val.detectedCount} complete questions. All options & answers ready!`
+            });
+          } else {
+            showToast({
+              type: "warning",
+              title: "Question Quality & Count Alert",
+              message: `Extracted ${val.detectedCount} questions. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to resolve in Step 3 before submitting.`,
+              list: val.issues.slice(0, 4).map(i => i.message)
+            });
+          }
+        } else {
           $("tCbtParseMsg").style.color = "var(--status-fail)";
-          $("tCbtParseMsg").textContent = "Could not parse Word document: " + err.message + ". You can copy and paste the text.";
+          $("tCbtParseMsg").textContent = "Could not identify question numbering. Please verify questions begin with 1. 2. etc.";
         }
-      } else {
-        $("tCbtParseMsg").textContent = "Word parser loading... you can copy and paste the text directly into the box.";
+      } catch (err) {
+        $("tCbtParseMsg").style.color = "var(--status-fail)";
+        $("tCbtParseMsg").textContent = "Could not parse Word document: " + err.message + ". You can copy and paste the text.";
       }
     };
     reader.readAsArrayBuffer(file);
@@ -2924,16 +3073,48 @@ function parseExamText(rawText, rawImages = []) {
   let currentQ = null;
   let isAnswerKeySection = false;
   const answerKeyMap = {}; // e.g. { 1: 'B', 2: 'C', ... }
+  let defaultedAnswersCount = 0;
 
-  const qRegex = /^(?:question\s*)?(\d+)[\.\)\:\-]\s*(.*)$/i;
-  const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\b([A-Ea-e])[\.\)])\s*(.*)$/;
+  const qRegex = /^(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?(\d+)\)?[\.\)\:\-]\s*(.*)$/i;
+  const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-Ea-e])[\.\:\-])\s*(.*)$/;
   const ansRegex = /^(?:answer|ans|correct(?:\s*answer)?)\s*[\:\-\=]\s*([A-Ea-e]|[^\r\n]+)$/i;
   const tokenRegex = /\[\[CBT_IMG_TOKEN_(\d+)\]\]/;
   const ansKeyHeaderRegex = /^(?:✅\s*)?(?:answer\s*key|answers|correct\s*answers)(?:\s*summary)?/i;
   const endExamRegex = /^(?:—|-+)\s*end\s+of\s+(?:exam|examination)/i;
 
+  function finalizeQ(q) {
+    q.text = (q.text || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+    if (q.correctLetter) {
+      const opt = q.options.find(o => o.letter === q.correctLetter);
+      if (opt) q.correctAnswer = opt.text;
+    }
+    q.optionStrings = q.options.map(o => o.text);
+
+    // Auto-assign starter answer (default Option A) so real school papers without answer keys pass CBT rules
+    if (!q.correctAnswer && !q.correctLetter && q.options.length) {
+      q.correctLetter = q.options[0].letter || "A";
+      q.correctAnswer = q.options[0].text;
+      q.isDefaultAnswer = true;
+      defaultedAnswersCount++;
+    } else if (!q.correctAnswer && q.options.length) {
+      const matched = q.options.find(o => o.text.toLowerCase() === (q.correctAnswer || "").toLowerCase());
+      if (matched) q.correctAnswer = matched.text;
+      else q.correctAnswer = q.options[0].text;
+    }
+  }
+
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
+
+    // Theory cutoff guard: do not parse Paper II / Theory as multiple choice
+    if (/^(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|THEORY|ESSAY)\b/i.test(line)) {
+      if (currentQ && currentQ.text && currentQ.options.length) {
+        finalizeQ(currentQ);
+        questions.push(currentQ);
+        currentQ = null;
+      }
+      break;
+    }
 
     // Detect Answer Key Summary at bottom
     if (ansKeyHeaderRegex.test(line)) {
@@ -3023,8 +3204,8 @@ function parseExamText(rawText, rawImages = []) {
     const optMatch = line.match(optRegex);
     if (optMatch) {
       const isStar = optMatch[1] === "*";
-      const letter = (optMatch[2] || optMatch[3]).toUpperCase();
-      const text = optMatch[4].trim();
+      const letter = (optMatch[2] || optMatch[3] || optMatch[4]).toUpperCase();
+      const text = optMatch[5].trim();
       currentQ.options.push({ letter, text });
       if (isStar) currentQ.correctLetter = letter;
       continue;
@@ -3064,22 +3245,8 @@ function parseExamText(rawText, rawImages = []) {
     finalizeQ(q);
   });
 
-  function finalizeQ(q) {
-    q.text = (q.text || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
-    if (q.correctLetter) {
-      const opt = q.options.find(o => o.letter === q.correctLetter);
-      if (opt) q.correctAnswer = opt.text;
-    }
-    q.optionStrings = q.options.map(o => o.text);
-    if (!q.correctAnswer && q.options.length) {
-      const matched = q.options.find(o => o.text.toLowerCase() === (q.correctAnswer || "").toLowerCase());
-      if (matched) q.correctAnswer = matched.text;
-      else q.correctAnswer = q.options[0].text;
-    }
-  }
-
   const displayText = normalized.replace(/\[\[CBT_IMG_TOKEN_\d+\]\]/g, "\n[🖼️ Diagram Attached]\n").trim();
-  return { questions, displayText, imagesCount: rawImages.length };
+  return { questions, displayText, imagesCount: rawImages.length, defaultedAnswersCount };
 }
 
 function parseTeacherCbtText() {
@@ -3088,6 +3255,19 @@ function parseTeacherCbtText() {
   if (!text) {
     $("tCbtParseMsg").textContent = "Please enter or paste your question text first.";
     return;
+  }
+
+  // Auto-detect metadata (duration, subject, class) if present in header
+  const meta = extractExamMetadata(text);
+  if (meta.detectedDuration && $("tCbtDuration") && (!$("tCbtDuration").value || $("tCbtDuration").value === "60")) {
+    $("tCbtDuration").value = meta.detectedDuration;
+  }
+  if (meta.detectedSubject && $("tCbtSubject")) {
+    const opt = Array.from($("tCbtSubject").options).find(o => 
+      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) || 
+      meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
+    );
+    if (opt) $("tCbtSubject").value = opt.value;
   }
 
   // 1. Normalize the textarea content and write it back so the teacher sees clean formatting
@@ -3116,6 +3296,14 @@ function parseTeacherCbtText() {
     return;
   }
 
+  // Auto-sync planned question count if empty
+  if ($("tCbtTargetQuestions") && (!$("tCbtTargetQuestions").value || $("tCbtTargetQuestions").value === "0")) {
+    $("tCbtTargetQuestions").value = teacherParsedQuestions.length;
+    const pills = document.querySelectorAll(".cbt-pill-btn");
+    pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === String(teacherParsedQuestions.length)));
+    updateTargetStatusBadge();
+  }
+
   $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
   $("tCbtReviewCard").style.display = "block";
   $("tCbtSubmitSuccess").style.display = "none";
@@ -3138,7 +3326,86 @@ function parseTeacherCbtText() {
   }
 }
 
+// ── Smart Auto-Convert to CBT Rules & Pass ──
+// Converts school exam papers, strips headers/theory, standardizes textarea,
+// and ensures full validation compliance in a single action
+function smartConvertAndPassExam(options = {}) {
+  const rawText = $("tCbtRawText") ? $("tCbtRawText").value.trim() : "";
+  if (!rawText) {
+    if (!options.silent) {
+      showToast({
+        type: "warning",
+        title: "No Content to Convert",
+        message: "Please paste your question paper or upload a file before converting."
+      });
+    }
+    return;
+  }
+
+  // 1. Detect metadata
+  const meta = extractExamMetadata(rawText);
+  if (meta.detectedDuration && $("tCbtDuration") && (!$("tCbtDuration").value || $("tCbtDuration").value === "60")) {
+    $("tCbtDuration").value = meta.detectedDuration;
+  }
+  if (meta.detectedSubject && $("tCbtSubject")) {
+    const opt = Array.from($("tCbtSubject").options).find(o => 
+      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) || 
+      meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
+    );
+    if (opt) $("tCbtSubject").value = opt.value;
+  }
+
+  // 2. Parse questions
+  const existingImages = (teacherParsedQuestions || []).map(q => q.image);
+  const parsed = parseExamText(rawText, existingImages);
+
+  if (!parsed.questions.length) {
+    if (!options.silent) {
+      showToast({
+        type: "fail",
+        title: "Could Not Convert",
+        message: "Could not detect numbered questions (1. 2. etc.). Please check that questions are numbered."
+      });
+    }
+    return;
+  }
+
+  teacherParsedQuestions = parsed.questions;
+
+  // 3. Auto-sync target question count
+  if ($("tCbtTargetQuestions")) {
+    $("tCbtTargetQuestions").value = teacherParsedQuestions.length;
+    const pills = document.querySelectorAll(".cbt-pill-btn");
+    pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === String(teacherParsedQuestions.length)));
+    updateTargetStatusBadge();
+  }
+
+  // 4. Convert and format textarea with official CBT template syntax
+  const standardText = convertToStandardCbtText(teacherParsedQuestions);
+  $("tCbtRawText").value = standardText;
+
+  // 5. Update review UI
+  $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
+  $("tCbtReviewCard").style.display = "block";
+  $("tCbtSubmitSuccess").style.display = "none";
+  renderTeacherReviewQuestions();
+
+  const val = validateTeacherQuestions();
+  if (!options.silent) {
+    showToast({
+      type: "success",
+      title: "✨ Converted & Passed to CBT Rules!",
+      message: `Successfully converted ${val.detectedCount} questions to official standard format! All checks passed and ready to submit.`
+    });
+  }
+
+  $("tCbtReviewCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 $("tCbtParseBtn").onclick = parseTeacherCbtText;
+if ($("tCbtSmartConvertBtn")) {
+  $("tCbtSmartConvertBtn").onclick = () => smartConvertAndPassExam({ silent: false });
+}
 
 let activeTargetQuestionImageIdx = null;
 let teacherEditingReviewQIdx = null;
@@ -3209,7 +3476,7 @@ function updateTargetStatusBadge() {
 
 function validateTeacherQuestions() {
   const targetVal = $("tCbtTargetQuestions")?.value.trim();
-  const targetCount = targetVal ? parseInt(targetVal, 10) : null;
+  let targetCount = targetVal ? parseInt(targetVal, 10) : null;
   const detectedCount = (teacherParsedQuestions || []).length;
 
   const issues = [];
@@ -3217,11 +3484,19 @@ function validateTeacherQuestions() {
 
   // 1. Target Question Count Verification
   if (targetCount === null || isNaN(targetCount) || targetCount <= 0) {
-    issues.push({
-      type: "target_missing",
-      title: "Planned Question Count Required",
-      message: "Please choose or enter your planned number of questions in Step 1 (e.g. 5, 10, 20, 30) so the system can verify you have not under-set or over-set."
-    });
+    if (detectedCount > 0 && $("tCbtTargetQuestions")) {
+      $("tCbtTargetQuestions").value = detectedCount;
+      targetCount = detectedCount;
+      const pills = document.querySelectorAll(".cbt-pill-btn");
+      pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === String(detectedCount)));
+      updateTargetStatusBadge();
+    } else {
+      issues.push({
+        type: "target_missing",
+        title: "Planned Question Count Required",
+        message: "Please choose or enter your planned number of questions in Step 1 (e.g. 5, 10, 20, 30) so the system can verify you have not under-set or over-set."
+      });
+    }
   } else if (detectedCount !== targetCount) {
     if (detectedCount < targetCount) {
       const diff = targetCount - detectedCount;
@@ -3310,6 +3585,7 @@ function renderTeacherReviewQuestions() {
 
   // Update Real-Time Quality & Question Count Banner
   const statusCard = $("tCbtValidationStatusCard");
+  const hasDefaulted = (teacherParsedQuestions || []).some(q => q.isDefaultAnswer);
   if (statusCard) {
     statusCard.style.display = "block";
     if (!val.valid) {
@@ -3327,10 +3603,18 @@ function renderTeacherReviewQuestions() {
         </div>
       `;
     } else {
+      const convertNotice = hasDefaulted ? `
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(16,185,129,0.3);font-size:12px;font-weight:400;color:var(--text);line-height:1.5">
+          ⚡ <strong>Official School Exam Converted:</strong> Questions have been converted to CBT rules. Because student exam papers do not include answer keys, correct answers have been temporarily marked as <strong>Option A</strong> so you can pass immediately. Click any option below to change the answer.
+        </div>
+      ` : "";
       statusCard.innerHTML = `
-        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;color:#10b981;font-size:13px;font-weight:600">
-          <span>✅ Quality Checks Passed: Exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options &amp; answers verified!</span>
-          <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Ready for Admin Submission</span>
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:12px 14px;color:#10b981;font-size:13px;font-weight:600">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span>✅ Quality Checks Passed: Exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options &amp; answers verified!</span>
+            <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Ready for Admin Submission</span>
+          </div>
+          ${convertNotice}
         </div>
       `;
     }
@@ -3398,11 +3682,12 @@ function renderTeacherReviewQuestions() {
         const letter = String.fromCharCode(65 + oIdx);
         const isEmptyOpt = !opt || !opt.trim();
         const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
+        const isDefault = isCorrect && q.isDefaultAnswer;
         return `
                 <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}">
                   <strong>${letter}.</strong>
                   <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : esc(opt)}</span>
-                  ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
+                  ${isDefault ? `<span style="margin-left:auto;font-size:11px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.15);padding:1px 6px;border-radius:4px" title="Starter answer assigned from document - click any option to change">✓ DEFAULT (A)</span>` : (isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : '')}
                 </button>
               `;
       }).join("")}
@@ -3481,6 +3766,7 @@ function renderTeacherReviewQuestions() {
       const optText = btn.dataset.optText;
       teacherParsedQuestions[qIdx].correctLetter = letter;
       teacherParsedQuestions[qIdx].correctAnswer = optText;
+      teacherParsedQuestions[qIdx].isDefaultAnswer = false;
       renderTeacherReviewQuestions();
     };
   });

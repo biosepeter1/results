@@ -6,7 +6,14 @@
   <title>Academic Administration Portal</title>
   <link rel="icon" type="image/png" href="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png">
   <link rel="apple-touch-icon" href="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png">
-  <link rel="manifest" href="manifest.json">
+  <script>
+    if (window.location.protocol.startsWith("http")) {
+      var _mf = document.createElement("link");
+      _mf.rel = "manifest";
+      _mf.href = "manifest.json";
+      document.head.appendChild(_mf);
+    }
+  </script>
   <meta name="theme-color" content="#161b22">
   <meta name="description" content="Institutional examination administration and teacher access management.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

@@ -6481,39 +6481,37 @@ async function handleTestAdminPush() {
 async function dispatchOneSignalPush({ title, message, target, targetSubject }) {
   try {
     const cfg = await window.dbClient?.getOneSignalConfig();
-    if (!cfg || !cfg.appId || !cfg.restApiKey || cfg.enabled === false) {
+    const appId = cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
+    const restApiKey = cfg?.restApiKey || "";
+
+    if (!appId || !restApiKey || cfg?.enabled === false) {
       return { success: false, reason: "not_configured" };
     }
 
+    // Determine endpoint: use relative endpoint on Vercel, or full URL on local/file testing
+    const isLiveVercel = window.location.hostname.includes("vercel.app");
+    const pushEndpoint = isLiveVercel ? "/api/send-push" : "https://portal-honeylandschools.vercel.app/api/send-push";
+
     const payload = {
-      app_id: cfg.appId,
-      headings: { en: "Exam Committee: " + title },
-      contents: { en: (message || "").substring(0, 160) },
-      url: window.location.origin + window.location.pathname.replace("admin.html", "index.html"),
-      chrome_web_icon: window.location.origin + "/favicon.png",
-      chrome_web_badge: window.location.origin + "/favicon.png"
+      appId,
+      restApiKey,
+      title: title || "Announcement",
+      message: message || "",
+      target: target || "all",
+      targetSubject: targetSubject || ""
     };
 
-    if (target === "subject" && targetSubject) {
-      payload.filters = [
-        { field: "tag", key: "subject", relation: "=", value: targetSubject }
-      ];
-    } else {
-      payload.included_segments = ["Total Subscriptions"];
-    }
-
-    const resp = await fetch("https://api.onesignal.com/notifications", {
+    const resp = await fetch(pushEndpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Key " + cfg.restApiKey
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
     });
 
     const data = await resp.json();
     if (!resp.ok) {
-      throw new Error(data?.errors?.[0] || data?.error || `HTTP ${resp.status}`);
+      throw new Error(data?.error || `Server error ${resp.status}`);
     }
     return { success: true, recipients: data?.recipients || 0 };
   } catch (err) {
