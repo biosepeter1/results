@@ -3475,7 +3475,8 @@ function updateTargetStatusBadge() {
 }
 
 function validateTeacherQuestions() {
-  const targetVal = $("tCbtTargetQuestions")?.value.trim();
+  const rawTarget = $("tCbtTargetQuestions")?.value;
+  const targetVal = String(rawTarget !== undefined && rawTarget !== null ? rawTarget : "").trim();
   let targetCount = targetVal ? parseInt(targetVal, 10) : null;
   const detectedCount = (teacherParsedQuestions || []).length;
 
