@@ -6313,15 +6313,97 @@ const NOTIF_TEMPLATES = {
   }
 };
 
+// Collapsible Dropdown Accordion for Broadcast Composer
+function toggleAdminComposerAccordion(forceOpen) {
+  const body = $("adminComposerCollapsibleBody");
+  const card = $("adminComposerCard");
+  const btn = $("adminToggleComposerBtn");
+  const text = $("adminComposerToggleText");
+  if (!body) return;
+
+  const isCurrentlyOpen = body.classList.contains("open");
+  const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+  if (willOpen) {
+    body.classList.add("open");
+    if (card) card.classList.add("cbt-accordion-open");
+    if (btn) btn.classList.add("open");
+    if (text) text.textContent = "Collapse Composer";
+  } else {
+    body.classList.remove("open");
+    if (card) card.classList.remove("cbt-accordion-open");
+    if (btn) btn.classList.remove("open");
+    if (text) text.textContent = "Expand Composer";
+  }
+}
+
+// Collapsible Dropdown Accordion for Push Gateway
+function toggleAdminGatewayAccordion(forceOpen) {
+  const body = $("adminGatewayCollapsibleBody");
+  const card = $("adminGatewayCard");
+  const btn = $("adminToggleGatewayBtn");
+  const text = $("adminGatewayToggleText");
+  if (!body) return;
+
+  const isCurrentlyOpen = body.classList.contains("open");
+  const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+  if (willOpen) {
+    body.classList.add("open");
+    if (card) card.classList.add("cbt-accordion-open");
+    if (btn) btn.classList.add("open");
+    if (text) text.textContent = "Collapse Gateway";
+  } else {
+    body.classList.remove("open");
+    if (card) card.classList.remove("cbt-accordion-open");
+    if (btn) btn.classList.remove("open");
+    if (text) text.textContent = "Expand Gateway";
+  }
+}
+
 function initAdminAnnouncementsEvents() {
   if (adminNotifEventsInitialized) return;
   adminNotifEventsInitialized = true;
+
+  // Accordion Dropdown Toggles
+  const compBtn = $("adminToggleComposerBtn");
+  if (compBtn) {
+    compBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleAdminComposerAccordion();
+    };
+  }
+
+  const compHeader = $("adminComposerHeader");
+  if (compHeader) {
+    compHeader.onclick = (e) => {
+      if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select") || e.target.closest("textarea")) return;
+      toggleAdminComposerAccordion();
+    };
+  }
+
+  const gateBtn = $("adminToggleGatewayBtn");
+  if (gateBtn) {
+    gateBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleAdminGatewayAccordion();
+    };
+  }
+
+  const gateHeader = $("adminGatewayHeader");
+  if (gateHeader) {
+    gateHeader.onclick = (e) => {
+      if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select")) return;
+      toggleAdminGatewayAccordion();
+    };
+  }
 
   const tplSelect = $("adminNotifTemplateSelect");
   if (tplSelect) {
     tplSelect.onchange = () => {
       const val = tplSelect.value;
       if (!val || !NOTIF_TEMPLATES[val]) return;
+      toggleAdminComposerAccordion(true);
       const t = NOTIF_TEMPLATES[val];
       if ($("adminNotifCategory")) $("adminNotifCategory").value = t.category;
       if ($("adminNotifTitle")) $("adminNotifTitle").value = t.title;

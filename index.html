@@ -21,7 +21,7 @@
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
+    OneSignalDeferred.push(async function (OneSignal) {
       await OneSignal.init({
         appId: "89e9469f-65f7-48aa-a798-6f6628cf4c5e",
       });
@@ -110,7 +110,8 @@
             </div>
 
             <!-- Administrative Announcements Bell Button -->
-            <button class="menu-notif-btn" id="teacherNotifBellBtn" type="button" title="View Administrative Announcements" aria-label="View Administrative Announcements">
+            <button class="menu-notif-btn" id="teacherNotifBellBtn" type="button"
+              title="View Administrative Announcements" aria-label="View Administrative Announcements">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -120,8 +121,10 @@
             </button>
 
             <!-- Device Push Notification Status Pill -->
-            <button class="menu-push-pill" id="teacherPushStatusPill" type="button" title="Device Push Status" style="display:none;">
-              <span class="push-dot" style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
+            <button class="menu-push-pill" id="teacherPushStatusPill" type="button" title="Device Push Status"
+              style="display:none;">
+              <span class="push-dot"
+                style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
               <span id="teacherPushStatusText" style="font-size:11px;font-weight:700;">Push Active</span>
             </button>
 
@@ -224,7 +227,8 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           <span>Announcements</span>
-          <span class="tab-badge" id="teacherMobileNotifBadge" style="display:none;background:#ef4444;color:#fff;margin-left:auto;">0</span>
+          <span class="tab-badge" id="teacherMobileNotifBadge"
+            style="display:none;background:#ef4444;color:#fff;margin-left:auto;">0</span>
         </button>
       </div>
 
@@ -265,17 +269,20 @@
       <!-- ══════════════════════════════════════════════════════════
          ADMINISTRATIVE ANNOUNCEMENTS FEED (PROMINENT ALERT BANNER)
          ══════════════════════════════════════════════════════════ -->
-      <section id="teacherAnnouncementsFeed" class="teacher-announcements-feed" style="display:none;" aria-label="Administrative Announcements"></section>
+      <section id="teacherAnnouncementsFeed" class="teacher-announcements-feed" style="display:none;"
+        aria-label="Administrative Announcements"></section>
 
       <!-- ══════════════════════════════════════════════════════════
          ONE-CLICK PUSH NOTIFICATION OPT-IN BANNER
          ══════════════════════════════════════════════════════════ -->
-      <section id="teacherPushOptInBanner" class="teacher-push-optin-card" style="display:none;" aria-label="Device Push Notifications Setup">
+      <section id="teacherPushOptInBanner" class="teacher-push-optin-card" style="display:none;"
+        aria-label="Device Push Notifications Setup">
         <div class="push-optin-content">
           <div class="push-optin-icon">🔔</div>
           <div class="push-optin-text">
             <div class="push-optin-title">Enable Instant Device Push Alerts</div>
-            <div class="push-optin-desc">Receive real-time vibrations and lock screen popups on your phone or laptop whenever the Exam Committee broadcasts notices—even when your browser is closed.</div>
+            <div class="push-optin-desc">Receive real-time vibrations and lock screen popups on your phone or laptop
+              whenever the Exam Committee broadcasts notices—even when your browser is closed.</div>
           </div>
         </div>
         <div class="push-optin-actions">
@@ -717,7 +724,9 @@
 
               <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
                 <button type="button" class="btn-text" id="tCbtClearTextBtn">Clear</button>
-                <button type="button" class="btn-secondary" id="tCbtSmartConvertBtn" style="min-height:42px;display:inline-flex;align-items:center;gap:6px;font-weight:600;border-color:rgba(245,158,11,0.4);color:#f59e0b" title="Automatically formats school exam papers, strips headers &amp; theory, and opens in Step 3 for teacher to review and mark correct answers">
+                <button type="button" class="btn-secondary" id="tCbtSmartConvertBtn"
+                  style="min-height:42px;display:inline-flex;align-items:center;gap:6px;font-weight:600;border-color:rgba(245,158,11,0.4);color:#f59e0b"
+                  title="Automatically formats school exam papers, strips headers &amp; theory, and opens in Step 3 for teacher to review and mark correct answers">
                   <span>⚡</span> Convert &amp; Review Questions
                 </button>
                 <button type="button" class="btn-primary" id="tCbtParseBtn" style="min-height:42px">🔍 Parse &amp;
@@ -984,14 +993,16 @@
         <button class="btn-close" id="teacherNotifModalCloseBtn" type="button">Close</button>
       </div>
 
-      <div id="teacherNotifModalBody" style="display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;padding-right:4px;">
+      <div id="teacherNotifModalBody"
+        style="display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;padding-right:4px;">
         <div style="text-align:center;padding:24px;color:var(--text-muted);">
           Loading announcements...
         </div>
       </div>
 
       <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-        <button class="btn-text" id="teacherClearDismissedBtn" type="button" style="font-size:12px;color:var(--text-muted);cursor:pointer;background:none;border:none;text-decoration:underline;">
+        <button class="btn-text" id="teacherClearDismissedBtn" type="button"
+          style="font-size:12px;color:var(--text-muted);cursor:pointer;background:none;border:none;text-decoration:underline;">
           🔄 Restore Dismissed Alerts
         </button>
         <button class="btn-primary" id="teacherNotifModalCloseBottomBtn" type="button">
@@ -1009,7 +1020,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.5"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/teacher.js?v=4.5"></script>
+  <script src="js/teacher.js?v=4.6"></script>
 </body>
 
 </html>
