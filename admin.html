@@ -1223,106 +1223,133 @@
       <!-- SECTION 4: CBT EXAMS & OFFLINE JSON DOWNLOADS -->
       <section id="paneCBT" style="display:none">
 
-        <!-- School-Wide Active Examination Term for Teacher CBT Uploads -->
-        <div class="card" style="margin-bottom:20px;border-left:4px solid var(--accent)">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
-            <div style="max-width:540px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0">Active Examination Term for
-                  Teacher Uploads</h3>
+        <!-- School-Wide Active Examination Term for Teacher CBT Uploads (Collapsible Dropdown Accordion) -->
+        <div class="card" id="cbtActiveTermCard" style="margin-bottom:20px;border-left:4px solid var(--accent);padding:0;overflow:hidden">
+          <div class="card-header cbt-collapsible-header" id="cbtActiveTermHeader"
+            style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px"
+            title="Click to expand or collapse active term & exam defaults">
+            <div style="flex:1;min-width:240px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0">Active Examination Term for Teacher Uploads</h3>
                 <span class="badge"
-                  style="background:rgba(235,87,87,0.15);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">CBT
-                  Sync</span>
+                  style="background:rgba(235,87,87,0.15);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">CBT Sync</span>
+                <span id="cbtActiveTermHeaderPreview"
+                  style="font-size:11px;font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:6px;background:var(--surface-alt);border:1px solid var(--border);padding:2px 8px;border-radius:10px;">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
+                  <span id="cbtActiveTermHeaderSummary">Loading active term...</span>
+                </span>
               </div>
+              <p style="margin:4px 0 0 0;font-size:12px;color:var(--text-muted)">
+                Configure active term, exam duration &amp; marks enforced for all teachers when uploading exams
+              </p>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtAddCustomTermBtn"
-                style="font-size:12px;padding:5px 12px">➕ Add Term</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtResetTermsBtn"
-                style="font-size:12px;padding:5px 10px;color:var(--text-muted)"
-                title="Restore standard school term presets">↺ Defaults</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtToggleActiveTermBtn"
+                style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span id="cbtActiveTermToggleIcon" class="cbt-toggle-arrow">▼</span>
+                <span id="cbtActiveTermToggleText">Configure Term</span>
+              </button>
             </div>
           </div>
 
-          <!-- Dynamic Active Term Options (Dropdown) -->
-          <div style="margin-top:14px">
-            <label for="cbtAdminTermSelect"
-              style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
-              Select Active Term:
-            </label>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <select id="cbtAdminTermSelect" class="form-input"
-                style="min-width:280px;max-width:440px;flex:1;padding:8px 12px;font-size:13px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer">
-                <!-- Dynamically populated from saved CBT term options -->
-              </select>
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtRenameTermBtn"
-                style="font-size:12px;padding:7px 12px" title="Rename the selected examination term">✏️ Rename</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="cbtDeleteTermBtn"
-                style="font-size:12px;padding:7px 12px;color:rgba(255,100,100,0.85)"
-                title="Delete the selected examination term">✕ Delete</button>
-            </div>
-            <div id="cbtAdminTermsContainer" style="display:none"></div>
-          </div>
-
-          <!-- Custom Term Input Drawer (Automatically saves as an option, smoothly animated) -->
-          <div id="cbtAdminCustomTermDrawer" class="cbt-accordion-collapse"
-            style="margin-top:12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
-            <div class="cbt-accordion-inner" style="padding:12px 14px">
-              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
-                ➕ Add Custom Examination Term
+          <!-- Collapsible Body with Smooth Animation -->
+          <div id="cbtActiveTermCollapsibleBody" class="cbt-accordion-collapse">
+            <div class="cbt-accordion-inner" style="border-top:1px solid var(--border);padding:18px 20px 20px">
+              <!-- Top bar: Add Term, Defaults -->
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+                <div style="font-size:12px;color:var(--text-muted)">
+                  Select which examination term teachers can upload questions into, and configure school-wide CBT parameters.
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtAddCustomTermBtn"
+                    style="font-size:12px;padding:5px 12px">➕ Add Term</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtResetTermsBtn"
+                    style="font-size:12px;padding:5px 10px;color:var(--text-muted)"
+                    title="Restore standard school term presets">↺ Defaults</button>
+                </div>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="text" id="cbtAdminCustomTermInput" class="form-input"
-                  style="padding:6px 12px;font-size:13px;min-width:260px;flex:1;max-width:440px"
-                  placeholder="e.g. FIRST TERM EXAMINATION, MOCK EXAM 2026...">
-                <button type="button" class="btn btn-sm btn-primary" id="cbtAdminSaveCustomTermBtn"
-                  style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none">
-                  💾 Save as Option &amp; Set Active
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="cbtAdminCancelCustomBtn"
-                  style="font-size:12px;padding:6px 12px">
-                  Cancel
-                </button>
-              </div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
-                💡 <em>Whatever custom term you enter automatically saves permanently as a selectable option and
-                  becomes the active term for all teachers!</em>
-              </div>
-            </div>
-          </div>
 
-          <!-- Active Term Status Banner -->
-          <div
-            style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px">
-            <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay"
-                style="color:var(--accent);letter-spacing:0.5px">FIRST TERM EXAMINATION</strong></span>
-            <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
-              for all teachers!</span>
-          </div>
+              <!-- Dynamic Active Term Options (Dropdown) -->
+              <div>
+                <label for="cbtAdminTermSelect"
+                  style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+                  Select Active Term:
+                </label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <select id="cbtAdminTermSelect" class="form-input"
+                    style="min-width:280px;max-width:440px;flex:1;padding:8px 12px;font-size:13px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer">
+                    <!-- Dynamically populated from saved CBT term options -->
+                  </select>
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtRenameTermBtn"
+                    style="font-size:12px;padding:7px 12px" title="Rename the selected examination term">✏️ Rename</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="cbtDeleteTermBtn"
+                    style="font-size:12px;padding:7px 12px;color:rgba(255,100,100,0.85)"
+                    title="Delete the selected examination term">✕ Delete</button>
+                </div>
+                <div id="cbtAdminTermsContainer" style="display:none"></div>
+              </div>
 
-          <!-- School-Wide Exam Duration & Marks per Question -->
-          <div
-            style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px">
-            <div>
-              <span style="color:var(--text);font-weight:700">School-Wide Exam Duration &amp; Marks:</span>
-              <span style="color:var(--text-muted);margin-left:6px">Enforced for all teachers when uploading
-                exams</span>
-            </div>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-              <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
-                Duration:
-                <input type="number" id="cbtAdminGlobalDuration" value="30" min="5" max="180" class="form-input"
-                  style="width:75px;padding:4px 8px;font-size:12px"> mins
-              </label>
-              <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
-                Marks / Question:
-                <input type="number" id="cbtAdminGlobalMarks" value="0.4" step="any" min="0.01" max="50"
-                  class="form-input" style="width:75px;padding:4px 8px;font-size:12px"> marks
-              </label>
-              <button type="button" class="btn btn-sm" id="cbtAdminSaveDefaultsBtn"
-                style="font-size:12px;padding:5px 12px">Save Parameters</button>
-              <span id="cbtAdminDefaultsSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓
-                Saved for all teachers!</span>
+              <!-- Custom Term Input Drawer (Automatically saves as an option, smoothly animated) -->
+              <div id="cbtAdminCustomTermDrawer" class="cbt-accordion-collapse"
+                style="margin-top:12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px">
+                <div class="cbt-accordion-inner" style="padding:12px 14px">
+                  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">
+                    ➕ Add Custom Examination Term
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <input type="text" id="cbtAdminCustomTermInput" class="form-input"
+                      style="padding:6px 12px;font-size:13px;min-width:260px;flex:1;max-width:440px"
+                      placeholder="e.g. FIRST TERM EXAMINATION, MOCK EXAM 2026...">
+                    <button type="button" class="btn btn-sm btn-primary" id="cbtAdminSaveCustomTermBtn"
+                      style="font-size:12px;padding:6px 14px;background:var(--accent);color:#fff;border:none">
+                      💾 Save as Option &amp; Set Active
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="cbtAdminCancelCustomBtn"
+                      style="font-size:12px;padding:6px 12px">
+                      Cancel
+                    </button>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+                    💡 <em>Whatever custom term you enter automatically saves permanently as a selectable option and
+                      becomes the active term for all teachers!</em>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Term Status Banner -->
+              <div
+                style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px">
+                <span style="color:var(--text-muted)">Current Active Term: <strong id="cbtAdminActiveTermDisplay"
+                    style="color:var(--accent);letter-spacing:0.5px">FIRST TERM EXAMINATION</strong></span>
+                <span id="cbtAdminTermSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓ Updated
+                  for all teachers!</span>
+              </div>
+
+              <!-- School-Wide Exam Duration & Marks per Question -->
+              <div
+                style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px">
+                <div>
+                  <span style="color:var(--text);font-weight:700">School-Wide Exam Duration &amp; Marks:</span>
+                  <span style="color:var(--text-muted);margin-left:6px">Enforced for all teachers when uploading
+                    exams</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                  <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                    Duration:
+                    <input type="number" id="cbtAdminGlobalDuration" value="30" min="5" max="180" class="form-input"
+                      style="width:75px;padding:4px 8px;font-size:12px"> mins
+                  </label>
+                  <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                    Marks / Question:
+                    <input type="number" id="cbtAdminGlobalMarks" value="0.4" step="any" min="0.01" max="50"
+                      class="form-input" style="width:75px;padding:4px 8px;font-size:12px"> marks
+                  </label>
+                  <button type="button" class="btn btn-sm" id="cbtAdminSaveDefaultsBtn"
+                    style="font-size:12px;padding:5px 12px">Save Parameters</button>
+                  <span id="cbtAdminDefaultsSavedBadge" style="color:var(--status-good);display:none;font-weight:600">✓
+                    Saved for all teachers!</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2349,7 +2376,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.5"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/admin.js?v=4.7"></script>
+  <script src="js/admin.js?v=4.8"></script>
 </body>
 
 </html>

@@ -3074,10 +3074,58 @@ async function setAdminCbtActiveTerm(newTerm) {
   }
 }
 
+function updateCbtActiveTermHeaderSummary() {
+  const summaryEl = $("cbtActiveTermHeaderSummary");
+  if (!summaryEl) return;
+  const term = activeCbtExamTerm || "FIRST TERM EXAMINATION";
+  const dur = (adminCbtDefaults && adminCbtDefaults.duration) || 30;
+  const marks = (adminCbtDefaults && adminCbtDefaults.marksPerQuestion != null) ? adminCbtDefaults.marksPerQuestion : 0.4;
+  summaryEl.textContent = `${term} · ${dur}m · ${marks} pts/Q`;
+}
+
+// Collapsible Dropdown Accordion for CBT Active Term & Defaults
+function toggleCbtActiveTermAccordion(forceOpen) {
+  const body = $("cbtActiveTermCollapsibleBody");
+  const card = $("cbtActiveTermCard");
+  const btn = $("cbtToggleActiveTermBtn");
+  const text = $("cbtActiveTermToggleText");
+  if (!body) return;
+
+  const isCurrentlyOpen = body.classList.contains("open");
+  const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
+
+  if (willOpen) {
+    body.classList.add("open");
+    if (card) card.classList.add("cbt-accordion-open");
+    if (btn) btn.classList.add("open");
+    if (text) text.textContent = "Collapse Term";
+  } else {
+    body.classList.remove("open");
+    if (card) card.classList.remove("cbt-accordion-open");
+    if (btn) btn.classList.remove("open");
+    if (text) text.textContent = "Configure Term";
+  }
+}
+
+if ($("cbtToggleActiveTermBtn")) {
+  $("cbtToggleActiveTermBtn").onclick = (e) => {
+    e.stopPropagation();
+    toggleCbtActiveTermAccordion();
+  };
+}
+
+if ($("cbtActiveTermHeader")) {
+  $("cbtActiveTermHeader").onclick = (e) => {
+    if (e.target.closest("button") || e.target.closest("input") || e.target.closest("select")) return;
+    toggleCbtActiveTermAccordion();
+  };
+}
+
 function updateAdminCbtTermUI() {
   if ($("cbtAdminActiveTermDisplay")) {
     $("cbtAdminActiveTermDisplay").textContent = activeCbtExamTerm;
   }
+  updateCbtActiveTermHeaderSummary();
   renderCbtTermOptions();
 }
 
@@ -3164,6 +3212,7 @@ async function loadAdminCbtDefaults() {
 function updateAdminCbtDefaultsUI() {
   if ($("cbtAdminGlobalDuration")) $("cbtAdminGlobalDuration").value = adminCbtDefaults.duration;
   if ($("cbtAdminGlobalMarks")) $("cbtAdminGlobalMarks").value = adminCbtDefaults.marksPerQuestion;
+  updateCbtActiveTermHeaderSummary();
 }
 
 async function saveAdminCbtDefaults() {
@@ -3171,6 +3220,7 @@ async function saveAdminCbtDefaults() {
   const marks = parseFloat($("cbtAdminGlobalMarks")?.value) || 0.4;
   adminCbtDefaults = { duration: dur, marksPerQuestion: marks };
   localStorage.setItem("cbt_exam_defaults", JSON.stringify(adminCbtDefaults));
+  updateCbtActiveTermHeaderSummary();
 
   try {
     if (window.dbClient && window.dbClient.setCbtExamDefaults) {
