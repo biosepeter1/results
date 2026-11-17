@@ -5147,9 +5147,21 @@ let oneSignalTeacherInitialized = false;
 
 async function initTeacherPushNotifications() {
   try {
-    if (!window.dbClient || !window.dbClient.getOneSignalConfig) return;
-    const config = await window.dbClient.getOneSignalConfig();
-    if (!config || !config.appId || config.enabled === false) {
+    let config = null;
+    if (window.dbClient && typeof window.dbClient.getOneSignalConfig === "function") {
+      try {
+        config = await window.dbClient.getOneSignalConfig();
+      } catch (e) {}
+    }
+    if (!config) {
+      try {
+        const raw = localStorage.getItem("onesignal_admin_config");
+        if (raw) config = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    const appId = config?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
+    if (config && config.enabled === false) {
       const banner = $("teacherPushOptInBanner");
       if (banner) banner.style.display = "none";
       const pill = $("teacherPushStatusPill");
@@ -5157,17 +5169,19 @@ async function initTeacherPushNotifications() {
       return;
     }
 
-    const appId = config.appId;
-
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
       if (!oneSignalTeacherInitialized) {
         oneSignalTeacherInitialized = true;
-        await OneSignal.init({
-          appId: appId,
-          allowLocalhostAsSecureOrigin: true,
-          notifyButton: { enable: false }
-        });
+        try {
+          await OneSignal.init({
+            appId: appId,
+            allowLocalhostAsSecureOrigin: true,
+            notifyButton: { enable: false }
+          });
+        } catch (e) {
+          // Already initialized by head script
+        }
 
         // Sync UI with subscription state
         const isOptedIn = await OneSignal.User.PushSubscription.optedIn;

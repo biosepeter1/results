@@ -29,9 +29,9 @@ export default async function handler(req, res) {
       app_id: appId.trim(),
       headings: { en: "Exam Committee: " + (title || "Announcement").trim() },
       contents: { en: (message || "New announcement posted").trim().substring(0, 180) },
-      url: "https://portal-honeylandschools.vercel.app/index.html",
-      chrome_web_icon: "https://portal-honeylandschools.vercel.app/favicon.png",
-      chrome_web_badge: "https://portal-honeylandschools.vercel.app/favicon.png"
+      url: "https://hlconline.vercel.app/index.html",
+      chrome_web_icon: "https://hlconline.vercel.app/favicon.png",
+      chrome_web_badge: "https://hlconline.vercel.app/favicon.png"
     };
 
     if (target === "subject" && targetSubject) {

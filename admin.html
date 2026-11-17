@@ -20,6 +20,15 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "89e9469f-65f7-48aa-a798-6f6628cf4c5e",
+      });
+    });
+  </script>
   <script>
     (function () {
       try {
@@ -2242,9 +2251,9 @@
   <script src="js/mammoth.browser.min.js"
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js"></script>
-  <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=4.3"></script>
+  <script src="js/supabase-config.js?v=4.4"></script>
+  <script src="js/cbt-catalog.js?v=4.4"></script>
+  <script src="js/admin.js?v=4.4"></script>
 </body>
 
 </html>

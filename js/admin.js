@@ -6372,20 +6372,58 @@ function initAdminAnnouncementsEvents() {
   loadAdminOneSignalConfig();
 }
 
+// ══════════════════════════════════════════════════════════
+// ONESIGNAL CONFIGURATION & PUSH GATEWAY HELPERS
+// ══════════════════════════════════════════════════════════
+
+async function getEffectiveOneSignalConfig() {
+  let cfg = null;
+  // 1. Try Supabase
+  if (window.dbClient && typeof window.dbClient.getOneSignalConfig === "function") {
+    try {
+      cfg = await window.dbClient.getOneSignalConfig();
+    } catch (e) {
+      console.warn("dbClient.getOneSignalConfig warning:", e);
+    }
+  }
+  // 2. Fallback to localStorage
+  if (!cfg || !cfg.restApiKey) {
+    try {
+      const raw = localStorage.getItem("onesignal_admin_config");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        cfg = Object.assign({}, cfg || {}, parsed);
+      }
+    } catch (e) {}
+  }
+  // 3. Fallback to active input fields on admin screen
+  const inputAppId = $("adminOneSignalAppId")?.value?.trim();
+  const inputRestKey = $("adminOneSignalRestKey")?.value?.trim();
+  return {
+    appId: inputAppId || cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e",
+    restApiKey: inputRestKey || cfg?.restApiKey || "",
+    enabled: cfg ? cfg.enabled !== false : true
+  };
+}
+
 async function loadAdminOneSignalConfig() {
   try {
-    if (!window.dbClient || !window.dbClient.getOneSignalConfig) return;
-    const cfg = await window.dbClient.getOneSignalConfig();
+    const cfg = await getEffectiveOneSignalConfig();
     const appIdInput = $("adminOneSignalAppId");
     const restKeyInput = $("adminOneSignalRestKey");
     const badge = $("adminPushGatewayBadge");
     const statusText = $("adminPushGatewayStatusText");
 
     const currentAppId = cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
-    if (appIdInput) appIdInput.value = currentAppId;
-    if (restKeyInput) restKeyInput.value = cfg?.restApiKey || "";
+    if (appIdInput && (!appIdInput.value || appIdInput.value === "89e9469f-65f7-48aa-a798-6f6628cf4c5e")) {
+      appIdInput.value = currentAppId;
+    }
+    if (restKeyInput && !restKeyInput.value && cfg?.restApiKey) {
+      restKeyInput.value = cfg.restApiKey;
+    }
 
-    if (currentAppId && cfg?.restApiKey) {
+    const hasKey = !!(restKeyInput?.value || cfg?.restApiKey);
+    if (currentAppId && hasKey) {
       if (badge && statusText) {
         badge.style.background = "rgba(16, 185, 129, 0.12)";
         badge.style.borderColor = "rgba(16, 185, 129, 0.35)";
@@ -6426,10 +6464,22 @@ async function handleSaveAdminOneSignalConfig() {
   }
 
   try {
-    if (!window.dbClient || !window.dbClient.saveOneSignalConfig) {
-      throw new Error("Database client unavailable");
+    const payload = { appId, restApiKey, enabled: true, updatedAt: new Date().toISOString() };
+
+    // 1. Immediately store in localStorage so it always works
+    try {
+      localStorage.setItem("onesignal_admin_config", JSON.stringify(payload));
+    } catch (e) {}
+
+    // 2. Persist to Supabase if available
+    if (window.dbClient && typeof window.dbClient.saveOneSignalConfig === "function") {
+      try {
+        await window.dbClient.saveOneSignalConfig(payload);
+      } catch (dbErr) {
+        console.warn("Supabase saveOneSignalConfig note:", dbErr);
+      }
     }
-    await window.dbClient.saveOneSignalConfig({ appId, restApiKey, enabled: true });
+
     showToast({ type: "success", title: "Push Settings Saved", message: "OneSignal Push Gateway configured successfully." });
     await loadAdminOneSignalConfig();
   } catch (err) {
@@ -6444,9 +6494,10 @@ async function handleSaveAdminOneSignalConfig() {
 }
 
 async function handleTestAdminPush() {
-  const cfg = await window.dbClient?.getOneSignalConfig();
+  const cfg = await getEffectiveOneSignalConfig();
   if (!cfg || !cfg.appId || !cfg.restApiKey) {
-    showToast({ type: "warning", title: "Configuration Incomplete", message: "Please save your OneSignal App ID and REST API Key first." });
+    showToast({ type: "warning", title: "Configuration Incomplete", message: "Please paste your OneSignal REST API Key and click 'Save Push Settings' first." });
+    $("adminOneSignalRestKey")?.focus();
     return;
   }
 
@@ -6480,7 +6531,7 @@ async function handleTestAdminPush() {
 
 async function dispatchOneSignalPush({ title, message, target, targetSubject }) {
   try {
-    const cfg = await window.dbClient?.getOneSignalConfig();
+    const cfg = await getEffectiveOneSignalConfig();
     const appId = cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
     const restApiKey = cfg?.restApiKey || "";
 
@@ -6490,7 +6541,7 @@ async function dispatchOneSignalPush({ title, message, target, targetSubject }) 
 
     // Determine endpoint: use relative endpoint on Vercel, or full URL on local/file testing
     const isLiveVercel = window.location.hostname.includes("vercel.app");
-    const pushEndpoint = isLiveVercel ? "/api/send-push" : "https://portal-honeylandschools.vercel.app/api/send-push";
+    const pushEndpoint = isLiveVercel ? "/api/send-push" : "https://hlconline.vercel.app/api/send-push";
 
     const payload = {
       appId,
