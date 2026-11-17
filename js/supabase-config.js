@@ -373,8 +373,8 @@ const dbClient = {
         await sb.from("exam_results").delete().eq("term", term);
       }
 
-      // 2. Insert records in chunks of 250
-      const chunkSize = 250;
+      // 2. Insert records in chunks of 500 with a brief breather
+      const chunkSize = 500;
       for (let i = 0; i < rows.length; i += chunkSize) {
         const chunk = rows.slice(i, i + chunkSize).map(r => ({
           term: term || r.term,
@@ -389,6 +389,8 @@ const dbClient = {
         }));
         const { error } = await sb.from("exam_results").insert(chunk);
         if (error) throw error;
+        // Brief 40ms yield to allow PostgreSQL WAL buffers to flush smoothly
+        await new Promise(res => setTimeout(res, 40));
       }
 
       // 3. Bump version document and update live_terms in Supabase
