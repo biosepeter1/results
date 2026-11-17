@@ -6000,42 +6000,44 @@ function initConversionPanel() {
     });
   }
 
-  // Mobile Collapsible Dropdown toggle for Score Conversion (only active on mobile)
-  const convToggleBtn = document.getElementById("convMobileToggleBtn");
+  // Collapsible Dropdown toggle for Score Conversion (Desktop and Mobile)
+  const convToggleBtn = document.getElementById("convToggleBtn") || document.getElementById("convMobileToggleBtn");
   const convHeader = document.getElementById("convHeaderBar");
   const convPanel = document.getElementById("scoreConversionPanel");
   const convBody = document.getElementById("convCollapsibleBody");
-  const convToggleText = document.getElementById("convMobileToggleText");
+  const convToggleText = document.getElementById("convToggleText") || document.getElementById("convMobileToggleText");
 
-  function toggleMobileScoreConversion(forceOpen) {
+  function toggleScoreConversion(forceOpen) {
     if (!convPanel) return;
-    const isCurrentlyOpen = convPanel.classList.contains("mobile-open");
+    const isCurrentlyOpen = convPanel.classList.contains("open") || (convBody && convBody.classList.contains("open"));
     const willOpen = (typeof forceOpen === "boolean") ? forceOpen : !isCurrentlyOpen;
 
     if (willOpen) {
-      convPanel.classList.add("mobile-open");
+      convPanel.classList.add("open");
+      convPanel.classList.add("cbt-accordion-open");
       if (convBody) convBody.classList.add("open");
-      if (convToggleText) convToggleText.textContent = "Close";
+      if (convToggleBtn) convToggleBtn.classList.add("open");
+      if (convToggleText) convToggleText.textContent = "Collapse Scaling";
     } else {
-      convPanel.classList.remove("mobile-open");
+      convPanel.classList.remove("open");
+      convPanel.classList.remove("cbt-accordion-open");
       if (convBody) convBody.classList.remove("open");
-      if (convToggleText) convToggleText.textContent = "Configure";
+      if (convToggleBtn) convToggleBtn.classList.remove("open");
+      if (convToggleText) convToggleText.textContent = "Configure Scaling";
     }
   }
 
   if (convToggleBtn) {
     convToggleBtn.onclick = (e) => {
       e.stopPropagation();
-      toggleMobileScoreConversion();
+      toggleScoreConversion();
     };
   }
 
   if (convHeader) {
     convHeader.onclick = (e) => {
-      if (window.innerWidth <= 768) {
-        if (e.target.closest("button") || e.target.closest("select") || e.target.closest("input")) return;
-        toggleMobileScoreConversion();
-      }
+      if (e.target.closest("button") || e.target.closest("select") || e.target.closest("input")) return;
+      toggleScoreConversion();
     };
   }
 

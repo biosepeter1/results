@@ -41,7 +41,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=3.0">
+  <link rel="stylesheet" href="css/admin.css?v=3.1">
 </head>
 
 <body>
@@ -786,13 +786,15 @@
          ══════════════════════════════════════════════════════ -->
       <section id="paneScores" style="display:none">
 
-        <!-- ── Score Conversion Panel (Responsive: Open Bar on Desktop, Animated Dropdown on Mobile) ── -->
-        <div id="scoreConversionPanel" class="score-conversion-panel">
-          <!-- Header Bar (Always visible; tappable toggle on mobile) -->
-          <div class="conv-header-bar" id="convHeaderBar" title="Toggle score conversion controls on mobile">
-            <div class="conv-brand-wrap">
-              <span class="conv-brand-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <!-- ── Score Conversion Panel (Collapsible Dropdown Accordion) ── -->
+        <div id="scoreConversionPanel" class="card score-conversion-panel" style="padding:0;overflow:hidden;margin-bottom:18px">
+          <!-- Header Bar (Collapsible Header) -->
+          <div class="card-header cbt-collapsible-header conv-header-bar" id="convHeaderBar"
+            style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 18px"
+            title="Click to collapse or expand score conversion controls">
+            <div class="conv-brand-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span class="conv-brand-label" style="font-weight:700;font-size:13.5px;color:var(--text);display:inline-flex;align-items:center;gap:8px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <path
                     d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
@@ -801,38 +803,42 @@
               </span>
               <span id="convActiveLabel" class="conv-status-badge"></span>
             </div>
-            <!-- Mobile Toggle Button (only on mobile screens <= 768px) -->
-            <button type="button" class="conv-mobile-toggle-btn" id="convMobileToggleBtn"
-              aria-label="Toggle score conversion controls">
-              <span id="convMobileToggleText">Configure</span>
-              <span class="cbt-toggle-arrow" id="convMobileToggleArrow">▼</span>
-            </button>
+            <!-- Toggle Button (Visible on all screen sizes) -->
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="btn btn-secondary btn-sm conv-toggle-btn" id="convToggleBtn"
+                style="font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span class="cbt-toggle-arrow" id="convToggleArrow">▼</span>
+                <span id="convToggleText">Configure Scaling</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Controls Container (Always open on Desktop; Smooth Animated Dropdown on Mobile) -->
-          <div id="convCollapsibleBody" class="conv-collapsible-body">
-            <div class="conv-collapsible-inner">
-              <div class="conv-controls-row">
+          <!-- Controls Container (Collapsible Body with Smooth Animation) -->
+          <div id="convCollapsibleBody" class="cbt-accordion-collapse conv-collapsible-body">
+            <div class="cbt-accordion-inner conv-collapsible-inner" style="border-top:1px solid var(--border);padding:14px 18px 16px">
+              <div class="conv-controls-row" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
                 <div class="conv-field-group">
-                  <label for="convTermSelect">Term</label>
-                  <select id="convTermSelect">
+                  <label for="convTermSelect" style="font-size:12px;font-weight:600;color:var(--text-muted)">Term</label>
+                  <select id="convTermSelect" class="form-input" style="padding:6px 10px;font-size:12.5px;min-width:140px">
                     <option value="__ALL__">All Terms</option>
                   </select>
                 </div>
                 <div class="conv-field-group">
-                  <label>Original Max</label>
-                  <input id="convOrigMax" type="number" min="1" max="9999" placeholder="Auto"
+                  <label style="font-size:12px;font-weight:600;color:var(--text-muted)">Original Max</label>
+                  <input id="convOrigMax" type="number" min="1" max="9999" placeholder="Auto" class="form-input"
+                    style="width:85px;padding:6px 10px;font-size:12.5px"
                     title="Auto-detected from uploaded student scores. Can be customized if needed.">
-                  <span id="convOrigAutoBadge" class="conv-auto-badge">(auto-detected)</span>
+                  <span id="convOrigAutoBadge" class="conv-auto-badge" style="font-size:11px;color:var(--text-muted)">(auto-detected)</span>
                 </div>
                 <div class="conv-field-group">
-                  <label>Scale to Target Max</label>
-                  <input id="convTargetMax" type="number" min="1" max="9999" placeholder="e.g. 30">
-                  <span id="convMultiplierLabel" class="conv-mult-label"></span>
+                  <label style="font-size:12px;font-weight:600;color:var(--text-muted)">Scale to Target Max</label>
+                  <input id="convTargetMax" type="number" min="1" max="9999" placeholder="e.g. 30" class="form-input"
+                    style="width:85px;padding:6px 10px;font-size:12.5px">
+                  <span id="convMultiplierLabel" class="conv-mult-label" style="font-size:12px;font-weight:700;color:var(--accent)"></span>
                 </div>
-                <div class="conv-actions-group">
-                  <button type="button" id="convApplyBtn" class="btn btn-primary btn-sm">Apply Scaling</button>
-                  <button type="button" id="convResetBtn" class="btn btn-secondary btn-sm">Reset</button>
+                <div class="conv-actions-group" style="display:flex;gap:8px;align-items:center;margin-left:auto">
+                  <button type="button" id="convApplyBtn" class="btn btn-primary btn-sm" style="font-size:12px;padding:6px 14px">Apply Scaling</button>
+                  <button type="button" id="convResetBtn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 12px">Reset</button>
                 </div>
               </div>
             </div>
@@ -2376,7 +2382,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.5"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/admin.js?v=4.8"></script>
+  <script src="js/admin.js?v=4.9"></script>
 </body>
 
 </html>
