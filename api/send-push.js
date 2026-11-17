@@ -25,8 +25,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing OneSignal App ID or REST API Key" });
     }
 
+    const cleanAppId = appId.trim();
+    // Clean key: strip quotes, whitespace, and any leading 'Key ', 'Bearer ', or 'Basic ' prefix
+    let cleanKey = restApiKey.trim().replace(/^["']|["']$/g, "").trim();
+    cleanKey = cleanKey.replace(/^(?:Key|Bearer|Basic)\s+/i, "").trim();
+
+    // Check if the user accidentally pasted the App ID into the REST API Key field
+    if (cleanAppId.toLowerCase() === cleanKey.toLowerCase()) {
+      return res.status(400).json({
+        error: "Your REST API Key is identical to your App ID. In your OneSignal Dashboard, go to Settings (gear icon) > Keys & IDs and copy your 'App API Key' (REST API Key), not the App ID."
+      });
+    }
+
     const payload = {
-      app_id: appId.trim(),
+      app_id: cleanAppId,
       headings: { en: "Exam Committee: " + (title || "Announcement").trim() },
       contents: { en: (message || "New announcement posted").trim().substring(0, 180) },
       url: "https://hlconline.vercel.app/index.html",
@@ -42,45 +54,63 @@ export default async function handler(req, res) {
       payload.included_segments = ["Total Subscriptions"];
     }
 
-    const cleanKey = restApiKey.trim();
-    // OneSignal accepts "Key <token>" for modern keys or "Basic <token>" for standard keys
-    let authHeader = cleanKey.startsWith("os_v2_") ? `Key ${cleanKey}` : `Basic ${cleanKey}`;
+    // Try authorization formats in priority order:
+    // 1. "Key <token>" (OneSignal standard for all App API keys)
+    // 2. "Basic <token>" (Legacy keys)
+    // 3. "Bearer <token>"
+    const authHeaders = [
+      `Key ${cleanKey}`,
+      `Basic ${cleanKey}`,
+      `Bearer ${cleanKey}`
+    ];
 
-    let response = await fetch("https://api.onesignal.com/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": authHeader
-      },
-      body: JSON.stringify(payload)
-    });
+    let lastError = null;
+    let lastData = null;
+    let lastStatus = 401;
 
-    let data = await response.json();
+    for (const authHeader of authHeaders) {
+      try {
+        const response = await fetch("https://api.onesignal.com/notifications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": authHeader
+          },
+          body: JSON.stringify(payload)
+        });
 
-    // If 401 Unauthorized, automatically retry with alternate auth scheme
-    if (!response.ok && response.status === 401) {
-      const altHeader = authHeader.startsWith("Key ") ? `Basic ${cleanKey}` : `Key ${cleanKey}`;
-      response = await fetch("https://api.onesignal.com/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": altHeader
-        },
-        body: JSON.stringify(payload)
+        const data = await response.json().catch(() => null);
+
+        if (response.ok) {
+          return res.status(200).json({
+            success: true,
+            recipients: data?.recipients || 0,
+            id: data?.id || ""
+          });
+        }
+
+        lastStatus = response.status;
+        lastData = data;
+        lastError = data?.errors?.[0] || data?.error || `OneSignal Error ${response.status}`;
+
+        // If error is not authentication-related (e.g. 400 bad payload), do not retry other auth headers
+        if (response.status !== 401 && response.status !== 403) {
+          break;
+        }
+      } catch (reqErr) {
+        lastError = reqErr.message;
+      }
+    }
+
+    // If still 401/403 after trying all auth formats, provide a descriptive helpful message
+    if (lastStatus === 401 || lastStatus === 403) {
+      return res.status(lastStatus).json({
+        error: "OneSignal Authentication Failed (401 Unauthorized): Access denied. Please ensure you are copying the 'App API Key' (REST API Key) from OneSignal Dashboard > Settings (gear icon) > Keys & IDs, and NOT the App ID or User Auth Key.",
+        details: lastData
       });
-      data = await response.json();
     }
 
-    if (!response.ok) {
-      const errMsg = data?.errors?.[0] || data?.error || `OneSignal Error ${response.status}`;
-      return res.status(response.status).json({ error: errMsg, details: data });
-    }
-
-    return res.status(200).json({
-      success: true,
-      recipients: data?.recipients || 0,
-      id: data?.id || ""
-    });
+    return res.status(lastStatus).json({ error: lastError, details: lastData });
   } catch (err) {
     console.error("send-push error:", err);
     return res.status(500).json({ error: err.message || "Internal server error" });

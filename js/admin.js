@@ -6449,11 +6449,32 @@ async function loadAdminOneSignalConfig() {
 
 async function handleSaveAdminOneSignalConfig() {
   const appId = $("adminOneSignalAppId")?.value.trim();
-  const restApiKey = $("adminOneSignalRestKey")?.value.trim();
+  let restApiKey = $("adminOneSignalRestKey")?.value.trim();
 
   if (!appId) {
     showToast({ type: "warning", title: "App ID Required", message: "Please enter your OneSignal App ID." });
     $("adminOneSignalAppId")?.focus();
+    return;
+  }
+
+  if (!restApiKey) {
+    showToast({ type: "warning", title: "REST API Key Required", message: "Please paste your OneSignal REST API Key before saving." });
+    $("adminOneSignalRestKey")?.focus();
+    return;
+  }
+
+  // Clean key: strip quotes, whitespace, and any accidental 'Key ' or 'Basic ' prefix
+  restApiKey = restApiKey.replace(/^["']|["']$/g, "").trim();
+  restApiKey = restApiKey.replace(/^(?:Key|Bearer|Basic)\s+/i, "").trim();
+
+  // Validate that the user didn't accidentally paste the App ID into the REST API Key field
+  if (appId.toLowerCase() === restApiKey.toLowerCase()) {
+    showToast({
+      type: "error",
+      title: "Invalid REST API Key",
+      message: "The REST API Key cannot be the same as the App ID! In OneSignal, go to Settings (gear icon) > Keys & IDs and copy the 'App API Key' (REST API Key)."
+    });
+    $("adminOneSignalRestKey")?.focus();
     return;
   }
 
@@ -6501,6 +6522,17 @@ async function handleTestAdminPush() {
     return;
   }
 
+  const cleanKey = cfg.restApiKey.trim().replace(/^["']|["']$/g, "").replace(/^(?:Key|Bearer|Basic)\s+/i, "").trim();
+  if (cfg.appId.trim().toLowerCase() === cleanKey.toLowerCase()) {
+    showToast({
+      type: "error",
+      title: "Invalid REST API Key",
+      message: "Your REST API Key is identical to your App ID. Please copy the 'App API Key' from OneSignal > Settings > Keys & IDs."
+    });
+    $("adminOneSignalRestKey")?.focus();
+    return;
+  }
+
   const testBtn = $("adminTestPushBtn");
   if (testBtn) {
     testBtn.disabled = true;
@@ -6516,7 +6548,7 @@ async function handleTestAdminPush() {
     if (res && res.success) {
       showToast({ type: "success", title: "Test Push Sent", message: `Dispatched to ${res.recipients || 'active'} device(s)! Check phone lock screen.` });
     } else {
-      showToast({ type: "warning", title: "Test Push Notice", message: res?.error || "Dispatched. Check your device lock screen." });
+      showToast({ type: "error", title: "Push Notice", message: res?.error || "Dispatched. Check your device lock screen.", duration: 8500 });
     }
   } catch (err) {
     console.error("Test push error:", err);
@@ -6532,12 +6564,16 @@ async function handleTestAdminPush() {
 async function dispatchOneSignalPush({ title, message, target, targetSubject }) {
   try {
     const cfg = await getEffectiveOneSignalConfig();
-    const appId = cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
-    const restApiKey = cfg?.restApiKey || "";
+    const appId = (cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e").trim();
+    let restApiKey = (cfg?.restApiKey || "").trim();
 
     if (!appId || !restApiKey || cfg?.enabled === false) {
       return { success: false, reason: "not_configured" };
     }
+
+    // Clean key: strip quotes, whitespace, and prefixes
+    restApiKey = restApiKey.replace(/^["']|["']$/g, "").trim();
+    restApiKey = restApiKey.replace(/^(?:Key|Bearer|Basic)\s+/i, "").trim();
 
     // Determine endpoint: use relative endpoint on Vercel, or full URL on local/file testing
     const isLiveVercel = window.location.hostname.includes("vercel.app");
@@ -6560,7 +6596,7 @@ async function dispatchOneSignalPush({ title, message, target, targetSubject }) 
       body: JSON.stringify(payload)
     });
 
-    const data = await resp.json();
+    const data = await resp.json().catch(() => null);
     if (!resp.ok) {
       throw new Error(data?.error || `Server error ${resp.status}`);
     }
