@@ -865,6 +865,40 @@ const dbClient = {
       console.error("Supabase saveOneSignalConfig error:", err);
       throw err;
     }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // 8. GENERAL METADATA & SETTINGS (EXAM_META)
+  // ══════════════════════════════════════════════════════════
+  async getMeta(key) {
+    const sb = getSupabase();
+    if (!sb || !key) return null;
+    try {
+      const { data, error } = await sb.from("exam_meta").select("meta, last_updated").eq("key", key).maybeSingle();
+      if (error || !data) return null;
+      return data.meta || null;
+    } catch (err) {
+      console.warn("Supabase getMeta error:", err);
+      return null;
+    }
+  },
+
+  async setMeta(key, metaObj) {
+    const sb = getSupabase();
+    if (!sb || !key) return false;
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await sb.from("exam_meta").upsert({
+        key,
+        last_updated: nowIso,
+        meta: metaObj || {}
+      }, { onConflict: "key" });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Supabase setMeta error:", err);
+      return false;
+    }
   }
 };
 

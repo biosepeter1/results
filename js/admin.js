@@ -2094,17 +2094,19 @@ function loadSavedUploadTerms() {
   } catch (e) { }
 }
 loadSavedUploadTerms();
+syncUploadTermsWithCloud();
 
 async function syncUploadTermsWithCloud() {
   try {
     if (window.dbClient && typeof window.dbClient.getMeta === "function") {
       const meta = await window.dbClient.getMeta("upload_terms_list");
       if (meta && Array.isArray(meta.terms) && meta.terms.length > 0) {
-        meta.terms.forEach(t => {
-          if (!savedUploadTerms.includes(t)) savedUploadTerms.push(t);
-        });
+        savedUploadTerms = [...meta.terms];
         localStorage.setItem("school_upload_terms_v2", JSON.stringify(savedUploadTerms));
         renderUploadTermSelector();
+      } else if (savedUploadTerms && savedUploadTerms.length > 0) {
+        // Cloud has no record yet: persist current terms so other devices immediately receive them
+        await saveUploadTermsList();
       }
     }
   } catch (err) {
@@ -2878,11 +2880,11 @@ async function syncCbtTermsWithCloud() {
     if (window.dbClient && typeof window.dbClient.getMeta === "function") {
       const meta = await window.dbClient.getMeta("cbt_term_options_list");
       if (meta && Array.isArray(meta.terms) && meta.terms.length > 0) {
-        meta.terms.forEach(t => {
-          if (!savedCbtTerms.includes(t)) savedCbtTerms.push(t);
-        });
+        savedCbtTerms = [...meta.terms];
         localStorage.setItem("cbt_term_options_v2", JSON.stringify(savedCbtTerms));
         renderCbtTermOptions();
+      } else if (savedCbtTerms && savedCbtTerms.length > 0) {
+        await saveCbtTermsList();
       }
     }
   } catch (err) {
