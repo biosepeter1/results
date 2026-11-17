@@ -1320,7 +1320,7 @@
               </label>
               <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px">
                 Marks / Question:
-                <input type="number" id="cbtAdminGlobalMarks" value="1.5" step="0.5" min="0.5" max="50"
+                <input type="number" id="cbtAdminGlobalMarks" value="0.4" step="any" min="0.01" max="50"
                   class="form-input" style="width:75px;padding:4px 8px;font-size:12px"> marks
               </label>
               <button type="button" class="btn btn-sm" id="cbtAdminSaveDefaultsBtn"
@@ -1942,6 +1942,11 @@
             <input type="number" class="form-input" id="cbtPreviewDuration" min="5" max="300" step="5" value="40"
               style="padding:5px 8px;font-size:12px;width:100%">
           </div>
+          <div>
+            <label class="form-label" style="font-size:11px;color:var(--accent);font-weight:700">MARKS / QUESTION</label>
+            <input type="number" class="form-input" id="cbtPreviewMarks" min="0.01" max="50" step="any" value="0.4"
+              style="padding:5px 8px;font-size:12px;width:100%">
+          </div>
           <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px">
             <input type="checkbox" id="cbtPreviewShuffle" checked style="width:16px;height:16px;cursor:pointer">
             <label for="cbtPreviewShuffle" style="font-size:12px;font-weight:600;cursor:pointer">Shuffle</label>
@@ -2263,8 +2268,8 @@
   <script src="js/mammoth.browser.min.js"
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=4.4"></script>
-  <script src="js/cbt-catalog.js?v=4.4"></script>
+  <script src="js/supabase-config.js?v=4.5"></script>
+  <script src="js/cbt-catalog.js?v=4.5"></script>
   <script src="js/admin.js?v=4.5"></script>
 </body>
 

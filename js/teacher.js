@@ -2072,7 +2072,7 @@ function populateCbtClassArms(className) {
 }
 
 // ── School-Wide CBT Exam Defaults (Duration & Marks synchronized from Admin) ──
-let teacherCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
+let teacherCbtDefaults = { duration: 30, marksPerQuestion: 0.4 };
 
 async function loadTeacherCbtDefaults() {
   try {
@@ -2081,7 +2081,9 @@ async function loadTeacherCbtDefaults() {
       const parsed = JSON.parse(cached);
       if (parsed) {
         if (parsed.duration) teacherCbtDefaults.duration = Number(parsed.duration);
-        if (parsed.marksPerQuestion) teacherCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        if (parsed.marksPerQuestion !== undefined && parsed.marksPerQuestion !== null && !isNaN(Number(parsed.marksPerQuestion))) {
+          teacherCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        }
         updateTeacherCbtDefaultsUI();
       }
     }
@@ -2089,21 +2091,27 @@ async function loadTeacherCbtDefaults() {
       const cloud = await window.dbClient.getCbtExamDefaults();
       if (cloud) {
         if (cloud.duration) teacherCbtDefaults.duration = Number(cloud.duration);
-        if (cloud.marksPerQuestion) teacherCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        if (cloud.marksPerQuestion !== undefined && cloud.marksPerQuestion !== null && !isNaN(Number(cloud.marksPerQuestion))) {
+          teacherCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        }
         localStorage.setItem("cbt_exam_defaults", JSON.stringify(teacherCbtDefaults));
         updateTeacherCbtDefaultsUI();
       }
     }
   } catch (e) {
-    // Offline / fallback
+    console.warn("Could not load cbt_exam_defaults:", e);
   }
 }
 
 function updateTeacherCbtDefaultsUI() {
-  if (tCbtDurationDisplay) tCbtDurationDisplay.textContent = teacherCbtDefaults.duration;
-  if (tCbtMarksDisplay) tCbtMarksDisplay.textContent = teacherCbtDefaults.marksPerQuestion;
-  if (tCbtDuration) tCbtDuration.value = teacherCbtDefaults.duration;
-  if (tCbtPoints) tCbtPoints.value = teacherCbtDefaults.marksPerQuestion;
+  const durDisp = $("tCbtDurationDisplay");
+  const marksDisp = $("tCbtMarksDisplay");
+  const durInput = $("tCbtDuration");
+  const ptsInput = $("tCbtPoints");
+  if (durDisp) durDisp.textContent = teacherCbtDefaults.duration;
+  if (marksDisp) marksDisp.textContent = teacherCbtDefaults.marksPerQuestion;
+  if (durInput) durInput.value = teacherCbtDefaults.duration;
+  if (ptsInput) ptsInput.value = teacherCbtDefaults.marksPerQuestion;
 }
 
 // ── School-Wide Active Examination Term (Synchronized from Administration) ──
@@ -3741,7 +3749,7 @@ function renderTeacherReviewQuestions() {
                 : `<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
             </div>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-size:12px;color:var(--text-muted)">Pts: ${q.points || 1.5}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${teacherCbtDefaults.marksPerQuestion || 0.4}</strong></span>
               <button type="button" class="btn-text" data-teacher-edit-review-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
               <button type="button" class="btn-text" data-teacher-del-review-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
@@ -3773,9 +3781,10 @@ function renderTeacherReviewQuestions() {
       <div class="cbt-q-card q-card-edit" style="border:1px solid var(--accent);background:rgba(59,130,246,0.04);padding:16px;border-radius:6px">
         <div class="cbt-q-header" style="margin-bottom:10px">
           <span class="cbt-q-num" style="background:var(--accent);color:#fff">Editing Question ${idx + 1}</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;color:var(--text-muted);font-weight:600">Points:</label>
-            <input type="number" step="0.5" id="teacherReviewEditPoints" value="${q.points || 1.5}" class="cbt-form-input" style="width:70px;padding:3px 6px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600">Points:</span>
+            <strong style="font-size:12px;color:var(--accent)">${teacherCbtDefaults.marksPerQuestion || 0.4}</strong>
+            <span style="font-size:11px;color:var(--text-muted)">(Enforced by Admin)</span>
           </div>
         </div>
         <div style="margin-bottom:10px">
@@ -3991,7 +4000,7 @@ function renderTeacherReviewQuestions() {
         const selectedLetter = currentTeacherReviewCorrectLetter || "A";
         const correctIdx = ["A", "B", "C", "D"].indexOf(selectedLetter);
         const newCorrect = (correctIdx >= 0 && newOptions[correctIdx]) ? newOptions[correctIdx] : newOptions[0];
-        const newPts = parseFloat($("teacherReviewEditPoints")?.value) || 1.5;
+        const newPts = teacherCbtDefaults.marksPerQuestion || 0.4;
 
         const targetQ = teacherParsedQuestions[qIdx];
         targetQ.text = newText;
@@ -4039,7 +4048,7 @@ if ($("tCbtAddReviewQBtn")) {
       optionStrings: ["", "", "", ""],
       correctLetter: "A",
       correctAnswer: "",
-      points: 1.5
+      points: teacherCbtDefaults.marksPerQuestion || 0.4
     };
     teacherParsedQuestions.push(newQ);
     teacherEditingReviewQIdx = teacherParsedQuestions.length - 1;
@@ -4127,7 +4136,7 @@ $("tCbtSubmitBtn").onclick = async () => {
   const sClass = $("tCbtClass") ? $("tCbtClass").value.trim() : "Year 7";
   const title = ($("tCbtTitle")?.value.trim() || `${subject} ${activeCbtExamTerm}`).toUpperCase();
   const duration = parseInt($("tCbtDuration")?.value || teacherCbtDefaults.duration, 10) || 30;
-  const pts = parseFloat($("tCbtPoints")?.value || teacherCbtDefaults.marksPerQuestion) || 1.5;
+  const pts = parseFloat($("tCbtPoints")?.value) || teacherCbtDefaults.marksPerQuestion || 0.4;
 
   $("tCbtSubmitBtn").disabled = true;
   $("tCbtSubmitBtn").textContent = "Submitting to admin...";
@@ -4172,6 +4181,7 @@ $("tCbtSubmitBtn").onclick = async () => {
       classId: classId,
       termName: activeCbtExamTerm,
       duration: duration,
+      marksPerQuestion: pts,
       teacherName: teacher.name || teacher.username,
       teacherUser: cleanUser,
       numberOfQuestions: formattedQuestions.length,
@@ -4364,6 +4374,7 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
 }
 
 async function openTeacherExamPreview(docId) {
+  try { await loadTeacherCbtDefaults(); } catch (e) {}
   const sub = teacherSubmissions.find(s => s.docId === docId);
   if (!sub) return;
   if ((!Array.isArray(sub.questions) || !sub.questions.length) && sub.numberOfQuestions > 0) {
@@ -4391,12 +4402,17 @@ function renderTeacherSubmittedPreviewQuestions() {
   if (!activeTeacherPreviewSub) return;
   const questions = activeTeacherPreviewSub.questions || [];
 
+  const adminMarks = (activeTeacherPreviewSub.marksPerQuestion !== undefined && activeTeacherPreviewSub.marksPerQuestion !== null && !isNaN(Number(activeTeacherPreviewSub.marksPerQuestion)))
+    ? Number(activeTeacherPreviewSub.marksPerQuestion)
+    : (teacherCbtDefaults.marksPerQuestion || 0.4);
+
   if ($("teacherPreviewCountDisplay")) {
     $("teacherPreviewCountDisplay").textContent = `Questions (${questions.length})`;
   }
   const resolvedSubName = activeTeacherPreviewSub.subjectName || (typeof resolveCbtSubject === "function" ? resolveCbtSubject(activeTeacherPreviewSub.title || "").name : "") || "—";
+  const totalExamMarks = (questions.length * adminMarks).toFixed(1).replace(/\.0$/, "");
   if ($("teacherPreviewModalMeta")) {
-    $("teacherPreviewModalMeta").textContent = `Subject: ${resolvedSubName} · Class: ${activeTeacherPreviewSub.className || "All"} · Duration: ${activeTeacherPreviewSub.duration || 30} mins · Total: ${questions.length} questions`;
+    $("teacherPreviewModalMeta").textContent = `Subject: ${resolvedSubName} · Class: ${activeTeacherPreviewSub.className || "All"} · Duration: ${activeTeacherPreviewSub.duration || 30} mins · Marks/Q: ${adminMarks} · Total: ${questions.length} questions (${totalExamMarks} marks)`;
   }
 
   if (questions.length === 0) {
@@ -4427,7 +4443,7 @@ function renderTeacherSubmittedPreviewQuestions() {
           <div class="q-card-head">
             <span class="q-badge">Question ${idx + 1}</span>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-size:12px;color:var(--text-muted)">Pts: ${q.points || 1.5}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${adminMarks}</strong></span>
               <button type="button" class="btn-text" data-teacher-edit-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
               <button type="button" class="btn-text" data-teacher-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
@@ -4457,9 +4473,10 @@ function renderTeacherSubmittedPreviewQuestions() {
       <div class="q-card q-card-edit">
         <div class="q-card-head">
           <span class="q-badge" style="background:var(--accent);color:#fff">Editing Question ${idx + 1}</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;color:var(--text-muted);font-weight:600">Points:</label>
-            <input type="number" step="0.5" id="teacherSubEditQPoints" value="${q.points || 1.5}" class="cbt-form-input" style="width:70px;padding:3px 6px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600">Points:</span>
+            <strong style="font-size:12px;color:var(--accent)">${adminMarks}</strong>
+            <span style="font-size:11px;color:var(--text-muted)">(Enforced by Admin)</span>
           </div>
         </div>
         <div style="margin-bottom:10px">
@@ -4619,7 +4636,10 @@ function renderTeacherSubmittedPreviewQuestions() {
         const selectedLetter = currentTeacherSubmittedCorrectLetter || "A";
         const correctIdx = ["A", "B", "C", "D"].indexOf(selectedLetter);
         const newCorrect = (correctIdx >= 0 && newOptions[correctIdx]) ? newOptions[correctIdx] : newOptions[0];
-        const newPts = parseFloat($("teacherSubEditQPoints")?.value) || 1.5;
+        const adminMarks = (activeTeacherPreviewSub.marksPerQuestion !== undefined && activeTeacherPreviewSub.marksPerQuestion !== null && !isNaN(Number(activeTeacherPreviewSub.marksPerQuestion)))
+          ? Number(activeTeacherPreviewSub.marksPerQuestion)
+          : (teacherCbtDefaults.marksPerQuestion || 0.4);
+        const newPts = adminMarks;
 
         const targetQ = activeTeacherPreviewSub.questions[qIdx];
         targetQ.text = newText;
@@ -4671,7 +4691,7 @@ if ($("teacherPreviewAddQuestionBtn")) {
       optionStrings: ["", "", "", ""],
       correctAnswer: "",
       correctLetter: "A",
-      points: 1.5,
+      points: teacherCbtDefaults.marksPerQuestion || 0.4,
       test_id: { $oid: activeTeacherPreviewSub.examId || activeTeacherPreviewSub.docId },
       subject: activeTeacherPreviewSub.subjectId ? { $oid: activeTeacherPreviewSub.subjectId } : null,
       class: activeTeacherPreviewSub.classId ? { $oid: activeTeacherPreviewSub.classId } : null,

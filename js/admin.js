@@ -3155,7 +3155,7 @@ if ($("cbtAdminCustomTermInput")) {
 }
 
 // ── School-Wide CBT Exam Defaults (Duration & Marks) ──
-let adminCbtDefaults = { duration: 30, marksPerQuestion: 1.5 };
+let adminCbtDefaults = { duration: 30, marksPerQuestion: 0.4 };
 
 async function loadAdminCbtDefaults() {
   try {
@@ -3164,7 +3164,9 @@ async function loadAdminCbtDefaults() {
       const parsed = JSON.parse(cached);
       if (parsed) {
         if (parsed.duration) adminCbtDefaults.duration = Number(parsed.duration);
-        if (parsed.marksPerQuestion) adminCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        if (parsed.marksPerQuestion !== undefined && parsed.marksPerQuestion !== null && !isNaN(Number(parsed.marksPerQuestion))) {
+          adminCbtDefaults.marksPerQuestion = Number(parsed.marksPerQuestion);
+        }
         updateAdminCbtDefaultsUI();
       }
     }
@@ -3172,7 +3174,9 @@ async function loadAdminCbtDefaults() {
       const cloud = await window.dbClient.getCbtExamDefaults();
       if (cloud) {
         if (cloud.duration) adminCbtDefaults.duration = Number(cloud.duration);
-        if (cloud.marksPerQuestion) adminCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        if (cloud.marksPerQuestion !== undefined && cloud.marksPerQuestion !== null && !isNaN(Number(cloud.marksPerQuestion))) {
+          adminCbtDefaults.marksPerQuestion = Number(cloud.marksPerQuestion);
+        }
         localStorage.setItem("cbt_exam_defaults", JSON.stringify(adminCbtDefaults));
         updateAdminCbtDefaultsUI();
       }
@@ -3189,7 +3193,7 @@ function updateAdminCbtDefaultsUI() {
 
 async function saveAdminCbtDefaults() {
   const dur = parseInt($("cbtAdminGlobalDuration")?.value, 10) || 30;
-  const marks = parseFloat($("cbtAdminGlobalMarks")?.value) || 1.5;
+  const marks = parseFloat($("cbtAdminGlobalMarks")?.value) || 0.4;
   adminCbtDefaults = { duration: dur, marksPerQuestion: marks };
   localStorage.setItem("cbt_exam_defaults", JSON.stringify(adminCbtDefaults));
 
@@ -4062,7 +4066,7 @@ function buildExportData(sub) {
       image: imgData,
       options: opts,
       correctAnswer: q.correctAnswer || (opts[0] || ""),
-      points: parseFloat(q.points) || 1.5,
+      points: parseFloat(sub.marksPerQuestion !== undefined && sub.marksPerQuestion !== null ? sub.marksPerQuestion : (q.points || adminCbtDefaults.marksPerQuestion || 0.4)),
       test_id: { $oid: examId },
       subject: { $oid: realSubjectId },
       class: { $oid: realClassId },
@@ -4196,6 +4200,10 @@ async function openCBTPreview(docId) {
   if ($("cbtPreviewGateOpen")) $("cbtPreviewGateOpen").value = sub.startTime || sub.gateOpen || "08:00";
   if ($("cbtPreviewGateClose")) $("cbtPreviewGateClose").value = sub.endTime || sub.gateClose || "20:00";
   if ($("cbtPreviewDuration")) $("cbtPreviewDuration").value = parseInt(sub.duration || sub.durationMinutes || 40, 10);
+  const subMarks = (sub.marksPerQuestion !== undefined && sub.marksPerQuestion !== null && !isNaN(Number(sub.marksPerQuestion)))
+    ? Number(sub.marksPerQuestion)
+    : (adminCbtDefaults.marksPerQuestion || 0.4);
+  if ($("cbtPreviewMarks")) $("cbtPreviewMarks").value = subMarks;
   if ($("cbtPreviewShuffle")) $("cbtPreviewShuffle").checked = sub.shuffle !== false;
 
   const timeD = `${sub.startTime || sub.gateOpen || "08:00"} – ${sub.endTime || sub.gateClose || "20:00"}`;
@@ -4304,6 +4312,9 @@ function getCleanImageSrc(img) {
 function renderCBTPreviewQuestions() {
   if (!activePreviewSubmission) return;
   const questions = activePreviewSubmission.questions || [];
+  const effectiveMarks = (activePreviewSubmission.marksPerQuestion !== undefined && activePreviewSubmission.marksPerQuestion !== null && !isNaN(Number(activePreviewSubmission.marksPerQuestion)))
+    ? Number(activePreviewSubmission.marksPerQuestion)
+    : (adminCbtDefaults.marksPerQuestion || 0.4);
 
   if ($("cbtPreviewCountDisplay")) {
     $("cbtPreviewCountDisplay").textContent = `Questions (${questions.length})`;
@@ -4344,7 +4355,7 @@ function renderCBTPreviewQuestions() {
           <div class="q-card-head">
             <span class="q-badge">Question ${idx + 1}</span>
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-size:12px;color:var(--text-muted)">Pts: ${q.points || 1.5}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${effectiveMarks}</strong></span>
               <button type="button" class="btn-text" data-admin-edit-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
               <button type="button" class="btn-text" data-admin-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
@@ -4376,7 +4387,7 @@ function renderCBTPreviewQuestions() {
           <span class="q-badge" style="background:var(--accent);color:#fff">Editing Question ${idx + 1}</span>
           <div style="display:flex;align-items:center;gap:8px">
             <label style="font-size:12px;color:var(--text-muted);font-weight:600">Points:</label>
-            <input type="number" step="0.5" id="adminEditQPoints" value="${q.points || 1.5}" class="form-input" style="width:70px;padding:3px 6px;font-size:12px">
+            <input type="number" step="any" min="0.01" id="adminEditQPoints" value="${effectiveMarks}" class="form-input" style="width:70px;padding:3px 6px;font-size:12px">
           </div>
         </div>
         <div style="margin-bottom:10px">
@@ -4532,7 +4543,10 @@ function renderCBTPreviewQuestions() {
         const selectedLetter = currentAdminEditingCorrectLetter || "A";
         const correctIdx = ["A", "B", "C", "D"].indexOf(selectedLetter);
         const newCorrect = (correctIdx >= 0 && newOptions[correctIdx]) ? newOptions[correctIdx] : newOptions[0];
-        const newPts = parseFloat($("adminEditQPoints")?.value) || 1.5;
+        const effectiveMarks = (activePreviewSubmission.marksPerQuestion !== undefined && activePreviewSubmission.marksPerQuestion !== null && !isNaN(Number(activePreviewSubmission.marksPerQuestion)))
+          ? Number(activePreviewSubmission.marksPerQuestion)
+          : (adminCbtDefaults.marksPerQuestion || 0.4);
+        const newPts = parseFloat($("adminEditQPoints")?.value) || effectiveMarks;
 
         const targetQ = activePreviewSubmission.questions[qIdx];
         targetQ.text = newText;
@@ -4587,7 +4601,9 @@ if ($("cbtPreviewAddQuestionBtn")) {
       optionStrings: ["", "", "", ""],
       correctAnswer: "",
       correctLetter: "A",
-      points: 1.5,
+      points: (activePreviewSubmission.marksPerQuestion !== undefined && activePreviewSubmission.marksPerQuestion !== null && !isNaN(Number(activePreviewSubmission.marksPerQuestion)))
+        ? Number(activePreviewSubmission.marksPerQuestion)
+        : (adminCbtDefaults.marksPerQuestion || 0.4),
       test_id: { $oid: activePreviewSubmission.examId || activePreviewSubmission.docId },
       subject: activePreviewSubmission.subjectId ? { $oid: activePreviewSubmission.subjectId } : null,
       class: activePreviewSubmission.classId ? { $oid: activePreviewSubmission.classId } : null,
@@ -4609,7 +4625,13 @@ if ($("cbtPreviewSaveScheduleBtn")) {
     const newGateOpen = $("cbtPreviewGateOpen")?.value || "08:00";
     const newGateClose = $("cbtPreviewGateClose")?.value || "20:00";
     const newDuration = parseInt($("cbtPreviewDuration")?.value, 10) || 40;
+    const newMarks = parseFloat($("cbtPreviewMarks")?.value) || adminCbtDefaults.marksPerQuestion || 0.4;
     const newShuffle = $("cbtPreviewShuffle") ? $("cbtPreviewShuffle").checked : true;
+
+    activePreviewSubmission.marksPerQuestion = newMarks;
+    (activePreviewSubmission.questions || []).forEach(q => {
+      q.points = newMarks;
+    });
 
     // Collect updated assigned arms (Admin exclusive)
     const classInfo = resolveCbtClass(activePreviewSubmission.className || "");
@@ -4654,7 +4676,9 @@ if ($("cbtPreviewSaveScheduleBtn")) {
         allCbtSubmissions[subIdx].gateClose = newGateClose;
         allCbtSubmissions[subIdx].duration = newDuration;
         allCbtSubmissions[subIdx].durationMinutes = newDuration;
+        allCbtSubmissions[subIdx].marksPerQuestion = newMarks;
         allCbtSubmissions[subIdx].shuffle = newShuffle;
+        allCbtSubmissions[subIdx].questions = activePreviewSubmission.questions;
       }
 
       // Update modal header duration display
@@ -4662,7 +4686,7 @@ if ($("cbtPreviewSaveScheduleBtn")) {
         ? activePreviewSubmission.subjectName
         : ((typeof resolveCbtSubject === "function" ? resolveCbtSubject(activePreviewSubmission.title || "").name : "") || "Biology");
       if ($("cbtPreviewModalMeta")) {
-        $("cbtPreviewModalMeta").textContent = `Teacher: ${activePreviewSubmission.teacherName || "Staff"} · Subject: ${resolvedSubName} · Class: ${activePreviewSubmission.className || "All"} · Duration: ${newDuration} mins · Total: ${(activePreviewSubmission.questions || []).length} questions`;
+        $("cbtPreviewModalMeta").textContent = `Teacher: ${activePreviewSubmission.teacherName || "Staff"} · Subject: ${resolvedSubName} · Class: ${activePreviewSubmission.className || "All"} · Duration: ${newDuration} mins · Marks/Q: ${newMarks} · Total: ${(activePreviewSubmission.questions || []).length} questions`;
       }
 
       if ($("cbtScheduleSummaryPill")) {
