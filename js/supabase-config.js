@@ -468,7 +468,7 @@ const dbClient = {
           if (!error && count && count > 0) {
             return { term: t, count, date: new Date().toISOString(), subjectsCount: 21 };
           }
-        } catch (_) {}
+        } catch (_) { }
         return null;
       }));
       const found = checked.filter(Boolean);
@@ -506,7 +506,7 @@ const dbClient = {
             meta: liveMap
           }, { onConflict: "key" });
         }
-      } catch (_) {}
+      } catch (_) { }
 
       return true;
     } catch (err) {
