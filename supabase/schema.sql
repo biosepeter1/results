@@ -25,6 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_exam_results_class ON public.exam_results(class);
 CREATE INDEX IF NOT EXISTS idx_exam_results_arm ON public.exam_results(arm);
 CREATE INDEX IF NOT EXISTS idx_exam_results_reg ON public.exam_results(reg);
 CREATE INDEX IF NOT EXISTS idx_exam_results_student ON public.exam_results(student);
+-- High-Performance Composite Index (Instant combined lookup for Term + Class + Subject)
+CREATE INDEX IF NOT EXISTS idx_exam_results_term_class_subject ON public.exam_results(term, class, subject);
 
 -- 2. Teachers Management Table
 CREATE TABLE IF NOT EXISTS public.exam_teachers (
@@ -69,6 +71,7 @@ CREATE TABLE IF NOT EXISTS public.cbt_submissions (
 
 CREATE INDEX IF NOT EXISTS idx_cbt_submissions_teacher ON public.cbt_submissions(teacher_user);
 CREATE INDEX IF NOT EXISTS idx_cbt_submissions_subject ON public.cbt_submissions(subject_name);
+CREATE INDEX IF NOT EXISTS idx_cbt_submissions_status_term ON public.cbt_submissions(status, term_name);
 
 -- 4. CBT Official Subjects Catalog & MongoDB ObjectIds
 CREATE TABLE IF NOT EXISTS public.cbt_subjects (
