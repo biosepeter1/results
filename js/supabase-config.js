@@ -308,7 +308,7 @@ const dbClient = {
     const sb = getSupabase();
     if (!sb) return [];
     try {
-      const pageSize = 1000;
+      const pageSize = 2000;
       const SELECT_COLS = "term,student,reg,subject,class,arm,score,pct,exam_date";
 
       const hasSubjects = Array.isArray(subjects) && subjects.length > 0;
@@ -324,22 +324,26 @@ const dbClient = {
 
       let all = firstPage || [];
 
-      // 2. If there are more pages, fetch them all in parallel
+      // 2. Fetch remaining pages in controlled batches of 2 (prevents connection pool exhaustion and memory spikes)
       if (count && count > pageSize) {
         const totalPages = Math.ceil(count / pageSize);
-        const pagePromises = [];
-        for (let page = 1; page < totalPages; page++) {
-          const from = page * pageSize;
-          let qp = sb.from("exam_results").select(SELECT_COLS).range(from, from + pageSize - 1);
-          if (term) qp = qp.eq("term", term);
-          if (hasSubjects) qp = qp.in("subject", subjects);
-          if (hasClasses) qp = qp.in("class", classes);
-          pagePromises.push(qp);
+        const BATCH_SIZE = 2;
+        for (let p = 1; p < totalPages; p += BATCH_SIZE) {
+          const batch = [];
+          for (let b = 0; b < BATCH_SIZE && (p + b) < totalPages; b++) {
+            const page = p + b;
+            const from = page * pageSize;
+            let qp = sb.from("exam_results").select(SELECT_COLS).range(from, from + pageSize - 1);
+            if (term) qp = qp.eq("term", term);
+            if (hasSubjects) qp = qp.in("subject", subjects);
+            if (hasClasses) qp = qp.in("class", classes);
+            batch.push(qp);
+          }
+          const results = await Promise.all(batch);
+          results.forEach(({ data, error }) => {
+            if (!error && data) all.push(...data);
+          });
         }
-        const results = await Promise.all(pagePromises);
-        results.forEach(({ data, error }) => {
-          if (!error && data) all.push(...data);
-        });
       }
 
       return all.map(r => ({
