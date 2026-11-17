@@ -805,6 +805,7 @@ function showApp() {
   buildTermTabs();
   initTeacherAnnouncements();
   loadTeacherAnnouncements();
+  initTeacherPushNotifications();
 }
 
 // ── Sign Out ──
@@ -4769,6 +4770,133 @@ window.toggleDismissTeacherAnnouncement = function(id) {
   setDismissedNotifIds(dismissed);
   loadTeacherAnnouncements();
 };
+
+// ══════════════════════════════════════════════════════════
+// ONESIGNAL DEVICE PUSH NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+let oneSignalTeacherInitialized = false;
+
+async function initTeacherPushNotifications() {
+  try {
+    if (!window.dbClient || !window.dbClient.getOneSignalConfig) return;
+    const config = await window.dbClient.getOneSignalConfig();
+    if (!config || !config.appId || config.enabled === false) {
+      const banner = $("teacherPushOptInBanner");
+      if (banner) banner.style.display = "none";
+      const pill = $("teacherPushStatusPill");
+      if (pill) pill.style.display = "none";
+      return;
+    }
+
+    const appId = config.appId;
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      if (!oneSignalTeacherInitialized) {
+        oneSignalTeacherInitialized = true;
+        await OneSignal.init({
+          appId: appId,
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: false }
+        });
+
+        // Sync UI with subscription state
+        const isOptedIn = await OneSignal.User.PushSubscription.optedIn;
+        updateTeacherPushUI(isOptedIn);
+
+        OneSignal.User.PushSubscription.addEventListener("change", (change) => {
+          updateTeacherPushUI(change.current.optedIn);
+        });
+      }
+
+      // Associate teacher tags for targeted broadcasts
+      if (teacher && teacher.user) {
+        try {
+          OneSignal.login(teacher.user.toLowerCase().trim());
+          OneSignal.User.addTags({
+            role: "teacher",
+            username: teacher.user.toLowerCase().trim(),
+            subject: (teacher.subject || "").trim()
+          });
+        } catch (e) {
+          console.warn("OneSignal user login/tag error:", e);
+        }
+      }
+    });
+
+    // Wire Opt-in Prompt Button
+    const enableBtn = $("teacherEnablePushBtn");
+    if (enableBtn) {
+      enableBtn.onclick = async () => {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            await OneSignal.Notifications.requestPermission();
+            const isOptedIn = await OneSignal.User.PushSubscription.optedIn;
+            updateTeacherPushUI(isOptedIn);
+            if (isOptedIn) {
+              showToast({
+                type: "success",
+                title: "Push Notifications Enabled",
+                message: "This device will now receive Exam Committee alerts even when your browser is closed."
+              });
+            }
+          } catch (err) {
+            console.warn("Push permission request error:", err);
+          }
+        });
+      };
+    }
+
+    // Wire Dismiss Button
+    const dismissBtn = $("teacherDismissPushPromptBtn");
+    if (dismissBtn) {
+      dismissBtn.onclick = () => {
+        const banner = $("teacherPushOptInBanner");
+        if (banner) banner.style.display = "none";
+        try {
+          localStorage.setItem("honeyland_dismiss_push_prompt", "true");
+        } catch (e) { }
+      };
+    }
+
+    // Wire Status Pill Click
+    const pill = $("teacherPushStatusPill");
+    if (pill) {
+      pill.onclick = () => {
+        showToast({
+          type: "info",
+          title: "Device Push Active",
+          message: "Push alerts are active on this device. You will receive notifications even if your browser is closed."
+        });
+      };
+    }
+  } catch (err) {
+    console.warn("initTeacherPushNotifications error:", err);
+  }
+}
+
+function updateTeacherPushUI(isOptedIn) {
+  const banner = $("teacherPushOptInBanner");
+  const pill = $("teacherPushStatusPill");
+  const isDismissed = localStorage.getItem("honeyland_dismiss_push_prompt") === "true";
+
+  if (isOptedIn) {
+    if (banner) banner.style.display = "none";
+    if (pill) {
+      pill.style.display = "inline-flex";
+      const dot = pill.querySelector(".push-dot");
+      const txt = $("teacherPushStatusText");
+      if (dot) dot.style.background = "#10b981";
+      if (txt) txt.textContent = "Push Active";
+    }
+  } else {
+    if (pill) pill.style.display = "none";
+    if (banner && !isDismissed) {
+      banner.style.display = "flex";
+    }
+  }
+}
 
 // Kick off auto-restore
 autoRestoreTeacherSession();

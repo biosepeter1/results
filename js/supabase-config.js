@@ -815,6 +815,56 @@ const dbClient = {
     const updated = current.filter(item => item.id !== id);
     await this.saveTeacherAnnouncements(updated);
     return true;
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // 7. ONESIGNAL PUSH NOTIFICATIONS CONFIGURATION
+  // ══════════════════════════════════════════════════════════
+  async getOneSignalConfig() {
+    const sb = getSupabase();
+    const defaultConfig = {
+      appId: "89e9469f-65f7-48aa-a798-6f6628cf4c5e",
+      restApiKey: "",
+      enabled: true
+    };
+    if (!sb) return defaultConfig;
+    try {
+      const { data, error } = await sb.from("exam_meta").select("meta").eq("key", "onesignal_config").maybeSingle();
+      if (error || !data?.meta) {
+        return defaultConfig;
+      }
+      return {
+        ...defaultConfig,
+        ...data.meta,
+        appId: data.meta.appId || defaultConfig.appId
+      };
+    } catch (err) {
+      console.warn("Supabase getOneSignalConfig error:", err);
+      return defaultConfig;
+    }
+  },
+
+  async saveOneSignalConfig(cfg) {
+    const sb = getSupabase();
+    if (!sb) return false;
+    try {
+      const payload = {
+        appId: (cfg?.appId || "").trim(),
+        restApiKey: (cfg?.restApiKey || "").trim(),
+        enabled: cfg?.enabled !== false,
+        updatedAt: new Date().toISOString()
+      };
+      const { error } = await sb.from("exam_meta").upsert({
+        key: "onesignal_config",
+        last_updated: new Date().toISOString(),
+        meta: payload
+      }, { onConflict: "key" });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Supabase saveOneSignalConfig error:", err);
+      throw err;
+    }
   }
 };
 

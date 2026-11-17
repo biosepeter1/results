@@ -6,6 +6,8 @@
   <title>Academic Administration Portal</title>
   <link rel="icon" type="image/png" href="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png">
   <link rel="apple-touch-icon" href="https://portal-honeylandschools.vercel.app/logos/honeyland_logo.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#161b22">
   <meta name="description" content="Institutional examination administration and teacher access management.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1772,10 +1774,16 @@
 
             <!-- Options & Submit Bar -->
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-top:14px;border-top:1px solid var(--border-subtle);">
-              <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none;touch-action:manipulation;">
-                <input type="checkbox" id="adminNotifPinned" style="width:18px;height:18px;cursor:pointer;">
-                <span style="font-weight:700;color:var(--text);">📌 Pin to top of Teacher Dashboard</span>
-              </label>
+              <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+                <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none;touch-action:manipulation;">
+                  <input type="checkbox" id="adminNotifPinned" style="width:18px;height:18px;cursor:pointer;">
+                  <span style="font-weight:700;color:var(--text);">📌 Pin to top of Teacher Dashboard</span>
+                </label>
+                <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none;touch-action:manipulation;">
+                  <input type="checkbox" id="adminSendPushCheckbox" checked style="width:18px;height:18px;cursor:pointer;">
+                  <span style="font-weight:700;color:#3b82f6;">📲 Send Device Push (Wakes up phones)</span>
+                </label>
+              </div>
 
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary" id="adminClearNotifBtn" style="min-height:38px;padding:0 16px;">Clear</button>
@@ -1785,6 +1793,55 @@
               </div>
             </div>
           </form>
+        </div>
+
+        <!-- OneSignal Push Notification Gateway Configuration Card -->
+        <div class="card notif-gateway-card" style="box-shadow:0 4px 16px rgba(0,0,0,0.05);margin-bottom:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">
+            <div>
+              <h3 style="font-size:15.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px;">
+                <span>📱</span> Device Push Notification Gateway (OneSignal)
+              </h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                Enables background push notifications that ring and vibrate on teachers' phones and laptops even when their browser is closed.
+              </p>
+            </div>
+            <div id="adminPushGatewayBadge" class="menu-status-pill" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#f59e0b;">
+              <span class="pulse-dot" style="background:#f59e0b;"></span>
+              <span id="adminPushGatewayStatusText">Configuration Required</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;margin-bottom:14px;">
+            <div>
+              <label for="adminOneSignalAppId" class="form-label" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">
+                OneSignal App ID <span style="color:var(--status-fail)">*</span>
+              </label>
+              <input type="text" id="adminOneSignalAppId" class="form-input" value="89e9469f-65f7-48aa-a798-6f6628cf4c5e" placeholder="89e9469f-65f7-48aa-a798-6f6628cf4c5e" style="width:100%;font-family:monospace;font-size:12.5px;min-height:38px;">
+            </div>
+
+            <div>
+              <label for="adminOneSignalRestKey" class="form-label" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">
+                REST API Key (For Sending Broadcasts) <span style="color:var(--status-fail)">*</span>
+              </label>
+              <input type="password" id="adminOneSignalRestKey" class="form-input" placeholder="os_v2_app_..." style="width:100%;font-family:monospace;font-size:12.5px;min-height:38px;">
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:11.5px;color:var(--text-muted);">
+              Need a free account? Get your App ID at <a href="https://onesignal.com" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;text-decoration:underline;">onesignal.com</a> (Free forever for school staff).
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button type="button" class="btn btn-secondary" id="adminTestPushBtn" style="font-size:12.5px;min-height:36px;padding:0 14px;">
+                🔔 Send Test Push
+              </button>
+              <button type="button" class="btn btn-primary" id="adminSavePushConfigBtn" style="font-size:12.5px;min-height:36px;padding:0 18px;font-weight:700;">
+                💾 Save Push Settings
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Active Broadcasts History Card -->
@@ -2180,7 +2237,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/cbt-catalog.js"></script>
-  <script src="js/admin.js?v=4.2"></script>
+  <script src="js/admin.js?v=4.3"></script>
 </body>
 
 </html>

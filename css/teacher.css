@@ -2903,3 +2903,131 @@ tbody td.muted-cell {
     padding: 3px 10px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   DEVICE PUSH NOTIFICATION OPT-IN PROMPT & UTILITIES
+   ══════════════════════════════════════════════════════════ */
+.teacher-push-optin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(30, 41, 59, 0.95) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  animation: slideInDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.push-optin-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.push-optin-icon {
+  font-size: 24px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
+}
+
+.push-optin-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.push-optin-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.push-optin-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.push-optin-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.push-enable-btn {
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.push-enable-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.push-dismiss-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 10px;
+  transition: color 0.2s;
+}
+
+.push-dismiss-btn:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.menu-push-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.menu-push-pill:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+@media (max-width: 680px) {
+  .teacher-push-optin-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .push-optin-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

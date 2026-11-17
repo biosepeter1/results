@@ -6357,6 +6357,169 @@ function initAdminAnnouncementsEvents() {
       showToast({ type: "info", title: "Refreshed", message: "Announcements synchronized with cloud." });
     };
   }
+
+  // OneSignal Push Gateway Events
+  const savePushBtn = $("adminSavePushConfigBtn");
+  if (savePushBtn) {
+    savePushBtn.onclick = handleSaveAdminOneSignalConfig;
+  }
+
+  const testPushBtn = $("adminTestPushBtn");
+  if (testPushBtn) {
+    testPushBtn.onclick = handleTestAdminPush;
+  }
+
+  loadAdminOneSignalConfig();
+}
+
+async function loadAdminOneSignalConfig() {
+  try {
+    if (!window.dbClient || !window.dbClient.getOneSignalConfig) return;
+    const cfg = await window.dbClient.getOneSignalConfig();
+    const appIdInput = $("adminOneSignalAppId");
+    const restKeyInput = $("adminOneSignalRestKey");
+    const badge = $("adminPushGatewayBadge");
+    const statusText = $("adminPushGatewayStatusText");
+
+    const currentAppId = cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
+    if (appIdInput) appIdInput.value = currentAppId;
+    if (restKeyInput) restKeyInput.value = cfg?.restApiKey || "";
+
+    if (currentAppId && cfg?.restApiKey) {
+      if (badge && statusText) {
+        badge.style.background = "rgba(16, 185, 129, 0.12)";
+        badge.style.borderColor = "rgba(16, 185, 129, 0.35)";
+        badge.style.color = "#10b981";
+        const dot = badge.querySelector(".pulse-dot");
+        if (dot) dot.style.background = "#10b981";
+        statusText.textContent = "Gateway Ready (OneSignal Active)";
+      }
+    } else {
+      if (badge && statusText) {
+        badge.style.background = "rgba(245, 158, 11, 0.1)";
+        badge.style.borderColor = "rgba(245, 158, 11, 0.3)";
+        badge.style.color = "#f59e0b";
+        const dot = badge.querySelector(".pulse-dot");
+        if (dot) dot.style.background = "#f59e0b";
+        statusText.textContent = "Paste REST API Key to Activate";
+      }
+    }
+  } catch (err) {
+    console.warn("loadAdminOneSignalConfig error:", err);
+  }
+}
+
+async function handleSaveAdminOneSignalConfig() {
+  const appId = $("adminOneSignalAppId")?.value.trim();
+  const restApiKey = $("adminOneSignalRestKey")?.value.trim();
+
+  if (!appId) {
+    showToast({ type: "warning", title: "App ID Required", message: "Please enter your OneSignal App ID." });
+    $("adminOneSignalAppId")?.focus();
+    return;
+  }
+
+  const saveBtn = $("adminSavePushConfigBtn");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+  }
+
+  try {
+    if (!window.dbClient || !window.dbClient.saveOneSignalConfig) {
+      throw new Error("Database client unavailable");
+    }
+    await window.dbClient.saveOneSignalConfig({ appId, restApiKey, enabled: true });
+    showToast({ type: "success", title: "Push Settings Saved", message: "OneSignal Push Gateway configured successfully." });
+    await loadAdminOneSignalConfig();
+  } catch (err) {
+    console.error("Save OneSignal config error:", err);
+    showToast({ type: "error", title: "Save Failed", message: err.message || "Failed to save push settings." });
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save Push Settings";
+    }
+  }
+}
+
+async function handleTestAdminPush() {
+  const cfg = await window.dbClient?.getOneSignalConfig();
+  if (!cfg || !cfg.appId || !cfg.restApiKey) {
+    showToast({ type: "warning", title: "Configuration Incomplete", message: "Please save your OneSignal App ID and REST API Key first." });
+    return;
+  }
+
+  const testBtn = $("adminTestPushBtn");
+  if (testBtn) {
+    testBtn.disabled = true;
+    testBtn.textContent = "Sending Test...";
+  }
+
+  try {
+    const res = await dispatchOneSignalPush({
+      title: "Test Alert",
+      message: "This is a test notification from the Exam Committee. Push notifications are active on your device!",
+      target: "all"
+    });
+    if (res && res.success) {
+      showToast({ type: "success", title: "Test Push Sent", message: `Dispatched to ${res.recipients || 'active'} device(s)! Check phone lock screen.` });
+    } else {
+      showToast({ type: "warning", title: "Test Push Notice", message: res?.error || "Dispatched. Check your device lock screen." });
+    }
+  } catch (err) {
+    console.error("Test push error:", err);
+    showToast({ type: "error", title: "Push Dispatch Error", message: err.message || "Failed to send test push." });
+  } finally {
+    if (testBtn) {
+      testBtn.disabled = false;
+      testBtn.textContent = "🔔 Send Test Push";
+    }
+  }
+}
+
+async function dispatchOneSignalPush({ title, message, target, targetSubject }) {
+  try {
+    const cfg = await window.dbClient?.getOneSignalConfig();
+    if (!cfg || !cfg.appId || !cfg.restApiKey || cfg.enabled === false) {
+      return { success: false, reason: "not_configured" };
+    }
+
+    const payload = {
+      app_id: cfg.appId,
+      headings: { en: "Exam Committee: " + title },
+      contents: { en: (message || "").substring(0, 160) },
+      url: window.location.origin + window.location.pathname.replace("admin.html", "index.html"),
+      chrome_web_icon: window.location.origin + "/favicon.png",
+      chrome_web_badge: window.location.origin + "/favicon.png"
+    };
+
+    if (target === "subject" && targetSubject) {
+      payload.filters = [
+        { field: "tag", key: "subject", relation: "=", value: targetSubject }
+      ];
+    } else {
+      payload.included_segments = ["Total Subscriptions"];
+    }
+
+    const resp = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Key " + cfg.restApiKey
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data?.errors?.[0] || data?.error || `HTTP ${resp.status}`);
+    }
+    return { success: true, recipients: data?.recipients || 0 };
+  } catch (err) {
+    console.warn("dispatchOneSignalPush error:", err);
+    return { success: false, error: err.message };
+  }
 }
 
 async function handleSendAdminAnnouncement() {
@@ -6418,6 +6581,25 @@ async function handleSendAdminAnnouncement() {
       title: "Broadcast Published",
       message: "Announcement successfully dispatched to teacher dashboards."
     });
+
+    // Also dispatch OneSignal Background Push if checked
+    const sendPushCheckbox = $("adminSendPushCheckbox");
+    if (sendPushCheckbox && sendPushCheckbox.checked) {
+      dispatchOneSignalPush({
+        title,
+        message: cleanNotifMessage(message),
+        target,
+        targetSubject
+      }).then(res => {
+        if (res.success && res.recipients > 0) {
+          showToast({
+            type: "info",
+            title: "Device Push Sent",
+            message: `Background alert pushed to ${res.recipients} teacher device(s).`
+          });
+        }
+      }).catch(e => console.warn("Background push dispatch error:", e));
+    }
 
     // Reset form
     if ($("adminNotifForm")) $("adminNotifForm").reset();
