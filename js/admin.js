@@ -1666,27 +1666,19 @@ const TEACHERS_CACHE_KEY = "school_exam_teachers_cache_v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24-Hour Smart Cache
 
 function getCachedTeachers() {
-  const keys = [
-    TEACHERS_CACHE_KEY,
-    "school_exam_teachers_cache",
-    "school_exam_teachers_backup",
-    "admin_teachers_cache"
-  ];
-  for (const k of keys) {
-    try {
-      const raw = localStorage.getItem(k);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.teachers) ? parsed.teachers : null);
-        if (list && list.length > 0) {
-          return {
-            timestamp: parsed.timestamp || Date.now(),
-            teachers: list
-          };
-        }
+  try {
+    const raw = localStorage.getItem(TEACHERS_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.teachers) ? parsed.teachers : null);
+      if (list && list.length > 0) {
+        return {
+          timestamp: parsed.timestamp || Date.now(),
+          teachers: list
+        };
       }
-    } catch (e) { }
-  }
+    }
+  } catch (e) { }
   return null;
 }
 
@@ -1696,6 +1688,10 @@ function setCachedTeachers(teachers) {
       timestamp: Date.now(),
       teachers
     }));
+    // Clean up legacy caches to ensure deleted accounts cannot resurrect
+    localStorage.removeItem("school_exam_teachers_cache");
+    localStorage.removeItem("school_exam_teachers_backup");
+    localStorage.removeItem("admin_teachers_cache");
   } catch (e) { }
 }
 
@@ -1724,27 +1720,6 @@ async function loadTeachers(force = false) {
       }
     }
     if (!Array.isArray(fresh)) fresh = [];
-
-    // If local cache contains additional teachers that were not in the default seed,
-    // preserve them and automatically push them into Supabase so they are never lost!
-    if (cached && Array.isArray(cached.teachers) && cached.teachers.length > fresh.length) {
-      const existingIds = new Set(fresh.map(t => (t.id || t.username || "").toLowerCase().replace(/[^a-z0-9]/g, "")));
-      const missingTeachers = cached.teachers.filter(t => {
-        const id = (t.id || t.username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-        return id && !existingIds.has(id);
-      });
-      if (missingTeachers.length > 0) {
-        console.log(`Auto-migrating ${missingTeachers.length} previously saved teacher(s) to Supabase...`);
-        for (const mt of missingTeachers) {
-          fresh.push(mt);
-          try {
-            await window.dbClient.saveTeacher(mt);
-          } catch (err) {
-            console.warn("Failed to auto-sync cached teacher:", mt.name, err);
-          }
-        }
-      }
-    }
 
     fresh.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     allTeachers = fresh;

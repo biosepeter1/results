@@ -394,17 +394,20 @@ async function doLogin() {
   $go.textContent = "Signing in...";
 
   let found = null;
+  let supabaseChecked = false;
   // 1. Supabase teacher account check
   try {
     if (window.dbClient && window.dbClient.getTeacher) {
       found = await window.dbClient.getTeacher(clean);
+      supabaseChecked = true;
     }
   } catch (e) {
     console.warn("Supabase teacher fetch error, checking backup:", e);
   }
 
-  // 2. Fallback to embedded dictionary
-  if (!found) {
+  // 2. Fallback to embedded dictionary ONLY if Supabase could not be contacted (e.g. offline)
+  // If Supabase was checked and returned null, this teacher account was deleted or does not exist.
+  if (!found && !supabaseChecked) {
     found = TEACHERS[clean] || TEACHERS[user];
   }
 
@@ -4783,6 +4786,7 @@ async function autoRestoreTeacherSession() {
         if (sess.pass && storedPw && (storedPw !== sess.pass && storedPw.toLowerCase() !== sess.pass.toLowerCase())) {
           console.warn("Teacher credentials changed remotely. Revoking session.");
           doSignOut();
+          if ($msg) $msg.textContent = "Your password has been changed. Please sign in again.";
           return;
         }
         teacher = { ...fresh, username: user };
@@ -4796,6 +4800,12 @@ async function autoRestoreTeacherSession() {
         const subText = `${sl} · ${cl}${al}`;
         if ($("subinfo")) $("subinfo").textContent = subText;
         if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
+      } else {
+        // Teacher was deleted or deactivated by admin in Supabase
+        console.warn("Teacher account has been removed by administrator. Revoking active session.");
+        doSignOut();
+        if ($msg) $msg.textContent = "Your teacher account has been removed or deactivated by administration.";
+        return;
       }
     } else {
       document.documentElement.classList.remove("restoring-teacher-session");
