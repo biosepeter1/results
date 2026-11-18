@@ -4514,13 +4514,45 @@ $("tCbtRefreshMyExamsBtn").onclick = loadTeacherSubmissions;
 // TEACHER SUBMITTED EXAM PREVIEW & EDIT SYSTEM
 // ══════════════════════════════════════════════════════════════
 let activeTeacherPreviewSub = null;
+let originalTeacherPreviewQuestions = [];
 let teacherSubmittedEditingQIdx = null;
 let teacherSubmittedTempImage = undefined;
 let currentTeacherSubmittedCorrectLetter = "A";
+let teacherSubmittedHasUnsavedChanges = false;
+let teacherSubmittedEditedQuestionIndices = new Set();
+
+function updateTeacherPreviewPendingUI() {
+  const bar = $("teacherPreviewPendingBar");
+  const text = $("teacherPreviewPendingText");
+  const bottomBtn = $("teacherPreviewSaveBottomBtn");
+  const count = teacherSubmittedEditedQuestionIndices.size;
+  if (bar) {
+    if (teacherSubmittedHasUnsavedChanges) {
+      bar.style.display = "flex";
+      if (text) {
+        text.textContent = count > 0
+          ? `You have unsaved changes in ${count} question${count > 1 ? 's' : ''}. Click "Save Changes" to apply.`
+          : `You have unsaved question changes. Click "Save Changes" to apply.`;
+      }
+    } else {
+      bar.style.display = "none";
+    }
+  }
+  if (bottomBtn) {
+    bottomBtn.style.display = teacherSubmittedHasUnsavedChanges ? "inline-block" : "none";
+  }
+}
 
 async function saveTeacherSubmittedQuestionsToCloud(msg) {
   if (!activeTeacherPreviewSub) return;
   try {
+    // Strip temporary draft edit flags
+    if (Array.isArray(activeTeacherPreviewSub.questions)) {
+      activeTeacherPreviewSub.questions.forEach(q => {
+        delete q._isDraftEdited;
+      });
+    }
+
     const qCount = activeTeacherPreviewSub.questions.length;
     activeTeacherPreviewSub.numberOfQuestions = qCount;
     activeTeacherPreviewSub.isUpdate = true;
@@ -4546,7 +4578,7 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
     }
     loadTeacherSubmissions();
 
-    // Alert School Administrator via In-App Announcement
+    // Alert School Administrator via In-App Announcement (single consolidated notice)
     if (window.dbClient && typeof window.dbClient.addTeacherAnnouncement === "function") {
       try {
         await window.dbClient.addTeacherAnnouncement({
@@ -4563,7 +4595,7 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
       }
     }
 
-    // Push notification to Admin
+    // Push notification to Admin (single consolidated alert)
     dispatchOneSignalPushToAdmin({
       title: `✏️ CBT Exam Edited: ${activeTeacherPreviewSub.subjectName || activeTeacherPreviewSub.title}`,
       message: `${teacher.name || "Teacher"} edited questions in ${activeTeacherPreviewSub.title || "Exam"} (${activeTeacherPreviewSub.className || ""} - ${activeTeacherPreviewSub.termName || ""}) · v${activeTeacherPreviewSub.version}.`
@@ -4571,7 +4603,7 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
 
     const notice = $("teacherPreviewNotice");
     if (notice) {
-      notice.textContent = `✓ ${msg} (v${activeTeacherPreviewSub.version} saved & admin notified)`;
+      notice.textContent = `✓ ${msg} (v${activeTeacherPreviewSub.version} saved)`;
       notice.style.display = "block";
       setTimeout(() => { notice.style.display = "none"; }, 3500);
     }
@@ -4581,7 +4613,66 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
       title: "Cloud Save Failed",
       message: err.message || "Failed to save changes to cloud."
     });
+    throw err;
   }
+}
+
+async function handleSaveTeacherAllChanges() {
+  if (!activeTeacherPreviewSub || !teacherSubmittedHasUnsavedChanges) return;
+  const saveBtns = [$("teacherPreviewSaveAllBtn"), $("teacherPreviewSaveBottomBtn")].filter(Boolean);
+  saveBtns.forEach(b => { b.disabled = true; b.textContent = "Saving..."; });
+
+  try {
+    await saveTeacherSubmittedQuestionsToCloud(`All changes saved successfully.`);
+    originalTeacherPreviewQuestions = JSON.parse(JSON.stringify(activeTeacherPreviewSub.questions || []));
+    teacherSubmittedHasUnsavedChanges = false;
+    teacherSubmittedEditedQuestionIndices.clear();
+    updateTeacherPreviewPendingUI();
+    renderTeacherSubmittedPreviewQuestions();
+    showToast({
+      type: "success",
+      title: "Changes Saved",
+      message: "All exam question modifications have been saved."
+    });
+  } catch (err) {
+    showToast({
+      type: "error",
+      title: "Save Failed",
+      message: err.message || "Failed to save changes."
+    });
+  } finally {
+    saveBtns.forEach(b => { b.disabled = false; b.textContent = "💾 Save Changes"; });
+  }
+}
+
+function handleDiscardTeacherChanges() {
+  if (!confirm("Discard all unsaved edits made during this session?")) return;
+  if (activeTeacherPreviewSub && originalTeacherPreviewQuestions.length) {
+    activeTeacherPreviewSub.questions = JSON.parse(JSON.stringify(originalTeacherPreviewQuestions));
+  }
+  teacherSubmittedEditingQIdx = null;
+  teacherSubmittedTempImage = undefined;
+  teacherSubmittedHasUnsavedChanges = false;
+  teacherSubmittedEditedQuestionIndices.clear();
+  updateTeacherPreviewPendingUI();
+  renderTeacherSubmittedPreviewQuestions();
+  showToast({ type: "info", title: "Edits Discarded", message: "Restored to saved version." });
+}
+
+function handleCloseTeacherPreviewModal() {
+  if (teacherSubmittedHasUnsavedChanges) {
+    if (!confirm("You have unsaved changes. Discard changes and close?")) {
+      return;
+    }
+    if (activeTeacherPreviewSub && originalTeacherPreviewQuestions.length) {
+      activeTeacherPreviewSub.questions = JSON.parse(JSON.stringify(originalTeacherPreviewQuestions));
+    }
+    teacherSubmittedHasUnsavedChanges = false;
+    teacherSubmittedEditedQuestionIndices.clear();
+  }
+  teacherSubmittedEditingQIdx = null;
+  teacherSubmittedTempImage = undefined;
+  $("teacherExamPreviewModal").classList.remove("open");
 }
 
 async function openTeacherExamPreview(docId) {
@@ -4599,8 +4690,12 @@ async function openTeacherExamPreview(docId) {
     }
   }
   activeTeacherPreviewSub = sub;
+  originalTeacherPreviewQuestions = JSON.parse(JSON.stringify(sub.questions || []));
   teacherSubmittedEditingQIdx = null;
   teacherSubmittedTempImage = undefined;
+  teacherSubmittedHasUnsavedChanges = false;
+  teacherSubmittedEditedQuestionIndices.clear();
+  updateTeacherPreviewPendingUI();
 
   $("teacherPreviewModalTitle").textContent = sub.title || "Exam Questions Preview & Edit";
   $("teacherPreviewModalFootnote").textContent = `Offline Exam ID: ${sub.examId || sub.docId}`;
@@ -4650,9 +4745,12 @@ function renderTeacherSubmittedPreviewQuestions() {
         </div>
       ` : '';
       return `
-        <div class="q-card">
+        <div class="q-card${q._isDraftEdited ? ' q-card-draft-edited' : ''}">
           <div class="q-card-head">
-            <span class="q-badge">Question ${idx + 1}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="q-badge">Question ${idx + 1}</span>
+              ${q._isDraftEdited ? `<span class="badge-pill" style="font-size:10.5px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);padding:2px 7px;border-radius:10px;font-weight:700">✏️ Modified</span>` : ''}
+            </div>
             <div style="display:flex;align-items:center;gap:12px">
               <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${adminMarks}</strong></span>
               <button type="button" class="btn-text" data-teacher-edit-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
@@ -4735,7 +4833,7 @@ function renderTeacherSubmittedPreviewQuestions() {
 
         <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">
           <button type="button" class="btn btn-secondary btn-sm" id="teacherSubCancelEditBtn">Cancel</button>
-          <button type="button" class="btn btn-sm btn-primary" id="teacherSubSaveQBtn" data-save-idx="${idx}">💾 Save Question</button>
+          <button type="button" class="btn btn-sm btn-primary" id="teacherSubSaveQBtn" data-save-idx="${idx}">✓ Done</button>
         </div>
       </div>
     `;
@@ -4761,7 +4859,7 @@ function renderTeacherSubmittedPreviewQuestions() {
   });
 
   document.querySelectorAll("[data-teacher-del-q]").forEach(btn => {
-    btn.onclick = async () => {
+    btn.onclick = () => {
       const idx = parseInt(btn.dataset.teacherDelQ, 10);
       if (!confirm(`Are you sure you want to delete Question ${idx + 1}?`)) return;
       activeTeacherPreviewSub.questions.splice(idx, 1);
@@ -4771,7 +4869,9 @@ function renderTeacherSubmittedPreviewQuestions() {
       } else if (teacherSubmittedEditingQIdx > idx) {
         teacherSubmittedEditingQIdx--;
       }
-      await saveTeacherSubmittedQuestionsToCloud(`Question ${idx + 1} deleted.`);
+      teacherSubmittedHasUnsavedChanges = true;
+      teacherSubmittedEditedQuestionIndices.add("del_" + Date.now());
+      updateTeacherPreviewPendingUI();
       renderTeacherSubmittedPreviewQuestions();
     };
   });
@@ -4831,7 +4931,7 @@ function renderTeacherSubmittedPreviewQuestions() {
     }
 
     if ($("teacherSubSaveQBtn")) {
-      $("teacherSubSaveQBtn").onclick = async () => {
+      $("teacherSubSaveQBtn").onclick = () => {
         const qIdx = parseInt($("teacherSubSaveQBtn").dataset.saveIdx, 10);
         const newText = ($("teacherSubEditQText")?.value || "").trim();
         if (!newText) {
@@ -4862,14 +4962,14 @@ function renderTeacherSubmittedPreviewQuestions() {
         if (teacherSubmittedTempImage !== undefined) {
           targetQ.image = teacherSubmittedTempImage;
         }
+        targetQ._isDraftEdited = true;
 
-        const saveBtn = $("teacherSubSaveQBtn");
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Saving...";
-
-        await saveTeacherSubmittedQuestionsToCloud(`Question ${qIdx + 1} updated and saved to cloud.`);
         teacherSubmittedEditingQIdx = null;
         teacherSubmittedTempImage = undefined;
+        teacherSubmittedHasUnsavedChanges = true;
+        teacherSubmittedEditedQuestionIndices.add(qIdx);
+
+        updateTeacherPreviewPendingUI();
         renderTeacherSubmittedPreviewQuestions();
       };
     }
@@ -4894,6 +4994,10 @@ if ($("teacherPreviewAddQuestionBtn")) {
     if (!Array.isArray(activeTeacherPreviewSub.questions)) {
       activeTeacherPreviewSub.questions = [];
     }
+    const adminMarks = (activeTeacherPreviewSub.marksPerQuestion !== undefined && activeTeacherPreviewSub.marksPerQuestion !== null && !isNaN(Number(activeTeacherPreviewSub.marksPerQuestion)))
+      ? Number(activeTeacherPreviewSub.marksPerQuestion)
+      : (teacherCbtDefaults.marksPerQuestion || 0.4);
+
     const newQ = {
       _id: { $oid: generateObjectId() },
       text: "",
@@ -4902,25 +5006,46 @@ if ($("teacherPreviewAddQuestionBtn")) {
       optionStrings: ["", "", "", ""],
       correctAnswer: "",
       correctLetter: "A",
-      points: teacherCbtDefaults.marksPerQuestion || 0.4,
+      points: adminMarks,
       test_id: { $oid: activeTeacherPreviewSub.examId || activeTeacherPreviewSub.docId },
       subject: activeTeacherPreviewSub.subjectId ? { $oid: activeTeacherPreviewSub.subjectId } : null,
       class: activeTeacherPreviewSub.classId ? { $oid: activeTeacherPreviewSub.classId } : null,
+      _isDraftEdited: true,
       __v: 0
     };
     activeTeacherPreviewSub.questions.push(newQ);
-    teacherSubmittedEditingQIdx = activeTeacherPreviewSub.questions.length - 1;
+    const newIdx = activeTeacherPreviewSub.questions.length - 1;
+    teacherSubmittedEditingQIdx = newIdx;
     teacherSubmittedTempImage = null;
     currentTeacherSubmittedCorrectLetter = "A";
+    teacherSubmittedHasUnsavedChanges = true;
+    teacherSubmittedEditedQuestionIndices.add(newIdx);
+    updateTeacherPreviewPendingUI();
     renderTeacherSubmittedPreviewQuestions();
   };
 }
 
+if ($("teacherPreviewSaveAllBtn")) {
+  $("teacherPreviewSaveAllBtn").onclick = handleSaveTeacherAllChanges;
+}
+if ($("teacherPreviewSaveBottomBtn")) {
+  $("teacherPreviewSaveBottomBtn").onclick = handleSaveTeacherAllChanges;
+}
+if ($("teacherPreviewDiscardBtn")) {
+  $("teacherPreviewDiscardBtn").onclick = handleDiscardTeacherChanges;
+}
 if ($("teacherPreviewModalCloseBtn")) {
-  $("teacherPreviewModalCloseBtn").onclick = () => $("teacherExamPreviewModal").classList.remove("open");
+  $("teacherPreviewModalCloseBtn").onclick = handleCloseTeacherPreviewModal;
 }
 if ($("teacherPreviewModalCloseBottomBtn")) {
-  $("teacherPreviewModalCloseBottomBtn").onclick = () => $("teacherExamPreviewModal").classList.remove("open");
+  $("teacherPreviewModalCloseBottomBtn").onclick = handleCloseTeacherPreviewModal;
+}
+if ($("teacherExamPreviewModal")) {
+  $("teacherExamPreviewModal").onclick = (e) => {
+    if (e.target === $("teacherExamPreviewModal")) {
+      handleCloseTeacherPreviewModal();
+    }
+  };
 }
 if ($("cbtLightboxCloseBtn")) {
   $("cbtLightboxCloseBtn").onclick = () => {

@@ -920,6 +920,19 @@
             style="display:none;padding:10px 14px;border-radius:6px;background:rgba(36,107,62,0.12);color:var(--status-good);font-size:13px;font-weight:600;margin-bottom:12px">
           </div>
 
+          <!-- Pending Changes Batch Bar -->
+          <div id="teacherPreviewPendingBar"
+            style="display:none;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:6px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);color:#b45309;margin-bottom:12px;font-size:13px;font-weight:600;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>⚠️</span>
+              <span id="teacherPreviewPendingText">You have unsaved changes.</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="teacherPreviewDiscardBtn" style="font-size:12px;padding:4px 10px;">Discard</button>
+              <button type="button" class="btn btn-sm btn-primary" id="teacherPreviewSaveAllBtn" style="font-size:12px;padding:4px 14px;font-weight:700;">💾 Save Changes</button>
+            </div>
+          </div>
+
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <span style="font-size:13px;font-weight:600;color:var(--text)"
               id="teacherPreviewCountDisplay">Questions</span>
@@ -929,9 +942,12 @@
 
           <div class="q-preview-list" id="teacherPreviewQuestionsList"></div>
 
-          <div class="modal-actions" style="justify-content:space-between">
+          <div class="modal-actions" style="justify-content:space-between;align-items:center;">
             <div style="font-size:12px;color:var(--text-muted)" id="teacherPreviewModalFootnote"></div>
-            <button class="btn btn-secondary" id="teacherPreviewModalCloseBottomBtn" type="button">Close</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary" id="teacherPreviewModalCloseBottomBtn" type="button">Close</button>
+              <button class="btn btn-primary" id="teacherPreviewSaveBottomBtn" type="button" style="display:none;font-weight:700;">💾 Save Changes</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1142,7 +1158,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/teacher.js?v=5.3"></script>
+  <script src="js/teacher.js?v=5.4"></script>
 </body>
 
 </html>
