@@ -6979,6 +6979,25 @@ window.handleDeleteAdminAnnouncement = async function(id) {
 };
 
 // ══════════════════════════════════════════════════════════
+// ANTI-FOUC APP LOADER CONTROLLER
+// ══════════════════════════════════════════════════════════
+function hideAppLoader() {
+  if (window.__appLoaderTimeout) {
+    clearTimeout(window.__appLoaderTimeout);
+    window.__appLoaderTimeout = null;
+  }
+  const loader = $("app-loader");
+  if (loader) {
+    loader.classList.add("app-loader-fade");
+    setTimeout(() => {
+      try { loader.remove(); } catch (_) { }
+    }, 240);
+  }
+  document.documentElement.classList.remove("app-loading");
+}
+window.hideAppLoader = hideAppLoader;
+
+// ══════════════════════════════════════════════════════════
 // AUTO-RESTORE ADMIN SESSION (RUNS ONCE ALL SCRIPTS LOAD)
 // ══════════════════════════════════════════════════════════
 function autoRestoreAdminSession() {
@@ -6988,10 +7007,17 @@ function autoRestoreAdminSession() {
       performAdminSignIn();
     } else {
       document.documentElement.classList.remove("restoring-admin-session");
+      if ($("viewLogin")) $("viewLogin").style.display = "flex";
+      if ($("viewApp")) $("viewApp").style.display = "none";
     }
   } catch (err) {
     console.warn("Auto-restore admin session failed:", err);
     document.documentElement.classList.remove("restoring-admin-session");
+    if ($("viewLogin")) $("viewLogin").style.display = "flex";
+    if ($("viewApp")) $("viewApp").style.display = "none";
+  } finally {
+    // Dismiss anti-FOUC loader immediately after auth decision and first render
+    hideAppLoader();
   }
 }
 

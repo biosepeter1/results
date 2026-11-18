@@ -93,6 +93,25 @@ function showToast(options) {
 }
 window.showToast = showToast;
 
+// ══════════════════════════════════════════════════════════
+// ANTI-FOUC APP LOADER CONTROLLER
+// ══════════════════════════════════════════════════════════
+function hideAppLoader() {
+  if (window.__appLoaderTimeout) {
+    clearTimeout(window.__appLoaderTimeout);
+    window.__appLoaderTimeout = null;
+  }
+  const loader = $("app-loader");
+  if (loader) {
+    loader.classList.add("app-loader-fade");
+    setTimeout(() => {
+      try { loader.remove(); } catch (_) { }
+    }, 240);
+  }
+  document.documentElement.classList.remove("app-loading");
+}
+window.hideAppLoader = hideAppLoader;
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Independent Supabase Engine Active (Zero Firebase Dependency)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -4738,80 +4757,97 @@ function esc(s) {
 
 // ── Session Persistence: Auto-restore on page reload ──
 async function autoRestoreTeacherSession() {
-  let saved = null;
   try {
-    saved = localStorage.getItem("teacher_session_v1");
-  } catch (e) { }
-  if (!saved) {
-    document.documentElement.classList.remove("restoring-teacher-session");
-    return;
-  }
+    let saved = null;
+    try {
+      saved = localStorage.getItem("teacher_session_v1");
+    } catch (e) { }
+    if (!saved) {
+      document.documentElement.classList.remove("restoring-teacher-session");
+      if ($login) $login.style.display = "block";
+      if ($app) $app.style.display = "none";
+      hideAppLoader();
+      return;
+    }
 
-  let sess = null;
-  try {
-    sess = JSON.parse(saved);
-  } catch (e) { }
-  if (!sess || !sess.username) {
-    document.documentElement.classList.remove("restoring-teacher-session");
-    return;
-  }
+    let sess = null;
+    try {
+      sess = JSON.parse(saved);
+    } catch (e) { }
+    if (!sess || !sess.username) {
+      document.documentElement.classList.remove("restoring-teacher-session");
+      if ($login) $login.style.display = "block";
+      if ($app) $app.style.display = "none";
+      hideAppLoader();
+      return;
+    }
 
-  const user = sess.username;
-  const clean = user.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const user = sess.username;
+    const clean = user.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  if ($u) $u.value = user;
-  if ($p && sess.pass) $p.value = sess.pass;
+    if ($u) $u.value = user;
+    if ($p && sess.pass) $p.value = sess.pass;
 
-  // 1. Initial immediate restore from cached session
-  if (sess.teacher) {
-    teacher = { ...sess.teacher, username: user };
-  } else {
-    teacher = TEACHERS[clean] || TEACHERS[user] || { name: user, username: user, subjects: [], classes: [] };
-  }
+    // 1. Initial immediate restore from cached session
+    if (sess.teacher) {
+      teacher = { ...sess.teacher, username: user };
+    } else {
+      teacher = TEACHERS[clean] || TEACHERS[user] || { name: user, username: user, subjects: [], classes: [] };
+    }
 
-  try {
-    await loadData();
+    // Immediately render app shell and dismiss loader (first render!)
     showApp();
-  } catch (e) {
-    console.warn("Auto-restore loadData failed:", e);
-    showApp();
-  }
+    hideAppLoader();
 
-  // 2. Asynchronously verify credentials & permissions against Supabase
-  try {
-    if (window.dbClient && window.dbClient.getTeacher) {
-      const fresh = await window.dbClient.getTeacher(clean);
-      if (fresh) {
-        const storedPw = fresh.password || "";
-        if (sess.pass && storedPw && (storedPw !== sess.pass && storedPw.toLowerCase() !== sess.pass.toLowerCase())) {
-          console.warn("Teacher credentials changed remotely. Revoking session.");
+    try {
+      await loadData();
+    } catch (e) {
+      console.warn("Auto-restore loadData failed:", e);
+    }
+
+    // 2. Asynchronously verify credentials & permissions against Supabase
+    try {
+      if (window.dbClient && window.dbClient.getTeacher) {
+        const fresh = await window.dbClient.getTeacher(clean);
+        if (fresh) {
+          const storedPw = fresh.password || "";
+          if (sess.pass && storedPw && (storedPw !== sess.pass && storedPw.toLowerCase() !== sess.pass.toLowerCase())) {
+            console.warn("Teacher credentials changed remotely. Revoking session.");
+            doSignOut();
+            if ($msg) $msg.textContent = "Your password has been changed. Please sign in again.";
+            return;
+          }
+          teacher = { ...fresh, username: user };
+          sess.teacher = teacher;
+          try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch (err) { }
+          if ($("who")) $("who").textContent = teacher.name;
+          if ($("teacherDrawerWho")) $("teacherDrawerWho").textContent = teacher.name;
+          const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
+          const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
+          const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
+          const subText = `${sl} · ${cl}${al}`;
+          if ($("subinfo")) $("subinfo").textContent = subText;
+          if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
+        } else {
+          // Teacher was deleted or deactivated by admin in Supabase
+          console.warn("Teacher account has been removed by administrator. Revoking active session.");
           doSignOut();
-          if ($msg) $msg.textContent = "Your password has been changed. Please sign in again.";
+          if ($msg) $msg.textContent = "Your teacher account has been removed or deactivated by administration.";
           return;
         }
-        teacher = { ...fresh, username: user };
-        sess.teacher = teacher;
-        try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch (err) { }
-        if ($("who")) $("who").textContent = teacher.name;
-        if ($("teacherDrawerWho")) $("teacherDrawerWho").textContent = teacher.name;
-        const sl = (teacher.subjects && teacher.subjects.length) ? teacher.subjects.join(", ") : "All subjects";
-        const cl = (teacher.classes && teacher.classes.length) ? teacher.classes.join(", ") : "All classes";
-        const al = (teacher.arms && teacher.arms.length) ? ` (${teacher.arms.join(", ")})` : "";
-        const subText = `${sl} · ${cl}${al}`;
-        if ($("subinfo")) $("subinfo").textContent = subText;
-        if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
       } else {
-        // Teacher was deleted or deactivated by admin in Supabase
-        console.warn("Teacher account has been removed by administrator. Revoking active session.");
-        doSignOut();
-        if ($msg) $msg.textContent = "Your teacher account has been removed or deactivated by administration.";
-        return;
+        document.documentElement.classList.remove("restoring-teacher-session");
       }
-    } else {
-      document.documentElement.classList.remove("restoring-teacher-session");
+    } catch (ve) {
+      console.warn("Background teacher account validation error:", ve);
     }
   } catch (err) {
-    console.warn("Background teacher account validation error:", err);
+    console.warn("autoRestoreTeacherSession error:", err);
+    document.documentElement.classList.remove("restoring-teacher-session");
+    if ($login) $login.style.display = "block";
+    if ($app) $app.style.display = "none";
+  } finally {
+    hideAppLoader();
   }
 }
 
