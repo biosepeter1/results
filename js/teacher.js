@@ -5211,6 +5211,36 @@ window.toggleDismissTeacherAnnouncement = function(id) {
 // ══════════════════════════════════════════════════════════
 let oneSignalTeacherInitialized = false;
 
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePWA() {
+  return window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+
+function isChromeIOS() {
+  return isIOSDevice() && /CriOS/i.test(navigator.userAgent);
+}
+
+function openIosPushGuideModal() {
+  const modal = $("iosPushGuideModal");
+  if (modal) {
+    modal.style.display = "flex";
+    modal.classList.add("open");
+  }
+}
+
+function closeIosPushGuideModal() {
+  const modal = $("iosPushGuideModal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.style.display = "none";
+  }
+}
+
 async function initTeacherPushNotifications() {
   try {
     let config = null;
@@ -5277,6 +5307,37 @@ async function initTeacherPushNotifications() {
     const enableBtn = $("teacherEnablePushBtn");
     if (enableBtn) {
       enableBtn.onclick = async () => {
+        // If Chrome on iPhone: Apple doesn't allow push notifications in Chrome for iOS.
+        // Copy the link to clipboard and show setup instructions modal.
+        if (isChromeIOS()) {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(window.location.href);
+            }
+            showToast({
+              type: "info",
+              title: "Link Copied!",
+              message: "Paste this link into Safari, tap Share ⎋, then 'Add to Home Screen'."
+            });
+          } catch (e) {
+            showToast({
+              type: "info",
+              title: "Open in Safari",
+              message: "Please open this URL in Safari: " + window.location.href
+            });
+          }
+          openIosPushGuideModal();
+          return;
+        }
+
+        // If regular browser tab on iPhone (Safari):
+        // Apple requires web apps to be installed to Home Screen (PWA) before push alerts work.
+        if (isIOSDevice() && !isStandalonePWA()) {
+          openIosPushGuideModal();
+          return;
+        }
+
+        // Normal browser or installed PWA (including iOS Home Screen PWA)
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
           try {
@@ -5320,6 +5381,18 @@ async function initTeacherPushNotifications() {
         });
       };
     }
+
+    // Wire iOS Push Guide Modal Buttons
+    const iosCloseBtn = $("iosPushGuideCloseBtn");
+    if (iosCloseBtn) iosCloseBtn.onclick = closeIosPushGuideModal;
+    const iosGotItBtn = $("iosPushGuideGotItBtn");
+    if (iosGotItBtn) iosGotItBtn.onclick = closeIosPushGuideModal;
+    const iosModal = $("iosPushGuideModal");
+    if (iosModal) {
+      iosModal.addEventListener("click", (e) => {
+        if (e.target === iosModal) closeIosPushGuideModal();
+      });
+    }
   } catch (err) {
     console.warn("initTeacherPushNotifications error:", err);
   }
@@ -5343,6 +5416,28 @@ function updateTeacherPushUI(isOptedIn) {
     if (pill) pill.style.display = "none";
     if (banner && !isDismissed) {
       banner.style.display = "flex";
+
+      const titleEl = $("teacherPushOptInTitle");
+      const descEl = $("teacherPushOptInDesc");
+      const btnTextEl = $("teacherEnablePushBtnText");
+      const iconEl = $("teacherPushOptInIcon");
+
+      if (isChromeIOS()) {
+        if (iconEl) iconEl.textContent = "📱";
+        if (titleEl) titleEl.textContent = "iPhone Setup: Open in Safari to Enable Alerts";
+        if (descEl) descEl.textContent = "Apple blocks push notifications in Chrome for iPhone. Copy this link, open in Safari, and tap 'Add to Home Screen' to activate notifications.";
+        if (btnTextEl) btnTextEl.textContent = "📋 Copy Link for Safari";
+      } else if (isIOSDevice() && !isStandalonePWA()) {
+        if (iconEl) iconEl.textContent = "📲";
+        if (titleEl) titleEl.textContent = "iPhone Setup: Add to Home Screen for Alerts";
+        if (descEl) descEl.textContent = "On iPhone, Apple permits notifications only when Honeyland is installed to your Home Screen from Safari. Tap below for easy 2-step setup.";
+        if (btnTextEl) btnTextEl.textContent = "📖 Show Setup Steps";
+      } else {
+        if (iconEl) iconEl.textContent = "🔔";
+        if (titleEl) titleEl.textContent = "Enable Instant Device Push Alerts";
+        if (descEl) descEl.textContent = "Receive real-time vibrations and lock screen popups on your phone or laptop whenever the Exam Committee broadcasts notices—even when your browser is closed.";
+        if (btnTextEl) btnTextEl.textContent = "📲 Allow Push Alerts";
+      }
     }
   }
 }
