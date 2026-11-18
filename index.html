@@ -77,6 +77,22 @@
     .modal-overlay.open {
       display: flex !important;
     }
+
+    /* ── Critical Centering for Teacher Login Screen ── */
+    #login {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      box-sizing: border-box;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
   </style>
   <title>Academic Examination Results Portal</title>
   <link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
@@ -1126,7 +1142,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/teacher.js?v=4.9"></script>
+  <script src="js/teacher.js?v=5.0"></script>
 </body>
 
 </html>

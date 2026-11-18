@@ -4764,7 +4764,7 @@ async function autoRestoreTeacherSession() {
     } catch (e) { }
     if (!saved) {
       document.documentElement.classList.remove("restoring-teacher-session");
-      if ($login) $login.style.display = "block";
+      if ($login) $login.style.display = "flex";
       if ($app) $app.style.display = "none";
       hideAppLoader();
       return;
@@ -4776,7 +4776,7 @@ async function autoRestoreTeacherSession() {
     } catch (e) { }
     if (!sess || !sess.username) {
       document.documentElement.classList.remove("restoring-teacher-session");
-      if ($login) $login.style.display = "block";
+      if ($login) $login.style.display = "flex";
       if ($app) $app.style.display = "none";
       hideAppLoader();
       return;
@@ -4844,7 +4844,7 @@ async function autoRestoreTeacherSession() {
   } catch (err) {
     console.warn("autoRestoreTeacherSession error:", err);
     document.documentElement.classList.remove("restoring-teacher-session");
-    if ($login) $login.style.display = "block";
+    if ($login) $login.style.display = "flex";
     if ($app) $app.style.display = "none";
   } finally {
     hideAppLoader();

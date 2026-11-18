@@ -121,6 +121,7 @@ a:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 32px 28px;
+  margin: 0 auto;
 }
 
 .school-meta-header {
