@@ -2725,11 +2725,66 @@ $("uploadScoresBtn").onclick = async () => {
     setUploadProgress(40, "Writing records to Supabase in batches...");
     await window.dbClient.saveScoresBatch(allRowsToSave, term);
 
+    // Automatic Push Notification to Teachers of Uploaded Subjects
+    const notifyTeachersCheckbox = $("uploadNotifyTeachersCheckbox");
+    const shouldNotify = !notifyTeachersCheckbox || notifyTeachersCheckbox.checked;
+    const notifiedSubjects = [];
+
+    if (shouldNotify && subjectList.length > 0) {
+      setUploadProgress(85, "Notifying subject teachers...");
+      for (const sub of subjectList) {
+        const notifTitle = `New Scores Uploaded: ${sub}`;
+        const notifMsg = `${term} scores for ${sub} have been uploaded and are now available in your portal.`;
+
+        // 1. In-App Announcements record in Supabase
+        if (window.dbClient && typeof window.dbClient.addTeacherAnnouncement === "function") {
+          try {
+            await window.dbClient.addTeacherAnnouncement({
+              title: notifTitle,
+              category: "scores",
+              target: "subject",
+              targetSubject: sub,
+              message: notifMsg,
+              pinned: false,
+              author: "Exam Committee"
+            });
+          } catch (annErr) {
+            console.warn("Announcement log error for", sub, annErr);
+          }
+        }
+
+        // 2. OneSignal Device Push
+        dispatchOneSignalPush({
+          title: notifTitle,
+          message: notifMsg,
+          target: "subject",
+          targetSubject: sub
+        }).then(res => {
+          if (res && res.success && res.recipients > 0) {
+            console.log(`Pushed alert for ${sub} to ${res.recipients} teacher device(s).`);
+          }
+        }).catch(e => console.warn("OneSignal subject push error for", sub, e));
+
+        notifiedSubjects.push(sub);
+      }
+    }
+
     setUploadProgress(100, "Update complete");
     const el = $("uploadSuccessBox");
     if (el) {
-      el.textContent = `Successfully uploaded ${totalParsedRecords.toLocaleString()} records across ${subjectList.length} subjects for "${term}" to Supabase. The portal is live with these scores.`;
+      const notifSuffix = (shouldNotify && notifiedSubjects.length > 0)
+        ? ` Alerts sent to teachers of: ${notifiedSubjects.join(", ")}.`
+        : "";
+      el.textContent = `Successfully uploaded ${totalParsedRecords.toLocaleString()} records across ${subjectList.length} subjects for "${term}" to Supabase.${notifSuffix} The portal is live with these scores.`;
       el.style.display = "block";
+    }
+
+    if (shouldNotify && notifiedSubjects.length > 0) {
+      showToast({
+        type: "success",
+        title: "Subject Teachers Notified",
+        message: `Push alerts dispatched to teachers of: ${notifiedSubjects.join(", ")}`
+      });
     }
 
     // Instantly refresh in-memory scores & UI views without requiring page reload!

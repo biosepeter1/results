@@ -47,8 +47,12 @@ export default async function handler(req, res) {
     };
 
     if (target === "subject" && targetSubject) {
+      const cleanSub = String(targetSubject).trim();
+      const cleanSubKey = "sub_" + cleanSub.toLowerCase().replace(/[^a-z0-9]/g, "_");
       payload.filters = [
-        { field: "tag", key: "subject", relation: "=", value: targetSubject.trim() }
+        { field: "tag", key: cleanSubKey, relation: "=", value: "1" },
+        { operator: "OR" },
+        { field: "tag", key: "subject", relation: "=", value: cleanSub }
       ];
     } else {
       payload.included_segments = ["Total Subscriptions"];

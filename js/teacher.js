@@ -371,19 +371,63 @@ async function syncTeacherScoreConversion(triggerRender = false) {
   }
 }
 
-// Auto-sync scaling from admin in background and on window focus
+// Auto-sync scaling & real-time scores from admin in background and on window focus
+let teacherLastSyncedVersion = null;
+
+async function checkForTeacherScoreUpdates(silent = true) {
+  if (!teacher || !window.dbClient || typeof window.dbClient.getVersion !== "function") return;
+  try {
+    const cloudVer = await window.dbClient.getVersion();
+    if (!cloudVer) return;
+
+    const clean = (teacher.username || "").toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cached = getTeacherCache(clean);
+    const currentVer = cached?.version || teacherLastSyncedVersion;
+
+    if (!currentVer || cloudVer !== currentVer || allRows.length === 0) {
+      console.log("New examination records detected in Supabase cloud. Syncing teacher portal...");
+      await loadData();
+      buildTermTabs();
+      buildFilters();
+      render();
+      teacherLastSyncedVersion = cloudVer;
+      if (!silent) {
+        showToast({
+          type: "info",
+          title: "Scores Synchronized",
+          message: "New examination scores have been updated on your dashboard."
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("checkForTeacherScoreUpdates error:", e);
+  }
+}
+
 window.addEventListener("focus", () => {
   const appEl = $("app");
   if (appEl && appEl.style.display !== "none") {
     syncTeacherScoreConversion(true);
+    if (teacher) checkForTeacherScoreUpdates(true);
   }
 });
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    const appEl = $("app");
+    if (appEl && appEl.style.display !== "none" && teacher) {
+      checkForTeacherScoreUpdates(true);
+    }
+  }
+});
+
 setInterval(() => {
   const appEl = $("app");
   if (appEl && appEl.style.display !== "none") {
     syncTeacherScoreConversion(true);
+    if (teacher) checkForTeacherScoreUpdates(true);
   }
-}, 10000);
+}, 12000);
 
 let teacherParsedQuestions = [];
 let teacherSubmissions = [];
@@ -456,6 +500,7 @@ async function doLogin() {
   try {
     await loadData();
     showApp();
+    syncTeacherOneSignalTags();
   } catch (e) {
     $msg.textContent = e.message || "Unable to connect. Check your internet connection.";
     console.error(e);
@@ -2889,7 +2934,10 @@ function normalizeExamText(text) {
   t = t.replace(/([^\n])\s*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
 
   // E. Separate Answer labels jammed directly after option text (e.g. "Endoplasmic reticulumAnswer: B")
-  t = t.replace(/([^\n])\s*(Answer|Ans|Correct(?:\s*Answer)?)\s*[\:\-\=]\s*/gi, "$1\nAnswer: ");
+  t = t.replace(/([^\n])\s*(Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=]\s*/gi, "$1\nAnswer: ");
+
+  // Separate Points / Marks metadata lines if jammed
+  t = t.replace(/([^\n])\s*((?:Points?|Marks?|Scores?|Weight|Pts)\s*[\:\-\=]?\s*\d*(?:\.\d+)?)/gi, "$1\n$2");
 
   // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is...")
   t = t.replace(/(Answer:\s*[A-Ea-e])\s*(\d+[\.\)\:\-]\s*)/gi, "$1\n\n$2");
@@ -3125,7 +3173,8 @@ function parseExamText(rawText, rawImages = []) {
 
   const qRegex = /^(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?(\d+)\)?[\.\)\:\-]\s*(.*)$/i;
   const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-Ea-e])[\.\:\-])\s*(.*)$/;
-  const ansRegex = /^(?:answer|ans|correct(?:\s*answer)?)\s*[\:\-\=]\s*([A-Ea-e]|[^\r\n]+)$/i;
+  const ansRegex = /^(?:answer|ans|correct(?:\s*(?:answer|option|choice))?|option)\s*[\:\-\=]\s*([A-Ea-e]|[^\r\n]+)$/i;
+  const pointsRegex = /^(?:points?|marks?|scores?|weight|pts)\s*[\:\-\=]?\s*\d*(?:\.\d+)?\s*$/i;
   const tokenRegex = /\[\[CBT_IMG_TOKEN_(\d+)\]\]/;
   const ansKeyHeaderRegex = /^(?:✅\s*)?(?:answer\s*key|answers|correct\s*answers)(?:\s*summary)?/i;
   const endExamRegex = /^(?:—|-+)\s*end\s+of\s+(?:exam|examination)/i;
@@ -3231,6 +3280,11 @@ function parseExamText(rawText, rawImages = []) {
     }
 
     if (!currentQ) continue;
+
+    // Ignore Points / Marks metadata lines
+    if (pointsRegex.test(line)) {
+      continue;
+    }
 
     // Answer directly under question
     const ansMatch = line.match(ansRegex);
@@ -4795,12 +4849,22 @@ async function autoRestoreTeacherSession() {
       teacher = TEACHERS[clean] || TEACHERS[user] || { name: user, username: user, subjects: [], classes: [] };
     }
 
+    // Pre-populate allRows from cached data if available for instant fast first render
+    const initialCache = getTeacherCache(clean);
+    if (initialCache && Array.isArray(initialCache.rows) && initialCache.rows.length > 0) {
+      allRows = deduplicateScoreRows(initialCache.rows);
+    }
+
     // Immediately render app shell and dismiss loader (first render!)
     showApp();
     hideAppLoader();
 
     try {
       await loadData();
+      // Crucial: Refresh term tabs, filters, and student table with fresh scores from Supabase!
+      buildTermTabs();
+      buildFilters();
+      render();
     } catch (e) {
       console.warn("Auto-restore loadData failed:", e);
     }
@@ -4817,6 +4881,7 @@ async function autoRestoreTeacherSession() {
             if ($msg) $msg.textContent = "Your password has been changed. Please sign in again.";
             return;
           }
+          const prevSubjects = (teacher.subjects || []).join(",");
           teacher = { ...fresh, username: user };
           sess.teacher = teacher;
           try { localStorage.setItem("teacher_session_v1", JSON.stringify(sess)); } catch (err) { }
@@ -4828,6 +4893,14 @@ async function autoRestoreTeacherSession() {
           const subText = `${sl} · ${cl}${al}`;
           if ($("subinfo")) $("subinfo").textContent = subText;
           if ($("teacherDrawerSubinfo")) $("teacherDrawerSubinfo").textContent = subText;
+          syncTeacherOneSignalTags();
+
+          const newSubjects = (teacher.subjects || []).join(",");
+          if (prevSubjects !== newSubjects) {
+            buildTermTabs();
+            buildFilters();
+            render();
+          }
         } else {
           // Teacher was deleted or deactivated by admin in Supabase
           console.warn("Teacher account has been removed by administrator. Revoking active session.");
@@ -5241,6 +5314,46 @@ function closeIosPushGuideModal() {
   }
 }
 
+function syncTeacherOneSignalTags() {
+  if (!teacher) return;
+  const tUser = (teacher.username || teacher.user || "").toLowerCase().trim();
+  if (!tUser) return;
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      if (typeof OneSignal.login === "function") {
+        await OneSignal.login(tUser);
+      }
+      const tags = {
+        role: "teacher",
+        username: tUser
+      };
+
+      let subList = [];
+      if (Array.isArray(teacher.subjects)) {
+        subList = teacher.subjects.filter(s => s && s.trim());
+      } else if (typeof teacher.subject === "string" && teacher.subject.trim()) {
+        subList = [teacher.subject.trim()];
+      }
+
+      if (subList.length > 0) {
+        tags.subject = subList[0].trim();
+        subList.forEach(s => {
+          const cleanKey = "sub_" + s.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
+          tags[cleanKey] = "1";
+        });
+      }
+
+      if (OneSignal.User && typeof OneSignal.User.addTags === "function") {
+        OneSignal.User.addTags(tags);
+      }
+    } catch (e) {
+      console.warn("OneSignal syncTeacherOneSignalTags error:", e);
+    }
+  });
+}
+
 async function initTeacherPushNotifications() {
   try {
     let config = null;
@@ -5288,19 +5401,8 @@ async function initTeacherPushNotifications() {
         });
       }
 
-      // Associate teacher tags for targeted broadcasts
-      if (teacher && teacher.user) {
-        try {
-          OneSignal.login(teacher.user.toLowerCase().trim());
-          OneSignal.User.addTags({
-            role: "teacher",
-            username: teacher.user.toLowerCase().trim(),
-            subject: (teacher.subject || "").trim()
-          });
-        } catch (e) {
-          console.warn("OneSignal user login/tag error:", e);
-        }
-      }
+      // Associate teacher tags for targeted broadcasts across all assigned subjects
+      syncTeacherOneSignalTags();
     });
 
     // Wire Opt-in Prompt Button
