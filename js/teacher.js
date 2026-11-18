@@ -5213,6 +5213,9 @@ function setDismissedNotifIds(idSet) {
 
 function isNotifForCurrentTeacher(notif) {
   if (!notif) return false;
+  // Strictly prevent admin-only and CBT re-upload notifications from reaching ANY teacher!
+  if (notif.target === "admin" || notif.category === "cbt_reupload") return false;
+
   if (!notif.target || notif.target === "all") return true;
 
   // Subject targeting
@@ -5231,7 +5234,7 @@ function isNotifForCurrentTeacher(notif) {
     return teacher.classes.some(c => c && c.trim().toLowerCase() === cNorm);
   }
 
-  return true;
+  return false;
 }
 
 function initTeacherAnnouncements() {

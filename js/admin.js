@@ -6988,7 +6988,11 @@ function renderAdminAnnouncementsList() {
   container.innerHTML = adminAnnouncementsList.map(item => {
     const cat = categoryLabels[item.category] || categoryLabels.general;
     let targetLabel = "👥 All Teachers";
-    if (item.target === "subject" && item.targetSubject) {
+    let isForTeachers = true;
+    if (item.target === "admin" || item.category === "cbt_reupload") {
+      targetLabel = "🛡️ Admin Only";
+      isForTeachers = false;
+    } else if (item.target === "subject" && item.targetSubject) {
       targetLabel = `🎯 Subject: ${esc(item.targetSubject)}`;
     } else if (item.target === "class" && item.targetClass) {
       targetLabel = `🏫 Class: ${esc(item.targetClass)}`;
@@ -7024,10 +7028,17 @@ function renderAdminAnnouncementsList() {
         </div>
         <div class="admin-notif-footer">
           <span>Author: <strong>${esc(getAuthorDisplay(item.author))}</strong></span>
-          <span style="color:var(--status-good);font-weight:700;display:inline-flex;align-items:center;gap:5px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--status-good);box-shadow:0 0 6px var(--status-good);"></span>
-            Live on Teacher Dashboard
-          </span>
+          ${isForTeachers ? `
+            <span style="color:var(--status-good);font-weight:700;display:inline-flex;align-items:center;gap:5px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--status-good);box-shadow:0 0 6px var(--status-good);"></span>
+              Live on Teacher Dashboard
+            </span>
+          ` : `
+            <span style="color:var(--accent);font-weight:700;display:inline-flex;align-items:center;gap:5px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);"></span>
+              🔒 Private Admin Alert (Hidden from Teachers)
+            </span>
+          `}
         </div>
       </div>
     `;
