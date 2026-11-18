@@ -3481,6 +3481,19 @@ async function loadCBTSubmissions() {
 
     populateCbtFilterOptions();
     filterCbtSubmissions();
+
+    // Check for re-uploaded / updated exams to show the top alert banner
+    const reuploadedSubs = allCbtSubmissions.filter(s => s.isUpdate || (s.version && s.version > 1) || s.status === "Updated by Teacher");
+    const banner = $("cbtReuploadedAlertBanner");
+    const bannerText = $("cbtReuploadedAlertText");
+    if (banner && bannerText) {
+      if (reuploadedSubs.length > 0) {
+        banner.style.display = "flex";
+        bannerText.textContent = `${reuploadedSubs.length} CBT exam${reuploadedSubs.length > 1 ? 's have' : ' has'} been re-uploaded or edited by subject teachers. Look for the "🔄 Re-uploaded (vX)" badge in the table below before exporting offline JSON.`;
+      } else {
+        banner.style.display = "none";
+      }
+    }
   } catch (err) {
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
   }
@@ -3529,9 +3542,23 @@ function renderCBTSubmissions() {
     }
     const armBadgeText = (totalArms > 0 && subArmCount >= totalArms) ? "All Arms" : `${subArmCount} Arm${subArmCount === 1 ? '' : 's'}`;
 
+    const isReupload = !!(sub.isUpdate || (sub.version && sub.version > 1) || sub.status === "Updated by Teacher");
+    const versionNum = sub.version || (isReupload ? 2 : 1);
+    const lastUpText = sub.lastUpdated ? new Date(sub.lastUpdated).toLocaleDateString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+
     return `
-      <tr>
-        <td style="font-weight:600;color:var(--text)">${esc(sub.title || "Untitled Exam")}</td>
+      <tr${isReupload ? ' style="background:rgba(245, 158, 11, 0.04);"' : ''}>
+        <td style="font-weight:600;color:var(--text)">
+          <div>${esc(sub.title || "Untitled Exam")}</div>
+          ${isReupload ? `
+            <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="badge-pill" style="background:#fef3c7;color:#b45309;border:1px solid #fcd34d;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px;" title="Teacher updated or re-uploaded these questions">
+                🔄 Re-uploaded (v${versionNum})
+              </span>
+              ${lastUpText ? `<span style="font-size:11px;color:var(--text-muted);font-weight:normal;">Updated: ${esc(lastUpText)}</span>` : ''}
+            </div>
+          ` : ''}
+        </td>
         <td>${esc(sub.teacherName || sub.teacherUser || "Teacher")}</td>
         <td>
           <span style="font-weight:600">${esc(resolvedSubName)}</span> <span style="color:var(--text-muted)">(${esc(resolvedClass)})</span>
@@ -6947,6 +6974,7 @@ function renderAdminAnnouncementsList() {
   }
 
   const categoryLabels = {
+    cbt_reupload: { label: "🔄 CBT Exam Re-uploaded / Edited", color: "#d97706", bg: "rgba(217, 119, 6, 0.12)", border: "rgba(217, 119, 6, 0.3)" },
     locked_server: { label: "🔒 Locked Room / Server Inaccessible", color: "#dc2626", bg: "rgba(220, 38, 38, 0.12)", border: "rgba(220, 38, 38, 0.35)" },
     missing_class: { label: "⚠️ Missing Class / Incomplete Upload", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.3)" },
     exam_upload: { label: "📝 Exam Upload Notice", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.3)" },

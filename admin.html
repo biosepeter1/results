@@ -96,6 +96,13 @@
       await OneSignal.init({
         appId: "89e9469f-65f7-48aa-a798-6f6628cf4c5e",
       });
+      try {
+        if (OneSignal.User && typeof OneSignal.User.addTags === "function") {
+          OneSignal.User.addTags({ role: "admin", type: "administrator" });
+        }
+      } catch (e) {
+        console.warn("OneSignal admin tag error:", e);
+      }
     });
   </script>
   <script>
@@ -1501,6 +1508,15 @@
             </div>
           </div>
 
+          <!-- CBT Exam Re-uploaded / Updated Alert Banner -->
+          <div id="cbtReuploadedAlertBanner" style="display:none;margin-bottom:16px;padding:12px 18px;border-radius:var(--radius);background:rgba(245, 158, 11, 0.12);border:1px solid rgba(245, 158, 11, 0.4);color:#b45309;align-items:center;gap:14px;">
+            <span style="font-size:24px;line-height:1;">⚠️</span>
+            <div style="flex:1;font-size:13px;line-height:1.45;">
+              <strong style="display:block;font-size:13.5px;color:#92400e;margin-bottom:2px;">Teacher Exam Update Detected</strong>
+              <span id="cbtReuploadedAlertText">One or more CBT exams have been re-uploaded or edited by subject teachers. Look for the "🔄 Re-uploaded (vX)" badge in the table below before exporting offline JSON.</span>
+            </div>
+          </div>
+
           <div class="table-wrap">
             <table class="inst-table">
               <thead>
@@ -2480,7 +2496,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
   <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/admin.js?v=5.2"></script>
+  <script src="js/admin.js?v=5.3"></script>
 </body>
 
 </html>

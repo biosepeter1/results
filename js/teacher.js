@@ -4215,10 +4215,67 @@ $("tCbtSubmitBtn").onclick = async () => {
   const pts = parseFloat($("tCbtPoints")?.value) || teacherCbtDefaults.marksPerQuestion || 0.4;
 
   $("tCbtSubmitBtn").disabled = true;
-  $("tCbtSubmitBtn").textContent = "Submitting to admin...";
+  $("tCbtSubmitBtn").textContent = "Checking existing exams...";
+
+  // 1. Check if an exam for this Subject + Class + Term was already submitted
+  let existingMatch = null;
+  try {
+    const allSubs = await window.dbClient.getSubmissions();
+    const normSub = (subject || "").toLowerCase().trim();
+    const normClass = (sClass || "").toLowerCase().trim();
+    const normTerm = (activeCbtExamTerm || "").toLowerCase().trim();
+
+    existingMatch = (allSubs || []).find(sub => {
+      const sSub = (sub.subjectName || "").toLowerCase().trim();
+      const sCls = (sub.className || "").toLowerCase().trim();
+      const sTrm = (sub.termName || "").toLowerCase().trim();
+      return sSub === normSub && sCls === normClass && (sTrm === normTerm || !sTrm || !normTerm);
+    });
+  } catch (err) {
+    console.warn("Could not check existing submissions:", err);
+  }
+
+  let isUpdate = false;
+  let version = 1;
+  let examId = generateObjectId();
+
+  if (existingMatch) {
+    const curVer = existingMatch.version || 1;
+    const nextVer = curVer + 1;
+    let prevDate = "previously";
+    if (existingMatch.createdAt) {
+      try {
+        prevDate = new Date(existingMatch.createdAt).toLocaleDateString("en-GB", {
+          day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+        });
+      } catch (e) {}
+    }
+    const prevQCount = existingMatch.numberOfQuestions || (existingMatch.questions ? existingMatch.questions.length : 0);
+
+    const proceed = confirm(
+      `⚠️ EXISTING EXAM FOUND!\n\n` +
+      `An exam for "${subject}" (${sClass} - ${activeCbtExamTerm}) was already submitted on ${prevDate} with ${prevQCount} questions (Version ${curVer}).\n\n` +
+      `Submitting now will:\n` +
+      `• OVERWRITE & update this exam to Version ${nextVer}\n` +
+      `• Replace previous questions with your ${teacherParsedQuestions.length} newly parsed questions\n` +
+      `• Mark the submission as "🔄 Re-uploaded (v${nextVer})" so the School Admin is alerted\n\n` +
+      `Do you want to proceed and update the exam?`
+    );
+
+    if (!proceed) {
+      $("tCbtSubmitBtn").disabled = false;
+      $("tCbtSubmitBtn").textContent = "🚀 Submit Exam to School Admin";
+      return;
+    }
+
+    isUpdate = true;
+    version = nextVer;
+    examId = existingMatch.examId || existingMatch.docId || existingMatch.id || examId;
+  }
+
+  $("tCbtSubmitBtn").textContent = isUpdate ? "Updating exam for admin..." : "Submitting to admin...";
 
   try {
-    const examId = generateObjectId();
     const classInfo = resolveCbtClass(sClass);
     const subjectInfo = resolveCbtSubject(subject);
     const subjectId = subjectInfo.id;
@@ -4250,6 +4307,7 @@ $("tCbtSubmitBtn").onclick = async () => {
 
     const subPayload = {
       examId: examId,
+      docId: examId,
       title: title,
       subjectName: subject,
       subjectId: subjectId,
@@ -4272,8 +4330,11 @@ $("tCbtSubmitBtn").onclick = async () => {
       shuffle: shuffle,
       selectedArms: selectedArms,
       arm: selectedArms.map(a => ({ "$oid": a })),
-      createdAt: new Date().toISOString(),
-      status: "Ready for Admin"
+      createdAt: existingMatch?.createdAt || new Date().toISOString(),
+      lastUpdated: isUpdate ? new Date().toISOString() : null,
+      isUpdate: isUpdate,
+      version: version,
+      status: isUpdate ? "Updated by Teacher" : "Ready for Admin"
     };
 
     try {
@@ -4282,6 +4343,33 @@ $("tCbtSubmitBtn").onclick = async () => {
       console.error("Supabase submit error:", sbErr);
       throw sbErr;
     }
+
+    // Alert School Administrator via In-App Announcements
+    if (window.dbClient && typeof window.dbClient.addTeacherAnnouncement === "function") {
+      try {
+        await window.dbClient.addTeacherAnnouncement({
+          title: isUpdate ? `🔄 Re-uploaded: ${subject} (${sClass})` : `📝 CBT Exam Uploaded: ${subject} (${sClass})`,
+          category: isUpdate ? "cbt_reupload" : "exam_upload",
+          target: "admin",
+          targetSubject: subject,
+          targetClass: sClass,
+          message: isUpdate
+            ? `${teacher.name || "Subject Teacher"} has re-uploaded/updated exam questions for ${subject} (${sClass} - ${activeCbtExamTerm}). Updated to Version ${version} (${formattedQuestions.length} questions).`
+            : `${teacher.name || "Subject Teacher"} has uploaded questions for ${subject} (${sClass} - ${activeCbtExamTerm}) with ${formattedQuestions.length} questions.`,
+          author: teacher.name || "Subject Teacher"
+        });
+      } catch (annErr) {
+        console.warn("Announcement log error on CBT submit:", annErr);
+      }
+    }
+
+    // Send OneSignal device push notification to Admin
+    dispatchOneSignalPushToAdmin({
+      title: isUpdate ? `🔄 CBT Exam Re-uploaded: ${subject}` : `📝 New CBT Exam: ${subject}`,
+      message: isUpdate
+        ? `${teacher.name || "Teacher"} re-uploaded questions for ${subject} (${sClass} - ${activeCbtExamTerm}) · Version ${version} (${formattedQuestions.length} questions).`
+        : `${teacher.name || "Teacher"} uploaded new questions for ${subject} (${sClass} - ${activeCbtExamTerm}) with ${formattedQuestions.length} questions.`
+    }).catch(e => console.warn("Admin push error:", e));
 
     // Clear and hide Step 3 review section so questions do not linger after submission!
     $("tCbtReviewCard").style.display = "none";
@@ -4293,15 +4381,21 @@ $("tCbtSubmitBtn").onclick = async () => {
     updateTargetStatusBadge();
 
     // Show clean success notification banner and scroll into view
-    $("tCbtSuccessTitle").textContent = `🎉 "${title}" Successfully Submitted!`;
-    $("tCbtSuccessMsg").textContent = `Scheduled for Launch: ${launchDate} (${gateOpen} – ${gateClose}) · ${formattedQuestions.length} Questions. The school admin can now export this exam.`;
+    $("tCbtSuccessTitle").textContent = isUpdate 
+      ? `🔄 "${title}" Updated to Version ${version}!`
+      : `🎉 "${title}" Successfully Submitted!`;
+    $("tCbtSuccessMsg").textContent = isUpdate
+      ? `Questions updated to Version ${version} (${formattedQuestions.length} Questions). The administrator has been alerted of this re-upload.`
+      : `Scheduled for Launch: ${launchDate} (${gateOpen} – ${gateClose}) · ${formattedQuestions.length} Questions. The school admin can now export this exam.`;
     $("tCbtSubmitSuccess").style.display = "block";
     $("tCbtSubmitSuccess").scrollIntoView({ behavior: "smooth", block: "center" });
 
     showToast({
       type: "success",
-      title: "Exam Submitted Successfully!",
-      message: `"${title}" with ${formattedQuestions.length} verified questions has been sent to the administrator.`
+      title: isUpdate ? `Exam Updated (v${version})!` : "Exam Submitted Successfully!",
+      message: isUpdate
+        ? `"${title}" has been updated to Version ${version} and flagged for the administrator.`
+        : `"${title}" with ${formattedQuestions.length} verified questions has been sent to the administrator.`
     });
 
     loadTeacherSubmissions();
@@ -4337,10 +4431,21 @@ function renderTeacherSubmissions() {
     const shuffleDisplay = sub.shuffle !== false ? "Shuffled" : "Sequential";
 
     const resolvedSubName = sub.subjectName || (typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "-";
+    const isUpdated = !!(sub.isUpdate || (sub.version && sub.version > 1) || sub.status === "Updated by Teacher");
+    const vNum = sub.version || (isUpdated ? 2 : 1);
 
     return `
       <tr>
-        <td style="font-weight:600">${esc(sub.title)}</td>
+        <td style="font-weight:600">
+          <div>${esc(sub.title)}</div>
+          ${isUpdated ? `
+            <div style="margin-top:3px;">
+              <span style="background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;">
+                🔄 v${vNum} (Updated)
+              </span>
+            </div>
+          ` : ''}
+        </td>
         <td>${esc(resolvedSubName)}</td>
         <td>${esc(sub.className || "-")}</td>
         <td>${sub.duration || 30} mins</td>
@@ -4349,7 +4454,7 @@ function renderTeacherSubmissions() {
           <strong style="color:var(--accent)">Launch: ${esc(launchDisplay)}</strong>
           <div style="font-size:11px;color:var(--text-muted)">${esc(timeDisplay)} &middot; ${shuffleDisplay}</div>
         </td>
-        <td><span style="color:var(--status-good);font-weight:600;font-size:12px">&bull; ${esc(sub.status || "Ready")}</span></td>
+        <td><span style="color:${isUpdated ? 'var(--status-warn, #d97706)' : 'var(--status-good)'};font-weight:600;font-size:12px">&bull; ${esc(sub.status || "Ready")}</span></td>
         <td style="text-align:right">
           <button type="button" class="btn btn-secondary btn-sm" data-preview-teacher-exam="${esc(sub.docId)}" style="margin-right:6px">Preview &amp; Edit</button>
           <button type="button" class="btn-text" data-del-my-exam="${esc(sub.docId)}" style="color:var(--status-fail)">Delete</button>
@@ -4418,6 +4523,10 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
   try {
     const qCount = activeTeacherPreviewSub.questions.length;
     activeTeacherPreviewSub.numberOfQuestions = qCount;
+    activeTeacherPreviewSub.isUpdate = true;
+    activeTeacherPreviewSub.version = (activeTeacherPreviewSub.version || 1) + 1;
+    activeTeacherPreviewSub.status = "Updated by Teacher";
+    activeTeacherPreviewSub.lastUpdated = new Date().toISOString();
 
     try {
       await window.dbClient.saveSubmission(activeTeacherPreviewSub.docId, activeTeacherPreviewSub);
@@ -4426,17 +4535,43 @@ async function saveTeacherSubmittedQuestionsToCloud(msg) {
       throw sbErr;
     }
 
-    activeTeacherPreviewSub.numberOfQuestions = qCount;
     const found = teacherSubmissions.find(s => s.docId === activeTeacherPreviewSub.docId);
     if (found) {
       found.questions = activeTeacherPreviewSub.questions;
       found.numberOfQuestions = qCount;
+      found.isUpdate = true;
+      found.version = activeTeacherPreviewSub.version;
+      found.status = "Updated by Teacher";
+      found.lastUpdated = activeTeacherPreviewSub.lastUpdated;
     }
     loadTeacherSubmissions();
 
+    // Alert School Administrator via In-App Announcement
+    if (window.dbClient && typeof window.dbClient.addTeacherAnnouncement === "function") {
+      try {
+        await window.dbClient.addTeacherAnnouncement({
+          title: `✏️ Questions Edited: ${activeTeacherPreviewSub.title || "Exam"}`,
+          category: "cbt_reupload",
+          target: "admin",
+          targetSubject: activeTeacherPreviewSub.subjectName || "",
+          targetClass: activeTeacherPreviewSub.className || "",
+          message: `${teacher.name || "Subject Teacher"} edited questions in "${activeTeacherPreviewSub.title || "Exam"}" (${activeTeacherPreviewSub.className || ""} - ${activeTeacherPreviewSub.termName || ""}). Updated to Version ${activeTeacherPreviewSub.version} (${qCount} questions).`,
+          author: teacher.name || "Subject Teacher"
+        });
+      } catch (e) {
+        console.warn("Announcement log error on question edit:", e);
+      }
+    }
+
+    // Push notification to Admin
+    dispatchOneSignalPushToAdmin({
+      title: `✏️ CBT Exam Edited: ${activeTeacherPreviewSub.subjectName || activeTeacherPreviewSub.title}`,
+      message: `${teacher.name || "Teacher"} edited questions in ${activeTeacherPreviewSub.title || "Exam"} (${activeTeacherPreviewSub.className || ""} - ${activeTeacherPreviewSub.termName || ""}) · v${activeTeacherPreviewSub.version}.`
+    }).catch(e => console.warn("Admin push error:", e));
+
     const notice = $("teacherPreviewNotice");
     if (notice) {
-      notice.textContent = `✓ ${msg}`;
+      notice.textContent = `✓ ${msg} (v${activeTeacherPreviewSub.version} saved & admin notified)`;
       notice.style.display = "block";
       setTimeout(() => { notice.style.display = "none"; }, 3500);
     }
@@ -5352,6 +5487,53 @@ function syncTeacherOneSignalTags() {
       console.warn("OneSignal syncTeacherOneSignalTags error:", e);
     }
   });
+}
+
+// Dispatch push notifications to the school administrator
+async function dispatchOneSignalPushToAdmin({ title, message }) {
+  try {
+    let cfg = null;
+    if (window.dbClient && typeof window.dbClient.getOneSignalConfig === "function") {
+      try { cfg = await window.dbClient.getOneSignalConfig(); } catch (e) {}
+    }
+    if (!cfg) {
+      try {
+        const raw = localStorage.getItem("onesignal_admin_config");
+        if (raw) cfg = JSON.parse(raw);
+      } catch (e) {}
+    }
+    const appId = (cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e").trim();
+    let restApiKey = (cfg?.restApiKey || "").trim();
+
+    if (!appId || !restApiKey || cfg?.enabled === false) {
+      return { success: false, reason: "not_configured" };
+    }
+
+    restApiKey = restApiKey.replace(/^["']|["']$/g, "").trim();
+    restApiKey = restApiKey.replace(/^(?:Key|Bearer|Basic)\s+/i, "").trim();
+
+    const isLiveVercel = window.location.hostname.includes("vercel.app");
+    const pushEndpoint = isLiveVercel ? "/api/send-push" : "https://hlconline.vercel.app/api/send-push";
+
+    const payload = {
+      appId,
+      restApiKey,
+      title: title || "CBT Notice",
+      message: message || "",
+      target: "admin"
+    };
+
+    const resp = await fetch(pushEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json().catch(() => null);
+    return { success: resp.ok, data };
+  } catch (err) {
+    console.warn("dispatchOneSignalPushToAdmin error:", err);
+    return { success: false, error: err.message };
+  }
 }
 
 async function initTeacherPushNotifications() {

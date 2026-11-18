@@ -54,6 +54,11 @@ export default async function handler(req, res) {
         { operator: "OR" },
         { field: "tag", key: "subject", relation: "=", value: cleanSub }
       ];
+    } else if (target === "admin") {
+      payload.filters = [
+        { field: "tag", key: "role", relation: "=", value: "admin" }
+      ];
+      payload.url = "https://hlconline.vercel.app/admin.html";
     } else {
       payload.included_segments = ["Total Subscriptions"];
     }
