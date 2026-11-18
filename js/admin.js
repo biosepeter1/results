@@ -4290,7 +4290,9 @@ async function openCBTPreview(docId) {
   const resolvedSubName = (sub.subjectName && sub.subjectName !== "—" && sub.subjectName !== "-")
     ? sub.subjectName
     : ((typeof resolveCbtSubject === "function" ? resolveCbtSubject(sub.title || "").name : "") || "Biology");
-  $("cbtPreviewModalMeta").textContent = `Teacher: ${sub.teacherName || "Staff"} · Subject: ${resolvedSubName} · Class: ${sub.className || "All"} · Duration: ${sub.duration || 30} mins · Total: ${questions.length} questions`;
+  const isUp = !!(sub.isUpdate || (sub.version && sub.version > 1) || sub.status === "Updated by Teacher");
+  const verText = isUp ? ` · 🔄 Version: v${sub.version || 2} (Updated)` : "";
+  $("cbtPreviewModalMeta").textContent = `Teacher: ${sub.teacherName || "Staff"} · Subject: ${resolvedSubName} · Class: ${sub.className || "All"} · Duration: ${sub.duration || 30} mins · Total: ${questions.length} questions${verText}`;
   $("cbtPreviewModalFootnote").textContent = `Offline Exam ID: ${sub.examId || sub.docId}`;
 
   // Populate schedule & parameters
