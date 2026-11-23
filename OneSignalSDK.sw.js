@@ -1,3 +1,2 @@
-// Synchronous root event listener required by Chromium initial-evaluation rules
-self.addEventListener("message", () => {});
-importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+// Load OneSignal v16 Service Worker with synchronous top-level message binding (v1.0)
+importScripts("js/onesignal-sw-bootstrap.js?v=1.0");
