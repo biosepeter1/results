@@ -308,7 +308,8 @@ const dbClient = {
     const sb = getSupabase();
     if (!sb) return [];
     try {
-      const pageSize = 2000;
+      // 1000 matches Supabase PostgREST default max-rows limit exactly
+      const pageSize = 1000;
       const SELECT_COLS = "term,student,reg,subject,class,arm,score,pct,exam_date";
 
       const hasSubjects = Array.isArray(subjects) && subjects.length > 0;
@@ -322,27 +323,22 @@ const dbClient = {
       const { data: firstPage, error: firstErr, count } = await q0;
       if (firstErr) { console.warn("Supabase getScores error:", firstErr); return []; }
 
-      let all = firstPage || [];
+      let all = firstPage ? [...firstPage] : [];
 
-      // 2. Fetch remaining pages in controlled batches of 2 (prevents connection pool exhaustion and memory spikes)
-      if (count && count > pageSize) {
-        const totalPages = Math.ceil(count / pageSize);
-        const BATCH_SIZE = 2;
-        for (let p = 1; p < totalPages; p += BATCH_SIZE) {
-          const batch = [];
-          for (let b = 0; b < BATCH_SIZE && (p + b) < totalPages; b++) {
-            const page = p + b;
-            const from = page * pageSize;
-            let qp = sb.from("exam_results").select(SELECT_COLS).range(from, from + pageSize - 1);
-            if (term) qp = qp.eq("term", term);
-            if (hasSubjects) qp = qp.in("subject", subjects);
-            if (hasClasses) qp = qp.in("class", classes);
-            batch.push(qp);
-          }
-          const results = await Promise.all(batch);
-          results.forEach(({ data, error }) => {
-            if (!error && data) all.push(...data);
-          });
+      // 2. Fetch remaining records in continuous sequential slices with zero gap
+      const step = (firstPage && firstPage.length > 0) ? firstPage.length : pageSize;
+      if (count && count > all.length) {
+        let from = all.length;
+        while (from < count) {
+          const to = Math.min(from + step - 1, count - 1);
+          let qp = sb.from("exam_results").select(SELECT_COLS).range(from, to);
+          if (term) qp = qp.eq("term", term);
+          if (hasSubjects) qp = qp.in("subject", subjects);
+          if (hasClasses) qp = qp.in("class", classes);
+          const { data, error } = await qp;
+          if (error || !data || data.length === 0) break;
+          all.push(...data);
+          from += data.length;
         }
       }
 
@@ -368,9 +364,16 @@ const dbClient = {
     const sb = getSupabase();
     if (!sb || !rows || !rows.length) return false;
     try {
-      // 1. Delete previous records for this term
+      // 1. Delete previous records ONLY for the subjects present in this upload
+      // (Prevents wiping other subjects when uploading in batches or single-subject files)
       if (term) {
-        await sb.from("exam_results").delete().eq("term", term);
+        const subjectsInUpload = [...new Set(rows.map(r => r.subject).filter(Boolean))];
+        if (subjectsInUpload.length > 0) {
+          for (let s = 0; s < subjectsInUpload.length; s += 20) {
+            const subSlice = subjectsInUpload.slice(s, s + 20);
+            await sb.from("exam_results").delete().eq("term", term).in("subject", subSlice);
+          }
+        }
       }
 
       // 2. Insert records in chunks of 500 with a brief breather
@@ -870,6 +873,40 @@ const dbClient = {
     } catch (err) {
       console.error("Supabase saveOneSignalConfig error:", err);
       throw err;
+    }
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // 7b. STUDENT DIRECTORY (stored as exam_meta key)
+  // ══════════════════════════════════════════════════════════
+  async getStudentDirectory() {
+    const sb = getSupabase();
+    if (!sb) return null;
+    try {
+      const { data, error } = await sb.from("exam_meta").select("meta, last_updated").eq("key", "student_directory").maybeSingle();
+      if (error || !data || !data.meta) return null;
+      return { students: data.meta.students || [], uploadedAt: data.last_updated };
+    } catch (err) {
+      console.warn("Supabase getStudentDirectory error:", err);
+      return null;
+    }
+  },
+
+  async saveStudentDirectory(students) {
+    const sb = getSupabase();
+    if (!sb) return false;
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await sb.from("exam_meta").upsert({
+        key: "student_directory",
+        last_updated: nowIso,
+        meta: { students: students || [], count: (students || []).length, uploadedAt: nowIso }
+      }, { onConflict: "key" });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Supabase saveStudentDirectory error:", err);
+      return false;
     }
   },
 

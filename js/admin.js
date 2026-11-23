@@ -204,6 +204,8 @@ function switchTab(target) {
     renderUploadTermSelector();
     loadLiveTerms();
     syncUploadTermsWithCloud();
+    if (typeof loadStudentDirectoryFromCloud === "function") loadStudentDirectoryFromCloud();
+    if (typeof populateAuditDropdowns === "function") populateAuditDropdowns();
   }
   if (target === "cbt") {
     loadAdminCbtActiveTerm();
@@ -276,11 +278,12 @@ document.querySelectorAll(".mobile-bottom-tab[data-tab]").forEach(btn => {
 // EXECUTIVE ANALYTICS DASHBOARD (PRINCIPAL & LEADERSHIP VIEW)
 // ══════════════════════════════════════════════════════════
 var _dashEventsBound = false;
-let dashActiveTabStudentView = "fail"; // "fail", "rewrite", or "honor"
-let dashSubjectView = "best"; // "best" or "needs_support"
+let dashActiveTabStudentView = "rewrite"; // "rewrite", "honor", or "missing"
+let dashSubjectView = "best"; // "best"
 let dashAtRiskStudents = [];
 let dashHonorRollStudents = [];
 let dashRewriteStudents = [];
+let dashMissingStudents = [];
 let dashRewriteCutoffPct = 25; // Default: <= 25% (captures 0/5 = 0%, 5/30 = 16.7%, 10/50 = 20%)
 let dashSubjectStats = [];
 
@@ -376,7 +379,9 @@ function initDashboardEvents() {
     if ($("dashStudentsTabFail")) $("dashStudentsTabFail").classList.toggle("active", tab === "fail");
     if ($("dashStudentsTabRewrite")) $("dashStudentsTabRewrite").classList.toggle("active", tab === "rewrite");
     if ($("dashStudentsTabHonor")) $("dashStudentsTabHonor").classList.toggle("active", tab === "honor");
+    if ($("dashStudentsTabMissing")) $("dashStudentsTabMissing").classList.toggle("active", tab === "missing");
     if ($("dashRewriteToolbar")) $("dashRewriteToolbar").style.display = (tab === "rewrite") ? "flex" : "none";
+    if ($("dashMissingToolbar")) $("dashMissingToolbar").style.display = (tab === "missing") ? "flex" : "none";
     toggleDashActionCenterAccordion(true);
     renderDashboardStudentActionCenter();
   };
@@ -390,6 +395,9 @@ function initDashboardEvents() {
   if ($("dashStudentsTabHonor")) {
     $("dashStudentsTabHonor").onclick = () => setStudentViewTab("honor");
   }
+  if ($("dashStudentsTabMissing")) {
+    $("dashStudentsTabMissing").onclick = () => setStudentViewTab("missing");
+  }
 
   if ($("dashCardRewriteKpi")) {
     $("dashCardRewriteKpi").onclick = () => {
@@ -398,6 +406,19 @@ function initDashboardEvents() {
       const card = $("dashStudentActionCenterCard");
       if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
     };
+  }
+
+  if ($("dashCardMissingKpi")) {
+    $("dashCardMissingKpi").onclick = () => {
+      setStudentViewTab("missing");
+      toggleDashActionCenterAccordion(true);
+      const card = $("dashStudentActionCenterCard");
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+  }
+
+  if ($("dashExportMissingBtn")) {
+    $("dashExportMissingBtn").onclick = () => exportMissingStudentsCsv();
   }
 
   if ($("dashRewriteCutoffSelect")) {
@@ -541,6 +562,9 @@ async function renderExecutiveDashboard() {
   // If score rows aren't in memory yet, load them
   if (!allScoreRows || !allScoreRows.length) {
     await loadStudentScores();
+  }
+  if (typeof loadStudentDirectoryFromCloud === "function") {
+    await loadStudentDirectoryFromCloud();
   }
 
   syncDashboardFilterOptions();
@@ -754,6 +778,201 @@ async function renderExecutiveDashboard() {
     $("dashMetricHighestLowest").textContent = `Highest: ${highStr} · Lowest: ${lowStr}`;
   }
 
+  // ── Missing Students Calculation (Official Curriculum + Choice Groups + Master Directory) ──
+  try {
+    dashMissingStudents = [];
+    const selectedDashClass = ($("dashFilterClass") ? $("dashFilterClass").value : "").trim();
+    const selectedDashArm = ($("dashFilterArm") ? $("dashFilterArm").value : "").trim();
+    const selectedDashSubj = ($("dashFilterSubject") ? $("dashFilterSubject").value : "").trim();
+    const selectedDashTerm = ($("dashFilterTerm") ? $("dashFilterTerm").value : "").trim() || (adminCurrentTerm || "");
+
+    const targetTermNorm = normalizeTermKey(selectedDashTerm);
+    const termRows = (allScoreRows || []).filter(r => {
+      if (!selectedDashTerm) return true;
+      if (!r.term) return true;
+      return r.term.toLowerCase() === selectedDashTerm.toLowerCase() || normalizeTermKey(r.term) === targetTermNorm;
+    });
+
+    // Build lookup of subjects actually administered per class level in this term,
+    // plus an auto-detected fallback curriculum for classes not in SCHOOL_CLASS_CURRICULUM.
+    const classTotalStudents = new Map();       // clsKey -> Set(studentKey)
+    const classSubjectStudents = new Map();     // `${clsKey}|${subCanon}` -> Set(studentKey)
+    const administeredCanonByClass = new Map(); // clsKey -> Set(subCanon)
+    const classSubjectDisplay = new Map();      // `${clsKey}|${subCanon}` -> displayName
+    const studentWrittenMap = new Map();        // identityKey -> Set(subCanon)
+
+    termRows.forEach(r => {
+      const clsRaw = (r.class || r.className || "").trim();
+      const subRaw = (r.subject || "").trim();
+      if (!clsRaw || !subRaw) return;
+      const clsKey = normalizeAuditClassKey(clsRaw);
+      const subCanon = auditCanonicalSubject(subRaw);
+      if (!subCanon) return;
+
+      if (!administeredCanonByClass.has(clsKey)) administeredCanonByClass.set(clsKey, new Set());
+      administeredCanonByClass.get(clsKey).add(subCanon);
+      const csKey = `${clsKey}|${subCanon}`;
+      if (!classSubjectDisplay.has(csKey)) classSubjectDisplay.set(csKey, subRaw);
+
+      const stId = compactAuditRegKey(r.reg) || `${normalizeAuditNameKey(r.student)}|${clsKey}`;
+      if (stId) {
+        if (!classTotalStudents.has(clsKey)) classTotalStudents.set(clsKey, new Set());
+        classTotalStudents.get(clsKey).add(stId);
+        if (!classSubjectStudents.has(csKey)) classSubjectStudents.set(csKey, new Set());
+        classSubjectStudents.get(csKey).add(stId);
+      }
+
+      indexStudentWrittenSubject(studentWrittenMap, r.reg, r.student, clsKey, subCanon);
+    });
+
+    // Auto-detected core fallback map (used only for classes without an explicit SCHOOL_CLASS_CURRICULUM entry)
+    const fallbackCurriculumMap = new Map();
+    administeredCanonByClass.forEach((canonSubs, clsKey) => {
+      const totalInClass = classTotalStudents.get(clsKey)?.size || 0;
+      const qualifying = [];
+      canonSubs.forEach(subCanon => {
+        const displayName = classSubjectDisplay.get(`${clsKey}|${subCanon}`) || subCanon;
+        if (selectedDashSubj) {
+          if (subCanon === auditCanonicalSubject(selectedDashSubj)) {
+            qualifying.push(displayName);
+          }
+        } else {
+          const count = classSubjectStudents.get(`${clsKey}|${subCanon}`)?.size || 0;
+          // Require >= 70% participation so optional/elective subjects aren't flagged as missing core exams
+          if (count >= Math.max(3, Math.floor(totalInClass * 0.70))) {
+            qualifying.push(displayName);
+          }
+        }
+      });
+      fallbackCurriculumMap.set(clsKey, qualifying);
+    });
+
+    // Build student cohort: active Master Directory students + any active test-takers in termRows
+    const targetClsKey = selectedDashClass ? normalizeAuditClassKey(selectedDashClass) : "";
+    const targetArmLow = selectedDashArm.toLowerCase();
+    const cohort = [];
+    const seenCohortKeys = new Set();
+
+    const addCohortStudent = (student) => {
+      if (auditIsWithdrawnStudent(student.reg, student.name)) return;
+      const clsKey = normalizeAuditClassKey(student.class);
+      const regC = compactAuditRegKey(student.reg);
+      const nameT = sortedAuditNameTokens(student.name);
+      const dedupReg = regC ? `R:${regC}` : "";
+      const dedupName = nameT ? `N:${nameT}|${clsKey}` : "";
+      if ((dedupReg && seenCohortKeys.has(dedupReg)) || (dedupName && seenCohortKeys.has(dedupName))) return;
+      if (dedupReg) seenCohortKeys.add(dedupReg);
+      if (dedupName) seenCohortKeys.add(dedupName);
+      cohort.push({ ...student, _clsKey: clsKey });
+    };
+
+    if (_studentDirectory && _studentDirectory.length > 0) {
+      const dirHasArms = _studentDirectory.some(s => (s.arm || "").trim() !== "");
+      _studentDirectory.forEach(s => {
+        const statusLow = (s.status || "").trim().toLowerCase();
+        if (statusLow === "inactive" || statusLow === "withdrawn") return;
+        const sClsKey = normalizeAuditClassKey(s.class);
+        if (targetClsKey && sClsKey !== targetClsKey) return;
+        const sArmLow = (s.arm || "").trim().toLowerCase();
+        if (targetArmLow && dirHasArms && sArmLow !== targetArmLow) return;
+        addCohortStudent({
+          id: s.reg || s.fullName,
+          name: s.fullName,
+          reg: s.reg || "",
+          class: s.class,
+          arm: s.arm || ""
+        });
+      });
+    }
+
+    termRows.forEach(r => {
+      const rCls = (r.class || r.className || "").trim();
+      const rClsKey = normalizeAuditClassKey(rCls);
+      const rArm = (r.arm || "").trim();
+      if (targetClsKey && rClsKey !== targetClsKey) return;
+      if (targetArmLow && rArm.toLowerCase() !== targetArmLow) return;
+      const stName = (r.student || r.name || "").trim();
+      const stReg = (r.reg || "").trim();
+      if (!stName && !stReg) return;
+      addCohortStudent({
+        id: stReg || stName,
+        name: stName || stReg,
+        reg: stReg,
+        class: rCls,
+        arm: rArm
+      });
+    });
+
+    const targetSubCanon = selectedDashSubj ? auditCanonicalSubject(selectedDashSubj) : "";
+    const curConfigMap = (typeof SCHOOL_CLASS_CURRICULUM !== "undefined") ? SCHOOL_CLASS_CURRICULUM : {};
+
+    cohort.forEach(st => {
+      const clsKey = st._clsKey;
+      const administered = administeredCanonByClass.get(clsKey);
+      if (!administered || !administered.size) return;
+
+      const written = getStudentWrittenSubjects(studentWrittenMap, st.reg, st.name, clsKey);
+      const missingSubjs = [];
+      const explicitCurr = curConfigMap[clsKey];
+
+      if (explicitCurr) {
+        if (targetSubCanon) {
+          const isCore = explicitCurr.core.some(c => auditCanonicalSubject(c) === targetSubCanon);
+          if (isCore) {
+            if (!written.has(targetSubCanon)) missingSubjs.push(selectedDashSubj);
+          } else {
+            const group = (explicitCurr.choiceGroups || []).find(g =>
+              g.options.some(opt => auditCanonicalSubject(opt) === targetSubCanon)
+            );
+            if (group) {
+              const satAnyOption = group.options.some(opt => written.has(auditCanonicalSubject(opt)));
+              if (!satAnyOption) missingSubjs.push(selectedDashSubj);
+            }
+          }
+        } else {
+          explicitCurr.core.forEach(coreSub => {
+            const coreCanon = auditCanonicalSubject(coreSub);
+            if (administered.has(coreCanon) && !written.has(coreCanon)) {
+              missingSubjs.push(coreSub);
+            }
+          });
+
+          (explicitCurr.choiceGroups || []).forEach(group => {
+            const activeOptions = group.options.filter(opt => administered.has(auditCanonicalSubject(opt)));
+            if (!activeOptions.length) return;
+            const satAnyOption = group.options.some(opt => written.has(auditCanonicalSubject(opt)));
+            if (!satAnyOption) {
+              missingSubjs.push(activeOptions.length === 1 ? activeOptions[0] : group.label);
+            }
+          });
+        }
+      } else {
+        const expectedFallback = fallbackCurriculumMap.get(clsKey) || [];
+        expectedFallback.forEach(sub => {
+          if (!written.has(auditCanonicalSubject(sub))) {
+            missingSubjs.push(sub);
+          }
+        });
+      }
+
+      if (missingSubjs.length > 0) {
+        dashMissingStudents.push({
+          ...st,
+          missingSubjects: missingSubjs,
+          missingCount: missingSubjs.length
+        });
+      }
+    });
+
+    dashMissingStudents.sort((a, b) => b.missingCount - a.missingCount || a.name.localeCompare(b.name));
+
+    if ($("dashMetricMissingCount")) $("dashMetricMissingCount").textContent = dashMissingStudents.length.toLocaleString();
+    if ($("dashMetricMissingSub")) $("dashMetricMissingSub").textContent = `${dashMissingStudents.length.toLocaleString()} student${dashMissingStudents.length !== 1 ? 's' : ''} missing exam`;
+    if ($("dashBadgeMissingCount")) $("dashBadgeMissingCount").textContent = dashMissingStudents.length.toLocaleString();
+  } catch (err) {
+    console.warn("Missing students audit error:", err);
+  }
+
   // ── 3. Update Performance Tiers ──
   if ($("dashTierTotalLabel")) $("dashTierTotalLabel").textContent = `${totalAssessments.toLocaleString()} Scores Analyzed`;
 
@@ -840,11 +1059,9 @@ function renderDashboardSubjectRadar() {
     return;
   }
 
-  const renderSubjectRow = (s, isIntervention) => {
+  const renderSubjectRow = (s) => {
     const badgeColor = s.passRate >= 75 ? "#10b981" : (s.passRate >= 50 ? "#f59e0b" : "#ef4444");
-    const accentBorder = isIntervention
-      ? (s.fails > 0 ? "border-left:4px solid #ef4444;" : "border-left:4px solid #f59e0b;")
-      : "border-left:4px solid #10b981;";
+    const accentBorder = "border-left:4px solid #10b981;";
 
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);${accentBorder}width:100%;box-sizing:border-box;gap:8px;">
@@ -856,50 +1073,16 @@ function renderDashboardSubjectRadar() {
         </div>
         <div style="text-align:right;flex-shrink:0;white-space:nowrap;">
           <div style="font-size:12px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
-          <div style="font-size:11px;color:${s.fails > 0 ? '#ef4444' : '#10b981'};font-weight:600;">
-            ${s.fails > 0 ? `${s.fails} failed` : 'Zero fails'}
+          <div style="font-size:11px;color:#10b981;font-weight:600;">
+            ${(s.total - s.fails).toLocaleString()} passed
           </div>
         </div>
       </div>
     `;
   };
 
-  const getInterventionList = () => {
-    const failsList = dashSubjectStats.filter(s => s.fails > 0).sort((a, b) => b.fails - a.fails || a.passRate - b.passRate);
-    const lowPassList = dashSubjectStats.filter(s => s.fails === 0 && s.passRate < 75).sort((a, b) => a.passRate - b.passRate || a.avgScore - b.avgScore);
-    return [...failsList, ...lowPassList];
-  };
-
-  const getBestList = () => {
-    return [...dashSubjectStats].sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
-  };
-
-  if (dashSubjectView === "needs_support") {
-    const interventionList = getInterventionList();
-    if (!interventionList.length) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:24px 14px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.3);width:100%;box-sizing:border-box;">
-          <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#10b981;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div style="font-weight:700;color:#10b981;font-size:13px;margin-bottom:2px;">No Curriculum Interventions Required</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">All evaluated subjects currently meet academic benchmarks with zero failing outcomes.</div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="if(document.getElementById('dashSubjectTabBest')) document.getElementById('dashSubjectTabBest').click();" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
-            <span>View Top Performing Subjects</span> &rarr;
-          </button>
-        </div>
-      `;
-      return;
-    }
-    container.innerHTML = interventionList.slice(0, 10).map(s => renderSubjectRow(s, true)).join("");
-    return;
-  }
-
-  if (dashSubjectView === "best") {
-    const bestList = getBestList();
-    container.innerHTML = bestList.slice(0, 10).map(s => renderSubjectRow(s, false)).join("");
-    return;
-  }
+  const bestList = [...dashSubjectStats].sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
+  container.innerHTML = bestList.slice(0, 10).map(s => renderSubjectRow(s)).join("");
 }
 
 let dashStudentByIdMap = new Map();
@@ -991,6 +1174,40 @@ window.openStudentScoreModal = function (studentId, isResit = false) {
 window.openStudentResitSlip = function (studentId) {
   window.openStudentScoreModal(studentId, true);
 };
+
+function exportMissingStudentsCsv() {
+  if (!dashMissingStudents || !dashMissingStudents.length) {
+    showToast({
+      type: "info",
+      title: "No Missing Candidates",
+      message: "There are no students with missing exam results under the current scope."
+    });
+    return;
+  }
+
+  const dashExportTerm = ($("dashFilterTerm") ? $("dashFilterTerm").value : "") || adminCurrentTerm || "Academic Term";
+  const headers = ["#", "Student Full Name", "Registration Number", "Class", "Arm", "Missing / Unwritten Subject(s)", "Status"];
+  const rows = [headers.map(h => `"${h}"`).join(",")];
+
+  dashMissingStudents.forEach((s, idx) => {
+    rows.push([
+      idx + 1,
+      s.name || "",
+      s.reg || "",
+      s.class || "",
+      s.arm || "",
+      (s.missingSubjects || []).join("; "),
+      "Not Sat / Missing"
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+  });
+
+  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const termSlug = dashExportTerm.replace(/[^a-zA-Z0-9]/g, "_");
+  a.download = `absentee_missing_students_${termSlug}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
 
 function exportRewriteRosterCsv() {
   if (!dashRewriteStudents || !dashRewriteStudents.length) {
@@ -1488,10 +1705,22 @@ function renderDashboardStudentActionCenter() {
 
   const isFailTab = (dashActiveTabStudentView === "fail");
   const isRewriteTab = (dashActiveTabStudentView === "rewrite");
+  const isMissingTab = (dashActiveTabStudentView === "missing");
 
   // Update Table Header accordingly
   if (thead) {
-    if (isRewriteTab) {
+    if (isMissingTab) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:36px;text-align:center;">#</th>
+          <th>STUDENT NAME</th>
+          <th>REG NUMBER</th>
+          <th>CLASS &amp; ARM</th>
+          <th>UNWRITTEN / MISSING SUBJECT(S)</th>
+          <th style="text-align:center;">STATUS</th>
+        </tr>
+      `;
+    } else if (isRewriteTab) {
       thead.innerHTML = `
         <tr>
           <th style="width:36px;">#</th>
@@ -1527,21 +1756,23 @@ function renderDashboardStudentActionCenter() {
     }
   }
 
-  const rawList = isRewriteTab ? dashRewriteStudents : (isFailTab ? dashAtRiskStudents : dashHonorRollStudents);
+  const rawList = isMissingTab ? dashMissingStudents : (isRewriteTab ? dashRewriteStudents : (isFailTab ? dashAtRiskStudents : dashHonorRollStudents));
   const filteredList = rawList.filter(s => {
     if (!query) return true;
-    return s.name.toLowerCase().includes(query) ||
-      s.reg.toLowerCase().includes(query) ||
-      s.class.toLowerCase().includes(query) ||
-      s.arm.toLowerCase().includes(query);
+    return (s.name || "").toLowerCase().includes(query) ||
+      (s.reg || "").toLowerCase().includes(query) ||
+      (s.class || "").toLowerCase().includes(query) ||
+      (s.arm || "").toLowerCase().includes(query);
   });
 
   if (!filteredList.length) {
-    const emptyMsg = isRewriteTab ?
-      `No students currently require rewrite under the selected cutoff (≤${dashRewriteCutoffPct}%).` :
-      (isFailTab ?
-        "Zero failing grades recorded in the selected analytical scope." :
-        "No honor roll students found matching the selected scope.");
+    const emptyMsg = isMissingTab ?
+      "✅ All students in the selected class and analytical scope have completed their examinations!" :
+      (isRewriteTab ?
+        `No students currently require rewrite under the selected cutoff (≤${dashRewriteCutoffPct}%).` :
+        (isFailTab ?
+          "Zero failing grades recorded in the selected analytical scope." :
+          "No honor roll students found matching the selected scope."));
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
     return;
   }
@@ -1550,6 +1781,31 @@ function renderDashboardStudentActionCenter() {
   filteredList.slice(0, 60).forEach((s, idx) => {
     const dashCenterTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
     const studentEffTerm = s.term || dashCenterTerm || adminCurrentTerm;
+
+    if (isMissingTab) {
+      const missingBadges = (s.missingSubjects || []).map(sub => `
+        <span style="display:inline-flex; align-items:center; gap:5px; margin:2px 4px 2px 0; padding:4px 9px; border-radius:4px; background:rgba(234,179,8,0.15); color:#d97706; font-size:11px; font-weight:700; border:1px solid rgba(234,179,8,0.35);">
+          <span>${esc(sub)}</span>
+        </span>
+      `).join("");
+
+      rowsHtml.push(`
+        <tr class="dash-student-row" style="transition:background 0.15s; border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:10px 8px;font-weight:700;color:var(--text-subtle);text-align:center;">${idx + 1}</td>
+          <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(s.name)}</td>
+          <td style="padding:10px 8px;font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(s.reg || "-")}</td>
+          <td style="padding:10px 8px;">${esc(s.class || "-")}${s.arm ? ` · ${esc(s.arm)}` : ""}</td>
+          <td style="padding:10px 8px;">${missingBadges || '<span style="color:var(--text-muted);font-size:12px;">None</span>'}</td>
+          <td style="padding:10px 8px;text-align:center;">
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:rgba(234,179,8,0.15);color:#d97706;font-size:11.5px;font-weight:700;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#d97706;"></span>
+              Not Sat
+            </span>
+          </td>
+        </tr>
+      `);
+      return;
+    }
 
     if (isRewriteTab) {
       const rewriteBadges = s.rewriteSubjects.map(rSub => {
@@ -2364,17 +2620,43 @@ if (dropZone && csvFileInput) {
 let lastLoadedCSVFile = null;
 let lastLoadedCSVText = null;
 
-const SCHOOL_SUBJECTS_CATALOG = [
-  "Mathematics", "English Language", "Basic Science", "Basic Technology", "Agricultural Science",
-  "Civic Education", "Christian Religious Studies", "Computer Studies", "Social Studies", "Physical Health Education",
-  "Business Studies", "French Language", "Home Economics", "Cultural and Creative Arts", "History",
-  "Digital Technologies", "Visual Arts", "Music", "Security Education", "Fashion Design and Garment making", "Literature in English"
-];
+function getKnownSubjectsCatalog() {
+  const set = new Set([
+    "Mathematics", "English Language", "Basic Science", "Basic Technology", "Agricultural Science",
+    "Civic Education", "Christian Religious Studies", "Islamic Religious Studies", "Computer Studies",
+    "Social Studies", "Social and Citizenship Studies", "Physical Health Education", "Business Studies",
+    "French Language", "Yoruba Language", "Home Economics", "Cultural and Creative Art",
+    "Cultural and Creative Arts", "History", "Digital Technologies", "Digital Technology",
+    "Visual Art", "Visual Arts", "Music", "Security Education", "Fashion Design and Garment making",
+    "Horticulture and Crop Production", "Beauty and Cosmetology", "Computer Hardware and GSM Repair",
+    "Literature in English", "Physics", "Chemistry", "Biology", "Further Mathematics", "Economics",
+    "Government", "Geography", "Commerce", "Financial Accounting", "Marketing", "Data Processing",
+    "ICT", "Robotics", "Technical Drawing", "Catering Craft", "Food and Nutrition"
+  ]);
+  if (typeof DEFAULT_CBT_SUBJECTS !== "undefined") {
+    Object.keys(DEFAULT_CBT_SUBJECTS).forEach(s => set.add(s));
+  }
+  if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.subjects) {
+    Object.keys(CBT_CONFIG.subjects).forEach(s => set.add(s));
+  }
+  return [...set];
+}
 
-const KNOWN_ARMS_CATALOG = [
-  "FRANKLIN", "HOLMES", "EINSTEIN", "DARWIN", "IVY", "GOLD", "SILVER", "EMERALD",
-  "DIAMOND", "RUBY", "BLUE", "GREEN", "RED", "YELLOW", "ARM A", "ARM B", "ARM C", "ARM D"
-];
+function getKnownArmsCatalog() {
+  const set = new Set([
+    "CHURCHILL", "DARWIN", "EINSTEIN", "FRANKLIN", "GRAHAM", "HOLMES", "IVY", "JOULES",
+    "EMERALD", "BERYL", "SAPPHIRE", "RUBY", "DIAMOND", "ORANGE", "ORANNGE",
+    "GOLD", "SILVER", "BLUE", "GREEN", "RED", "YELLOW", "ARM A", "ARM B", "ARM C", "ARM D"
+  ]);
+  if (typeof CBT_CONFIG !== "undefined" && CBT_CONFIG.classes) {
+    Object.values(CBT_CONFIG.classes).forEach(clsObj => {
+      if (Array.isArray(clsObj.armsDetail)) {
+        clsObj.armsDetail.forEach(a => { if (a.name) set.add(a.name.trim().toUpperCase()); });
+      }
+    });
+  }
+  return [...set];
+}
 
 function handleCSVFile(file) {
   if (!file || !file.name.toLowerCase().endsWith(".csv")) {
@@ -2417,6 +2699,9 @@ function splitLine(line, delimiter = ",") {
       if (inQuotes && line[i + 1] === '"') {
         current += '"';
         i++;
+      } else if (!inQuotes && current.trim() === "") {
+        current = "";
+        inQuotes = true;
       } else {
         inQuotes = !inQuotes;
       }
@@ -2446,7 +2731,7 @@ function parseCSV(text, filename = "", manualSubject = "") {
   const normHeaders = rawHeaders.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
 
   const isHeaderRow = normHeaders.some(h =>
-    /^(subject|course|class|arm|student|name|reg|admission|score|mark|pct|percentage|date|time|status|submission)$/.test(h)
+    /^(subject|course|class|arm|student|name|reg|regnumber|admission|score|points|mark|pct|percentage|date|time|status|submission)$/.test(h)
   );
 
   const startLine = isHeaderRow ? 1 : 0;
@@ -2461,6 +2746,7 @@ function parseCSV(text, filename = "", manualSubject = "") {
       else if (/^(classname|class|classlevel|level|grade|year)$/.test(h) && headerMap.class === undefined) headerMap.class = idx;
       else if (/^(classarm|arm|section|subclass|armname)$/.test(h) && headerMap.arm === undefined) headerMap.arm = idx;
       else if (/^(score|mark|marks|totalscore|rawscore|examscore|result)$/.test(h) && headerMap.score === undefined) headerMap.score = idx;
+      else if (/^(points|point|rawpoints)$/.test(h) && headerMap.points === undefined) headerMap.points = idx;
       else if (/^(percentage|percent|pct|percentmarks)$/.test(h) && headerMap.pct === undefined) headerMap.pct = idx;
       else if (/^(date|datetime|dateandtime|timestamp|time|submittedat|submissiontime|examdate)$/.test(h) && headerMap.date === undefined) headerMap.date = idx;
       else if (/^(status|submission|submissiontype|submissionstatus|mode|type)$/.test(h) && headerMap.status === undefined) headerMap.status = idx;
@@ -2468,12 +2754,18 @@ function parseCSV(text, filename = "", manualSubject = "") {
     });
   }
 
-  // Sample data lines to run content heuristics
+  const knownSubjects = getKnownSubjectsCatalog();
+  const knownSubjectsLow = new Set(knownSubjects.map(s => s.toLowerCase()));
+  const knownArmsSet = new Set(getKnownArmsCatalog());
+  const assignedHeaderIndices = new Set(Object.values(headerMap));
+
+  // Sample data lines to run content heuristics ONLY for unmapped columns
   const sampleDataLines = lines.slice(startLine, Math.min(lines.length, startLine + 10));
   const colRoles = {};
   const maxCols = Math.max(...sampleDataLines.map(l => splitLine(l, delimiter).length));
 
   for (let colIdx = 0; colIdx < maxCols; colIdx++) {
+    if (assignedHeaderIndices.has(colIdx)) continue;
     const colValues = sampleDataLines.map(l => {
       const parts = splitLine(l, delimiter);
       return (parts[colIdx] || "").replace(/^["']|["']$/g, "").trim();
@@ -2484,22 +2776,22 @@ function parseCSV(text, filename = "", manualSubject = "") {
     const isReg = colValues.filter(v => /^STDS\d+-\d+/i.test(v) || /^[A-Z]{3,}\d*-\d+/i.test(v)).length >= (colValues.length * 0.5);
     if (isReg) { colRoles[colIdx] = "reg"; continue; }
 
-    const isSubmission = colValues.filter(v => /^(NORMAL|LATE|AUTO|EXTRA)\s*(SUBMISSION)?$/i.test(v) || /^SUBMISSION$/i.test(v)).length >= (colValues.length * 0.5);
+    const isSubmission = colValues.filter(v => /^(NORMAL|LATE|AUTO|EXTRA)\s*(SUBMISSION)?$/i.test(v) || /(submission|elapsed)/i.test(v)).length >= (colValues.length * 0.5);
     if (isSubmission) { colRoles[colIdx] = "status"; continue; }
 
-    const isQuestionFraction = colValues.filter(v => /^\d+\s*(of|\/)\s*\d+$/i.test(v)).length >= (colValues.length * 0.5);
+    const isQuestionFraction = colValues.filter(v => /^\d+(?:\.\d+)?\s*(of|\/)\s*\d+(?:\.\d+)?$/i.test(v)).length >= (colValues.length * 0.5);
     if (isQuestionFraction) { colRoles[colIdx] = "questions"; continue; }
 
-    const isArm = colValues.filter(v => KNOWN_ARMS_CATALOG.includes(v.toUpperCase()) || /^(Franklin|Holmes|Einstein|Darwin|Ivy|Gold|Silver|Emerald|Diamond|Ruby|Blue|Green|Red|Yellow|Arm\s*[A-Z]|[A-D])$/i.test(v)).length >= (colValues.length * 0.5);
+    const isArm = colValues.filter(v => knownArmsSet.has(v.toUpperCase()) || /^(Arm\s*[A-Z]|[A-D])$/i.test(v)).length >= (colValues.length * 0.5);
     if (isArm) { colRoles[colIdx] = "arm"; continue; }
 
     const isClass = colValues.filter(v => /^(Year\s*\d+|Grade\s*\d+|JSS\s*\d|SSS\s*\d|Basic\s*\d|Primary\s*\d)/i.test(v)).length >= (colValues.length * 0.5);
     if (isClass) { colRoles[colIdx] = "class"; continue; }
 
-    const isSubject = colValues.filter(v => SCHOOL_SUBJECTS_CATALOG.some(sub => sub.toLowerCase() === v.toLowerCase())).length >= (colValues.length * 0.5);
+    const isSubject = colValues.filter(v => knownSubjectsLow.has(v.toLowerCase())).length >= (colValues.length * 0.5);
     if (isSubject) { colRoles[colIdx] = "subject"; continue; }
 
-    const isDate = colValues.filter(v => /\b(AM|PM)\b/i.test(v) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(v) || /\d{4}-\d{2}-\d{2}/.test(v) || /[A-Za-z]{3}\s+\d{1,2},\s*\d{4}/.test(v)).length >= (colValues.length * 0.5);
+    const isDate = colValues.filter(v => /\b(AM|PM)\b/i.test(v) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(v) || /\d{4}-\d{2}-\d{2}/.test(v) || /[A-Za-z]{3}\s+\d{1,2}(?:,\s*\d{4})?/.test(v)).length >= (colValues.length * 0.5);
     if (isDate) { colRoles[colIdx] = "date"; continue; }
 
     const isPct = colValues.filter(v => /^\d+(\.\d+)?%$/.test(v)).length >= (colValues.length * 0.5);
@@ -2508,15 +2800,23 @@ function parseCSV(text, filename = "", manualSubject = "") {
     const isNumericScore = colValues.filter(v => /^\d+(\.\d+)?$/.test(v) && parseFloat(v) <= 100).length >= (colValues.length * 0.5);
     if (isNumericScore && headerMap.score === undefined) { colRoles[colIdx] = "score"; continue; }
 
-    const isStudentName = colValues.filter(v => /^[A-Za-z\s\.\-]{4,60}$/.test(v) && v.split(/\s+/).length >= 2 && !/submission/i.test(v)).length >= (colValues.length * 0.5);
+    const isStudentName = colValues.filter(v =>
+      /^[A-Za-z\s\.\-']{4,80}$/.test(v) &&
+      v.split(/\s+/).filter(Boolean).length >= 2 &&
+      !/(submission|elapsed)/i.test(v) &&
+      !knownSubjectsLow.has(v.toLowerCase()) &&
+      !knownArmsSet.has(v.toUpperCase())
+    ).length >= (colValues.length * 0.5);
     if (isStudentName) { colRoles[colIdx] = "student"; continue; }
   }
 
+  // Always prefer explicit CSV headers over heuristic guesses
   const getCol = (role) => {
+    if (headerMap[role] !== undefined) return headerMap[role];
     for (const [idx, r] of Object.entries(colRoles)) {
       if (r === role) return parseInt(idx, 10);
     }
-    return headerMap[role] !== undefined ? headerMap[role] : -1;
+    return -1;
   };
 
   const studentCol = getCol("student") !== -1 ? getCol("student") : 3;
@@ -2524,7 +2824,8 @@ function parseCSV(text, filename = "", manualSubject = "") {
   const classCol = getCol("class") !== -1 ? getCol("class") : 1;
   const armCol = getCol("arm") !== -1 ? getCol("arm") : 2;
   const subjectCol = getCol("subject");
-  const scoreCol = getCol("score") !== -1 ? getCol("score") : 6;
+  const scoreCol = getCol("score") !== -1 ? getCol("score") : (headerMap.points !== undefined ? headerMap.points : 6);
+  const pointsCol = headerMap.points !== undefined ? headerMap.points : -1;
   const pctCol = getCol("pct") !== -1 ? getCol("pct") : 8;
   const dateCol = getCol("date") !== -1 ? getCol("date") : 9;
   const questionsCol = getCol("questions");
@@ -2533,7 +2834,7 @@ function parseCSV(text, filename = "", manualSubject = "") {
   let fallbackSubject = manualSubject || "";
   if (!fallbackSubject && filename) {
     const fLow = filename.toLowerCase();
-    const foundSub = SCHOOL_SUBJECTS_CATALOG.find(s => fLow.includes(s.toLowerCase()));
+    const foundSub = knownSubjects.find(s => fLow.includes(s.toLowerCase()));
     if (foundSub) fallbackSubject = foundSub;
   }
   if (!fallbackSubject) fallbackSubject = "Mathematics";
@@ -2548,23 +2849,30 @@ function parseCSV(text, filename = "", manualSubject = "") {
 
     // Student name
     let student = (studentCol !== -1 && c[studentCol]) ? c[studentCol].replace(/^["']|["']$/g, "").trim().toUpperCase() : "";
-    if (!student || /^(NORMAL|LATE|AUTO)\s*SUBMISSION$/i.test(student) || KNOWN_ARMS_CATALOG.includes(student)) {
-      const nameCand = c.find(val => /^[A-Za-z\s\.\-]{5,60}$/.test(val) && val.split(/\s+/).length >= 2 && !/submission/i.test(val) && !KNOWN_ARMS_CATALOG.includes(val.toUpperCase()));
+    if (!student || /^(NORMAL|LATE|AUTO|EXTRA)\s*(SUBMISSION)?$/i.test(student) || /(submission|elapsed)/i.test(student) || knownArmsSet.has(student) || (headerMap.student === undefined && knownSubjectsLow.has(student.toLowerCase()))) {
+      const nameCand = c.find((val, idx) =>
+        idx !== subjectCol && idx !== armCol && idx !== classCol &&
+        /^[A-Za-z\s\.\-']{4,80}$/.test(val) &&
+        val.split(/\s+/).filter(Boolean).length >= 2 &&
+        !/(submission|elapsed)/i.test(val) &&
+        !knownArmsSet.has(val.toUpperCase()) &&
+        !knownSubjectsLow.has(val.toLowerCase())
+      );
       if (nameCand) student = nameCand.trim().toUpperCase();
     }
     if (!student) continue;
 
     // Reg number
     let reg = (regCol !== -1 && c[regCol]) ? c[regCol].replace(/^["']|["']$/g, "").trim() : "";
-    if (!/^STDS\d+/i.test(reg)) {
+    if (!/^STDS\d+/i.test(reg) && headerMap.reg === undefined) {
       const regCand = c.find(val => /^STDS\d+-\d+/i.test(val) || /^[A-Z]{3,}\d*-\d+/i.test(val));
       if (regCand) reg = regCand.trim();
     }
 
     // Arm
     let arm = (armCol !== -1 && c[armCol]) ? c[armCol].replace(/^["']|["']$/g, "").trim().toUpperCase() : "";
-    if (!KNOWN_ARMS_CATALOG.includes(arm)) {
-      const armCand = c.find(val => KNOWN_ARMS_CATALOG.includes(val.toUpperCase()));
+    if ((!arm || !knownArmsSet.has(arm)) && headerMap.arm === undefined) {
+      const armCand = c.find(val => knownArmsSet.has(val.toUpperCase()));
       if (armCand) arm = armCand.trim().toUpperCase();
     }
 
@@ -2583,12 +2891,15 @@ function parseCSV(text, filename = "", manualSubject = "") {
 
     // Subject
     let subject = (subjectCol !== -1 && c[subjectCol]) ? c[subjectCol].replace(/^["']|["']$/g, "").trim() : "";
-    if (!subject || KNOWN_ARMS_CATALOG.includes(subject.toUpperCase())) {
+    if (!subject || (headerMap.subject === undefined && knownArmsSet.has(subject.toUpperCase()))) {
       subject = fallbackSubject;
     }
 
     // Score & Percentage
     let score = (scoreCol !== -1 && c[scoreCol]) ? c[scoreCol].replace(/^["']|["']$/g, "").trim() : "";
+    if (!score && pointsCol !== -1 && c[pointsCol]) {
+      score = c[pointsCol].replace(/^["']|["']$/g, "").trim();
+    }
     let pct = 0;
     if (pctCol !== -1 && c[pctCol]) {
       const pctMatch = c[pctCol].replace(/[^0-9.]/g, "");
@@ -2598,10 +2909,10 @@ function parseCSV(text, filename = "", manualSubject = "") {
 
     // If score has "X of Y" (or questionsCol has it)
     const qFraction = (questionsCol !== -1 && c[questionsCol]) ? c[questionsCol] : score;
-    const qMatch = (qFraction || "").match(/(\d+)\s*(?:of|\/)\s*(\d+)/i);
+    const qMatch = (qFraction || "").match(/(\d+(?:\.\d+)?)\s*(?:of|\/)\s*(\d+(?:\.\d+)?)/i);
     if (qMatch) {
-      const correct = parseInt(qMatch[1], 10);
-      const totalQ = parseInt(qMatch[2], 10);
+      const correct = parseFloat(qMatch[1]);
+      const totalQ = parseFloat(qMatch[2]);
       if (!pct && totalQ > 0) pct = Math.round((correct / totalQ) * 100);
       if (!score || score === qFraction) score = String(correct);
     } else {
@@ -2612,8 +2923,21 @@ function parseCSV(text, filename = "", manualSubject = "") {
       }
     }
 
-    // Date
-    let date = (dateCol !== -1 && c[dateCol]) ? c[dateCol].replace(/^["']|["']$/g, "").trim() : "";
+    // Date (handles unquoted comma dates like "Nov 12, 2026, 03:44 PM")
+    let date = "";
+    if (dateCol !== -1 && c[dateCol]) {
+      if (isHeaderRow && headerMap.date !== undefined && dateCol === rawHeaders.length - 1 && c.length > rawHeaders.length) {
+        date = c.slice(dateCol).map(v => v.replace(/^["']|["']$/g, "").trim()).filter(Boolean).join(", ");
+      } else {
+        date = c[dateCol].replace(/^["']|["']$/g, "").trim();
+        if (/^[A-Za-z]{3,9}\s+\d{1,2}$/.test(date) && c[dateCol + 1] && /^\d{4}$/.test(c[dateCol + 1])) {
+          date += ", " + c[dateCol + 1].trim();
+          if (c[dateCol + 2] && /\d{1,2}:\d{2}/.test(c[dateCol + 2])) {
+            date += ", " + c[dateCol + 2].trim();
+          }
+        }
+      }
+    }
     if (!date) date = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
     if (!subjects[subject]) subjects[subject] = [];
@@ -2795,6 +3119,12 @@ $("uploadScoresBtn").onclick = async () => {
     if (typeof renderExecutiveDashboard === "function") renderExecutiveDashboard();
     await loadLiveTerms();
 
+    // ── Missing Student Audit: check uploaded scores against the directory ──
+    if (_studentDirectory.length > 0) {
+      const uploadedClasses = [...new Set(allRowsToSave.map(r => r.class).filter(Boolean))];
+      triggerPostUploadMissingCheck(term, subjectList, uploadedClasses);
+    }
+
     setTimeout(() => {
       $("csvClearBtn")?.click();
       if ($("uploadProgressWrap")) $("uploadProgressWrap").style.display = "none";
@@ -2810,6 +3140,433 @@ $("uploadScoresBtn").onclick = async () => {
 function setUploadProgress(pct, text) {
   $("uploadProgressBar").style.width = pct + "%";
   $("uploadProgressText").textContent = text;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// STUDENT DIRECTORY MANAGER & AUDIT NORMALIZATION HELPERS
+// ══════════════════════════════════════════════════════════════════════════
+
+let _studentDirectory = []; // { fullName, reg, class, arm, gender, status }
+let _studentDirectoryPromise = null;
+
+function auditCanonicalSubject(subjectName) {
+  if (typeof canonicalSubjectKey === "function") return canonicalSubjectKey(subjectName);
+  return String(subjectName || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizeAuditClassKey(className) {
+  if (typeof normalizeClassLevelKey === "function") return normalizeClassLevelKey(className);
+  return String(className || "").trim().toUpperCase().replace(/\s+/g, " ");
+}
+
+function normalizeAuditRegKey(reg) {
+  return String(reg || "").trim().toUpperCase();
+}
+
+function compactAuditRegKey(reg) {
+  return String(reg || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeAuditNameKey(name) {
+  return String(name || "").trim().toUpperCase().replace(/\s+/g, " ");
+}
+
+function sortedAuditNameTokens(name) {
+  const norm = normalizeAuditNameKey(name);
+  if (!norm) return "";
+  return norm.split(" ").filter(Boolean).sort().join(" ");
+}
+
+function getStudentIdentityLookupKeys(reg, name, clsKey) {
+  const keys = [];
+  const rExact = normalizeAuditRegKey(reg);
+  const rCompact = compactAuditRegKey(reg);
+  const nNorm = normalizeAuditNameKey(name);
+  const nTokens = sortedAuditNameTokens(name);
+  if (rExact) keys.push(`R:${rExact}`);
+  if (rCompact && rCompact !== rExact) keys.push(`C:${rCompact}`);
+  if (nNorm && clsKey) keys.push(`N:${nNorm}|${clsKey}`);
+  if (nTokens && clsKey && nTokens !== nNorm) keys.push(`T:${nTokens}|${clsKey}`);
+  return keys;
+}
+
+function indexStudentWrittenSubject(writtenMap, reg, name, clsKey, subCanon) {
+  if (!subCanon) return;
+  getStudentIdentityLookupKeys(reg, name, clsKey).forEach(k => {
+    if (!writtenMap.has(k)) writtenMap.set(k, new Set());
+    writtenMap.get(k).add(subCanon);
+  });
+}
+
+function getStudentWrittenSubjects(writtenMap, reg, name, clsKey) {
+  const combined = new Set();
+  getStudentIdentityLookupKeys(reg, name, clsKey).forEach(k => {
+    const subs = writtenMap.get(k);
+    if (subs) subs.forEach(s => combined.add(s));
+  });
+  return combined;
+}
+
+function isSubjectInClassCurriculum(className, subjectName) {
+  const clsKey = normalizeAuditClassKey(className);
+  const subCanon = auditCanonicalSubject(subjectName);
+  const curr = (typeof SCHOOL_CLASS_CURRICULUM !== "undefined") ? SCHOOL_CLASS_CURRICULUM[clsKey] : null;
+  if (!curr || !subCanon) return true;
+  if (curr.core.some(c => auditCanonicalSubject(c) === subCanon)) return true;
+  return (curr.choiceGroups || []).some(g => g.options.some(opt => auditCanonicalSubject(opt) === subCanon));
+}
+
+function auditIsWithdrawnStudent(reg, fullName) {
+  if (typeof isWithdrawnStudent === "function") return isWithdrawnStudent(reg, fullName);
+  return false;
+}
+
+// Parse student directory CSV (matches the school's export format)
+function parseStudentDirectoryCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const headerRaw = lines[0];
+  const cols = headerRaw.split(",").map(c => c.replace(/^"|"$/g, "").trim().toLowerCase());
+  const idx = {
+    fullName: cols.indexOf("full name"),
+    reg: cols.indexOf("registration number"),
+    cls: cols.indexOf("class"),
+    arm: cols.indexOf("arm"),
+    gender: cols.indexOf("gender"),
+    status: cols.indexOf("status"),
+    firstName: cols.indexOf("first name"),
+    lastName: cols.indexOf("last name")
+  };
+  const students = [];
+  for (let i = 1; i < lines.length; i++) {
+    const raw = lines[i];
+    if (!raw.trim()) continue;
+    // CSV-safe split (handles quoted commas)
+    const cells = [];
+    let inQ = false, cur = "";
+    for (let ch of raw) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    cells.push(cur.trim());
+    const get = (ii) => (ii >= 0 && ii < cells.length) ? cells[ii].replace(/^"|"$/g, "").trim() : "";
+    const fullName = get(idx.fullName) || `${get(idx.firstName)} ${get(idx.lastName)}`.trim();
+    const reg = get(idx.reg);
+    const cls = get(idx.cls);
+    const arm = get(idx.arm);
+    const status = get(idx.status) || "Active";
+    if (!fullName || !cls) continue;
+    if (status.toLowerCase() === "inactive" || status.toLowerCase() === "withdrawn") continue;
+    if (auditIsWithdrawnStudent(reg, fullName)) continue;
+    students.push({ fullName: fullName.toUpperCase(), reg, class: cls, arm: arm.toUpperCase(), gender: get(idx.gender), status });
+  }
+  return students;
+}
+
+function renderDirectorySummary(students) {
+  const grid = $("dirSummaryGrid");
+  if (!grid) return;
+  const byClass = {};
+  students.forEach(s => {
+    const k = s.class;
+    if (!byClass[k]) byClass[k] = 0;
+    byClass[k]++;
+  });
+  grid.innerHTML = Object.entries(byClass).sort((a, b) => a[0].localeCompare(b[0])).map(([cls, cnt]) =>
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);font-size:12.5px;font-weight:700;color:var(--text)">
+      <span style="color:#818cf8">${esc(cls)}</span>
+      <span style="background:var(--surface-alt);border-radius:10px;padding:1px 7px;font-size:11px">${cnt}</span>
+    </span>`
+  ).join("");
+  if ($("dirSummaryWrap")) $("dirSummaryWrap").style.display = "block";
+  const badge = $("dirEnrolledBadge");
+  if (badge) { badge.textContent = `${students.length} Students Enrolled`; badge.style.display = ""; }
+}
+
+async function loadStudentDirectoryFromCloud(forceRefresh = false) {
+  if (_studentDirectoryPromise && !forceRefresh) return _studentDirectoryPromise;
+  _studentDirectoryPromise = (async () => {
+    try {
+      const result = await window.dbClient.getStudentDirectory();
+      if (result && Array.isArray(result.students) && result.students.length > 0) {
+        _studentDirectory = result.students.filter(s => !auditIsWithdrawnStudent(s.reg, s.fullName));
+        renderDirectorySummary(_studentDirectory);
+        populateAuditDropdowns();
+        const dtitle = $("dirDropTitle");
+        const dsub = $("dirDropSub");
+        if (dtitle) dtitle.textContent = `\u2705 Directory loaded: ${_studentDirectory.length} students`;
+        if (dsub) dsub.textContent = `Last saved: ${result.uploadedAt ? new Date(result.uploadedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Unknown"}`;
+      }
+    } catch (e) {
+      console.warn("Could not load student directory:", e);
+    }
+    return _studentDirectory;
+  })();
+  return _studentDirectoryPromise;
+}
+
+function handleDirectoryFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const students = parseStudentDirectoryCSV(e.target.result);
+    if (!students.length) {
+      showToast({ type: "error", title: "Parse Error", message: "No valid student records found. Check the CSV format." });
+      return;
+    }
+    _studentDirectory = students;
+    const dtitle = $("dirDropTitle");
+    const dsub = $("dirDropSub");
+    if (dtitle) dtitle.textContent = `\u2705 ${students.length} students parsed from: ${file.name}`;
+    if (dsub) dsub.textContent = "Review summary below, then click '\u{1F4BE} Save Directory to Cloud'";
+    const statusRow = $("dirStatusRow");
+    if (statusRow) {
+      statusRow.style.display = "flex";
+      const msg = $("dirStatusMsg");
+      if (msg) msg.textContent = `${students.length} active students parsed successfully.`;
+      const saveBtn = $("dirSaveBtn");
+      if (saveBtn) { saveBtn.style.display = ""; saveBtn.textContent = "\u{1F4BE} Save Directory to Cloud"; saveBtn.disabled = false; }
+    }
+    renderDirectorySummary(students);
+    populateAuditDropdowns();
+  };
+  reader.readAsText(file);
+}
+
+// Wire up Directory dropzone
+(function wireDirectoryUpload() {
+  const zone = $("dirDropZone");
+  const fileInput = $("dirFileInput");
+  if (!zone || !fileInput) return;
+
+  zone.onclick = () => fileInput.click();
+  zone.ondragover = (e) => { e.preventDefault(); zone.style.borderColor = "var(--accent)"; };
+  zone.ondragleave = () => { zone.style.borderColor = "var(--border)"; };
+  zone.ondrop = (e) => {
+    e.preventDefault();
+    zone.style.borderColor = "var(--border)";
+    const file = e.dataTransfer.files[0];
+    if (file) handleDirectoryFile(file);
+  };
+  fileInput.onchange = () => { if (fileInput.files[0]) handleDirectoryFile(fileInput.files[0]); };
+
+  const saveBtn = $("dirSaveBtn");
+  if (saveBtn) saveBtn.onclick = async () => {
+    if (!_studentDirectory.length) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+    try {
+      await window.dbClient.saveStudentDirectory(_studentDirectory);
+      saveBtn.textContent = "\u2705 Saved!";
+      showToast({ type: "success", title: "Directory Saved", message: `${_studentDirectory.length} students saved to cloud.` });
+      setTimeout(() => { saveBtn.style.display = "none"; saveBtn.disabled = false; saveBtn.textContent = "\u{1F4BE} Save Directory to Cloud"; }, 2500);
+    } catch (e) {
+      saveBtn.textContent = "Save Failed";
+      saveBtn.disabled = false;
+    }
+  };
+
+  const clearBtn = $("dirClearBtn");
+  if (clearBtn) clearBtn.onclick = () => {
+    _studentDirectory = [];
+    fileInput.value = "";
+    if ($("dirDropTitle")) $("dirDropTitle").textContent = "Click or drag Student Directory CSV here";
+    if ($("dirDropSub")) $("dirDropSub").textContent = "Expected columns: Full Name, Registration Number, Class, Arm, Status";
+    if ($("dirSummaryWrap")) $("dirSummaryWrap").style.display = "none";
+    if ($("dirStatusRow")) $("dirStatusRow").style.display = "none";
+    if ($("dirEnrolledBadge")) $("dirEnrolledBadge").style.display = "none";
+  };
+
+  const refreshBtn = $("dirRefreshBtn");
+  if (refreshBtn) refreshBtn.onclick = () => loadStudentDirectoryFromCloud(true);
+
+  // Auto-load from cloud on page init
+  loadStudentDirectoryFromCloud();
+})();
+
+// ══════════════════════════════════════════════════════════════════════════
+// MISSING EXAM RESULTS AUDIT ENGINE
+// ══════════════════════════════════════════════════════════════════════════
+
+function runMissingStudentAudit(filterClass, filterSubject, filterTerm) {
+  if (!_studentDirectory.length) {
+    showToast({ type: "warn", title: "No Directory", message: "Upload or load the Student Directory first to run the audit." });
+    return null;
+  }
+
+  const filterTermNorm = normalizeTermKey(filterTerm);
+  const filterClsKey = filterClass && filterClass.trim() ? normalizeAuditClassKey(filterClass) : "";
+  const filterSubCanon = filterSubject && filterSubject.trim() ? auditCanonicalSubject(filterSubject) : "";
+
+  const studentWrittenMap = new Map();
+  allScoreRows.forEach(r => {
+    const rTerm = (r.term || "").trim();
+    if (filterTermNorm && rTerm && normalizeTermKey(rTerm) !== filterTermNorm) return;
+    const rClsKey = normalizeAuditClassKey(r.class || r.className || "");
+    if (filterClsKey && rClsKey !== filterClsKey) return;
+    const rSubCanon = auditCanonicalSubject(r.subject);
+    if (!rSubCanon) return;
+    indexStudentWrittenSubject(studentWrittenMap, r.reg, r.student, rClsKey, rSubCanon);
+  });
+
+  const enrolled = _studentDirectory.filter(s => {
+    const statusLow = (s.status || "").trim().toLowerCase();
+    if (statusLow === "inactive" || statusLow === "withdrawn") return false;
+    if (auditIsWithdrawnStudent(s.reg, s.fullName)) return false;
+    const sClsKey = normalizeAuditClassKey(s.class);
+    if (filterClsKey && sClsKey !== filterClsKey) return false;
+    if (filterSubCanon && !isSubjectInClassCurriculum(s.class, filterSubject)) return false;
+    return true;
+  });
+
+  const curConfigMap = (typeof SCHOOL_CLASS_CURRICULUM !== "undefined") ? SCHOOL_CLASS_CURRICULUM : {};
+
+  const missing = enrolled.filter(s => {
+    const sClsKey = normalizeAuditClassKey(s.class);
+    const written = getStudentWrittenSubjects(studentWrittenMap, s.reg, s.fullName, sClsKey);
+    if (!filterSubCanon) return written.size === 0;
+    if (written.has(filterSubCanon)) return false;
+
+    const curr = curConfigMap[sClsKey];
+    if (curr && curr.choiceGroups) {
+      const group = curr.choiceGroups.find(g =>
+        g.options.some(opt => auditCanonicalSubject(opt) === filterSubCanon)
+      );
+      if (group && group.options.some(opt => written.has(auditCanonicalSubject(opt)))) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const haveScore = enrolled.length - missing.length;
+
+  const summaryBar = $("missingAuditSummaryBar");
+  if (summaryBar) {
+    summaryBar.style.display = "flex";
+    const eEl = $("missingAuditEnrolled");
+    const hEl = $("missingAuditHaveScore");
+    const mEl = $("missingAuditMissing");
+    if (eEl) eEl.textContent = `Enrolled: ${enrolled.length}`;
+    if (hEl) hEl.textContent = `\u2705 Have score: ${haveScore} (${enrolled.length ? Math.round((haveScore / enrolled.length) * 100) : 0}%)`;
+    if (mEl) mEl.textContent = `\u26a0\ufe0f Missing: ${missing.length}`;
+  }
+
+  const tbody = $("missingAuditBody");
+  if (!tbody) return { missing, enrolled, haveScore };
+
+  if (!missing.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#10b981;font-weight:700">\u2705 All enrolled students have a score for this selection.</td></tr>`;
+    return { missing, enrolled, haveScore };
+  }
+
+  tbody.innerHTML = missing.map((s, i) => `
+    <tr>
+      <td style="padding:8px;text-align:center;color:var(--text-muted)">${i + 1}</td>
+      <td style="padding:8px;font-weight:600;color:var(--text)">${esc(s.fullName)}</td>
+      <td style="padding:8px;font-family:monospace;font-size:12px;color:var(--text-muted)">${esc(s.reg)}</td>
+      <td style="padding:8px">${esc(s.class)}</td>
+      <td style="padding:8px">${esc(s.arm)}</td>
+      <td style="padding:8px"><span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(245,158,11,0.15);color:#f59e0b">Not Written</span></td>
+    </tr>
+  `).join("");
+
+  return { missing, enrolled, haveScore };
+}
+
+// Wire audit panel
+(function wireAuditPanel() {
+  const runBtn = $("missingAuditRunBtn");
+  if (runBtn) runBtn.onclick = () => {
+    const cls = $("missingAuditClass") ? $("missingAuditClass").value : "";
+    const subj = $("missingAuditSubject") ? $("missingAuditSubject").value : "";
+    const term = $("missingAuditTerm") ? $("missingAuditTerm").value : "";
+    runMissingStudentAudit(cls, subj, term);
+  };
+
+  const closeBtn = $("missingAuditCloseBtn");
+  if (closeBtn) closeBtn.onclick = () => {
+    const card = $("missingAuditCard");
+    if (card) card.style.display = "none";
+  };
+
+  const alertViewBtn = $("missingAlertViewBtn");
+  if (alertViewBtn) alertViewBtn.onclick = () => {
+    const card = $("missingAuditCard");
+    if (card) { card.style.display = ""; card.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    const alertEl = $("missingUploadAlert");
+    if (alertEl) alertEl.style.display = "none";
+  };
+
+  const exportBtn = $("missingAuditExportBtn");
+  if (exportBtn) exportBtn.onclick = () => {
+    const rows = $("missingAuditBody") ? $("missingAuditBody").querySelectorAll("tr") : [];
+    if (!rows.length) return;
+    const csv = ["Student Name,Registration Number,Class,Arm,Status"];
+    rows.forEach(tr => {
+      const cells = tr.querySelectorAll("td");
+      if (cells.length < 5) return;
+      csv.push([cells[1].textContent.trim(), cells[2].textContent.trim(), cells[3].textContent.trim(), cells[4].textContent.trim(), "Not Written"].map(v => `"${v}"`).join(","));
+    });
+    const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `missing_students_audit_${Date.now()}.csv`;
+    a.click();
+  };
+})();
+
+function populateAuditDropdowns(term) {
+  const classSet = new Set(_studentDirectory.map(s => s.class));
+  const subjectSet = new Set(allScoreRows.map(r => r.subject).filter(Boolean));
+  const termSet = new Set(allScoreRows.map(r => r.term).filter(Boolean));
+
+  const clsSel = $("missingAuditClass");
+  const subjSel = $("missingAuditSubject");
+  const termSel = $("missingAuditTerm");
+
+  if (clsSel) clsSel.innerHTML = `<option value="">All Classes</option>` + [...classSet].sort().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  if (subjSel) subjSel.innerHTML = `<option value="">All Subjects</option>` + [...subjectSet].sort().map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (termSel) termSel.innerHTML = `<option value="">All Terms</option>` + [...termSet].sort().map(t => `<option value="${esc(t)}" ${t === term ? "selected" : ""}>${esc(t)}</option>`).join("");
+}
+
+function triggerPostUploadMissingCheck(term, subjects, classes) {
+  if (!_studentDirectory.length) return;
+
+  const totalMissingSet = new Set();
+  const auditResults = [];
+
+  classes.forEach(cls => {
+    subjects.forEach(subj => {
+      if (!isSubjectInClassCurriculum(cls, subj)) return;
+      const result = runMissingStudentAudit(cls, subj, term);
+      if (result && result.missing.length > 0) {
+        result.missing.forEach(s => totalMissingSet.add(s.reg || s.fullName));
+        auditResults.push({ cls, subj, count: result.missing.length });
+      }
+    });
+  });
+
+  if (totalMissingSet.size > 0) {
+    const alertEl = $("missingUploadAlert");
+    const alertMsg = $("missingUploadAlertMsg");
+    if (alertEl && alertMsg) {
+      const summary = auditResults.slice(0, 3).map(r => `${r.count} student(s) missing in ${r.cls} \u00b7 ${r.subj}`).join("; ");
+      alertMsg.textContent = `${totalMissingSet.size} unique student(s) have no score for this upload. ${summary}${auditResults.length > 3 ? ` +${auditResults.length - 3} more...` : ""}`;
+      alertEl.style.display = "block";
+      setTimeout(() => { if (alertEl) alertEl.style.display = "none"; }, 30000);
+    }
+    const auditCard = $("missingAuditCard");
+    if (auditCard) auditCard.style.display = "";
+    populateAuditDropdowns(term);
+    if (auditResults.length > 0) {
+      const first = auditResults[0];
+      if ($("missingAuditClass")) $("missingAuditClass").value = first.cls;
+      if ($("missingAuditSubject")) $("missingAuditSubject").value = first.subj;
+      if ($("missingAuditTerm")) $("missingAuditTerm").value = term;
+      runMissingStudentAudit(first.cls, first.subj, term);
+    }
+  }
 }
 
 async function loadLiveTerms() {
@@ -5733,9 +6490,24 @@ function updateAdminTermTabs() {
   $("scoresTableHeadingText").textContent = (adminCurrentTerm || "All terms") + " — Examination Scores";
 }
 
+function normalizeTermKey(str) {
+  return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 function termScopedRows() {
   if (!adminCurrentTerm) return allScoreRows;
-  return allScoreRows.filter(r => r.term === adminCurrentTerm);
+  const targetNorm = normalizeTermKey(adminCurrentTerm);
+  return allScoreRows.filter(r => {
+    if (!r.term) return false;
+    if (r.term === adminCurrentTerm) return true;
+    const rNorm = normalizeTermKey(r.term);
+    if (rNorm === targetNorm) return true;
+    // Tolerant semantic match: e.g. "Mid Term Test" matches "Mid-Term Test", "Midterm", etc.
+    if (targetNorm.includes("midterm") && rNorm.includes("midterm")) return true;
+    if (targetNorm.includes("firsttest") && rNorm.includes("firsttest")) return true;
+    if (targetNorm.includes("firstterm") && rNorm.includes("firstterm")) return true;
+    return false;
+  });
 }
 
 function buildAdminFilters() {

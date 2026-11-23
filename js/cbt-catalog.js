@@ -358,3 +358,151 @@ function resolveCbtSessionId(sessionName) {
   if (CBT_CONFIG.sessions && CBT_CONFIG.sessions[s]) return CBT_CONFIG.sessions[s];
   return CBT_CONFIG.session || "6aabf6c9fe918aaa23f28245";
 }
+
+// Official class curriculum mapping and subject alias normalization for exam audits.
+const SUBJECT_CANONICAL_ALIASES = {
+  "cultural and creative arts": "cultural and creative art",
+  "cca": "cultural and creative art",
+  "digital technology": "digital technologies",
+  "digital tech": "digital technologies",
+  "physical and health education": "physical health education",
+  "phe": "physical health education",
+  "nigerian history": "history",
+  "yoruba": "yoruba language",
+  "yoruba studies": "yoruba language",
+  "french": "french language",
+  "intermediate science": "basic science",
+  "crs": "christian religious studies",
+  "irs": "islamic religious studies",
+  "agric science": "agricultural science",
+  "agric": "agricultural science",
+  "home econ": "home economics",
+  "english": "english language",
+  "maths": "mathematics",
+  "mathematic": "mathematics",
+  "fashion design": "fashion design and garment making",
+  "horticulture": "horticulture and crop production",
+  "social citizenship": "social and citizenship studies"
+};
+
+function canonicalSubjectKey(subjectName) {
+  const clean = String(subjectName || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!clean) return "";
+  return SUBJECT_CANONICAL_ALIASES[clean] || clean;
+}
+
+function normalizeClassLevelKey(className) {
+  const s = String(className || "").trim().toUpperCase().replace(/\s+/g, " ");
+  if (!s) return "";
+  if (s === "JSS 1" || s === "JSS1" || s === "YEAR7" || s.startsWith("YEAR 7 ")) return "YEAR 7";
+  if (s === "JSS 2" || s === "JSS2" || s === "YEAR8" || s.startsWith("YEAR 8 ")) return "YEAR 8";
+  if (s === "JSS 3" || s === "JSS3" || s === "YEAR9" || s.startsWith("YEAR 9 ")) return "YEAR 9";
+  if (s === "SSS 1" || s === "SS 1" || s === "SSS1" || s === "YEAR10") return "YEAR 10";
+  if (s === "SSS 2" || s === "SS 2" || s === "SSS2" || s === "YEAR11") return "YEAR 11";
+  if (s === "SSS 3" || s === "SS 3" || s === "SSS3" || s === "YEAR12") return "YEAR 12";
+  return s;
+}
+
+const JUNIOR_EARLY_CURRICULUM = {
+  core: [
+    "Basic Science",
+    "Business Studies",
+    "Cultural and Creative Art",
+    "Digital Technologies",
+    "English Language",
+    "French Language",
+    "History",
+    "Mathematics",
+    "Physical Health Education",
+    "Social and Citizenship Studies",
+    "Yoruba Language"
+  ],
+  choiceGroups: [
+    {
+      label: "Religious Studies (CRS / IRS)",
+      options: ["Christian Religious Studies", "Islamic Religious Studies"]
+    },
+    {
+      label: "Trade Subject (Fashion Design / Horticulture)",
+      options: [
+        "Fashion Design and Garment making",
+        "Horticulture and Crop Production"
+      ]
+    }
+  ]
+};
+
+const SCHOOL_CLASS_CURRICULUM = {
+  "YEAR 7": JUNIOR_EARLY_CURRICULUM,
+  "YEAR 8": JUNIOR_EARLY_CURRICULUM,
+  "YEAR 9": {
+    core: [
+      "Agricultural Science",
+      "Basic Science",
+      "Basic Technology",
+      "Business Studies",
+      "Civic Education",
+      "Computer Studies",
+      "Cultural and Creative Art",
+      "English Language",
+      "French Language",
+      "History",
+      "Home Economics",
+      "Mathematics",
+      "Physical Health Education",
+      "Social Studies",
+      "Yoruba Language"
+    ],
+    choiceGroups: [
+      {
+        label: "Religious Studies (CRS / IRS)",
+        options: ["Christian Religious Studies", "Islamic Religious Studies"]
+      }
+    ]
+  }
+};
+
+// Students who have left / withdrawn from the school (excluded from active rosters and missing-exam audits)
+const WITHDRAWN_STUDENTS = [
+  { name: "ADEBAYO MARYAM OLUWASEMILORE", reg: "STDS9-2024-178" },
+  { name: "ADIKA MICHEAL OLUWAFERANMI", reg: "STDS9-2024-134" },
+  { name: "AKUETIEMHE HARRISON GANIYU", reg: "STDS9-2024-061" },
+  { name: "BABATUNDE OLUWATENIOLA VIRTUE", reg: "STDS9-2024-084" },
+  { name: "EHPRAIM IFEOMA MICHELLE", reg: "STDS9-2024-162" },
+  { name: "EMMANUEL DIVINE PRINCE", reg: "STDS9-2024-183" },
+  { name: "IWU JEWEL KAMSIRIOCHI", reg: "STDS9-2024-117" },
+  { name: "KIKI GABRIEL KIKI", reg: "STDS9-2024-044" },
+  { name: "MUOTOH MELVIN CHIDUBEM", reg: "STDS9-2024-018" },
+  { name: "OGUDE DAVID UDOKA", reg: "STDS9-2024-119" },
+  { name: "OLALERE OLAOLUWA ADORATION", reg: "STDS9-2024-125" },
+  { name: "OLUBUNMI OLUWAFERANMI RICHMAN", reg: "STDS9-2024-075" },
+  { name: "OSHIN OLUWADEMILADE JEFFREY", reg: "STDS9-2024-078" },
+  { name: "SALAKO OYINDAMOLA HALEEMAT", reg: "STDS9-2024-026" },
+  { name: "SILAS CHIDALU TONY", reg: "STDS9-2024-128" },
+  { name: "SOYINKA ADERINSOLA IFEOLUWA", reg: "STDS9-2024-201" },
+  { name: "HASSAN OLAWAMIWA AWWAL", reg: "STDS9-2024-066" },
+  { name: "ADEBAYO OLUWANIFEMI FIRDAOUS", reg: "STDS8-2025-004" },
+  { name: "ADEDIRAN CHUKWUZUBE DAVID", reg: "STDS8-2025-064" },
+  { name: "AWODI JOY AWODI", reg: "STDS8-2025-100" },
+  { name: "DOMINIC CHIEMENA CLINTON", reg: "STDS8-2025-208" },
+  { name: "ENATUFE ENATUFE ENATUFE", reg: "STDS7-2026-162" },
+  { name: "EZEH SUCCESS CHISIMDIRI", reg: "STDS8-2025-078" },
+  { name: "MOHAMMED AISHA JODA", reg: "STDS8-2025-050" },
+  { name: "POPOOLA OLUWAFEMIFOLA ILYAS", reg: "STDS8-2025-057" },
+  { name: "SHOBANDA AKANNI MUBARAK", reg: "STDS8-2025-060" },
+  { name: "SYLVESTER OSAGIODUWA WISDOM", reg: "STDS8-2025-168" }
+];
+
+const _WITHDRAWN_REG_SET = new Set(
+  WITHDRAWN_STUDENTS.map(s => String(s.reg || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "")).filter(Boolean)
+);
+const _WITHDRAWN_NAME_SET = new Set(
+  WITHDRAWN_STUDENTS.map(s => String(s.name || "").trim().toUpperCase().replace(/\s+/g, " ")).filter(Boolean)
+);
+
+function isWithdrawnStudent(reg, fullName) {
+  const rCompact = String(reg || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (rCompact && _WITHDRAWN_REG_SET.has(rCompact)) return true;
+  const nNorm = String(fullName || "").trim().toUpperCase().replace(/\s+/g, " ");
+  return Boolean(nNorm && _WITHDRAWN_NAME_SET.has(nNorm));
+}

@@ -544,42 +544,6 @@
             <div class="metric-sub" id="dashMetricPassedPct">0% of evaluations</div>
           </div>
 
-          <!-- 4. Failed Outcomes / At Risk -->
-          <div class="metric-card" style="border-top:3px solid #ef4444;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <span class="metric-lbl">Failing Outcomes</span>
-              <div
-                style="width:28px;height:28px;border-radius:6px;background:rgba(239,68,68,0.12);color:#ef4444;display:flex;align-items:center;justify-content:center;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </div>
-            </div>
-            <div class="metric-val" id="dashMetricFailedCount" style="color:#ef4444;">0</div>
-            <div class="metric-sub" id="dashMetricAtRiskStudents">0 students with &ge;1 fail</div>
-          </div>
-
-          <!-- 5. Academic Average Score -->
-          <div class="metric-card" style="border-top:3px solid #8b5cf6;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <span class="metric-lbl">Academic Average</span>
-              <div
-                style="width:28px;height:28px;border-radius:6px;background:rgba(139,92,246,0.12);color:#8b5cf6;display:flex;align-items:center;justify-content:center;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <circle cx="12" cy="12" r="6" />
-                  <circle cx="12" cy="12" r="2" />
-                </svg>
-              </div>
-            </div>
-            <div class="metric-val" id="dashMetricAvgScore" style="color:#8b5cf6;">0%</div>
-            <div class="metric-sub" id="dashMetricHighestLowest">Highest: - · Lowest: -</div>
-          </div>
-
           <!-- 6. Mandatory Rewrites (Low Scores <= 25%) -->
           <div class="metric-card" id="dashCardRewriteKpi"
             style="border-top:3px solid #f59e0b;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;"
@@ -598,6 +562,26 @@
             </div>
             <div class="metric-val" id="dashMetricRewriteCount" style="color:#f59e0b;">0</div>
             <div class="metric-sub" id="dashMetricRewriteSub">0 papers needing rewrite (≤25%)</div>
+          </div>
+
+          <!-- 7. Missing Exam Results -->
+          <div class="metric-card" id="dashCardMissingKpi"
+            style="border-top:3px solid #eab308;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;"
+            title="Click to view all students with missing/unwritten exam results">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span class="metric-lbl">Missing Results</span>
+              <div
+                style="width:28px;height:28px;border-radius:6px;background:rgba(234,179,8,0.12);color:#eab308;display:flex;align-items:center;justify-content:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-val" id="dashMetricMissingCount" style="color:#eab308;">0</div>
+            <div class="metric-sub" id="dashMetricMissingSub">0 students missing exam</div>
           </div>
         </div>
 
@@ -690,40 +674,14 @@
             </div>
           </div>
 
-          <!-- Subject Performance Ranking (Top vs Intervention Required) -->
+          <!-- Subject Performance Ranking (Top Performing) -->
           <div class="card" style="margin:0;">
-            <div class="card-header">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
               <div>
-                <h3 class="card-title">Subject Performance &amp; Intervention Radar</h3>
-                <div class="card-sub">Identify top subjects and subjects requiring curriculum support.</div>
+                <h3 class="card-title">Top Performing Subjects</h3>
+                <div class="card-sub">Identify top subjects meeting academic standards.</div>
               </div>
-            </div>
-            <div class="dash-radar-segmented-tabs">
-              <button type="button" class="btn btn-secondary btn-sm active" id="dashSubjectTabBest" data-view="best">
-                <span style="display:inline-flex;align-items:center;gap:8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <polygon
-                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span>Top Performing</span>
-                </span>
-                <span id="dashBadgeSubjectTopCount" class="dash-tab-pill-badge dash-badge-pass">0</span>
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="dashSubjectTabNeedsSupport"
-                data-view="needs_support">
-                <span style="display:inline-flex;align-items:center;gap:8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <path
-                      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                  <span>Needs Intervention</span>
-                </span>
-                <span id="dashBadgeSubjectFailCount" class="dash-tab-pill-badge dash-badge-fail">0</span>
-              </button>
+              <span id="dashBadgeSubjectTopCount" class="dash-tab-pill-badge dash-badge-pass" style="font-size:12px;padding:3px 10px;">0</span>
             </div>
             <div id="dashSubjectRankingList"
               style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:4px;">
@@ -732,30 +690,20 @@
           </div>
         </div>
 
-        <!-- Actionable Student Lists (Failed/At-Risk vs Honor Roll) -->
+        <!-- Actionable Student Lists (Rewrites, Missing, Honor Roll) -->
         <div class="card dash-action-center-card" id="dashStudentActionCenterCard" style="margin-bottom:20px;">
           <div class="card-header cbt-collapsible-header" id="dashActionCenterHeader"
             style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"
             title="Click to expand or collapse Student Academic Action Center">
             <div style="flex:1;min-width:240px">
               <h3 class="card-title" style="margin:0">Student Academic Action Center</h3>
-              <div class="card-sub" style="margin:4px 0 0 0">Actionable drill-down for student counseling, intervention,
+              <div class="card-sub" style="margin:4px 0 0 0">Actionable drill-down for student rewrites, missing exams,
                 and academic honors.
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-secondary btn-sm active dash-btn-fail" id="dashStudentsTabFail"
-                  style="display:inline-flex;align-items:center;gap:5px;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="10" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  Students Requiring Intervention (<span id="dashBadgeFailCount">0</span>)
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm dash-btn-rewrite" id="dashStudentsTabRewrite"
+                <button type="button" class="btn btn-secondary btn-sm active dash-btn-rewrite" id="dashStudentsTabRewrite"
                   style="display:inline-flex;align-items:center;gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -764,6 +712,16 @@
                     <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
                   </svg>
                   Students That Need to Rewrite (<span id="dashBadgeRewriteCount">0</span>)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm dash-btn-missing" id="dashStudentsTabMissing"
+                  style="display:inline-flex;align-items:center;gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  Missing Exam Results (<span id="dashBadgeMissingCount">0</span>)
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm dash-btn-honor" id="dashStudentsTabHonor"
                   style="display:inline-flex;align-items:center;gap:5px;">
@@ -824,6 +782,39 @@
                       <polyline points="10 9 9 9 8 9" />
                     </svg>
                     Download Resit Report (PDF)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Missing Results Toolbar (Visible on Missing Tab) -->
+              <div id="dashMissingToolbar" class="dash-missing-toolbar"
+                style="display:none;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">
+                  <span style="color:#eab308;font-weight:700;display:inline-flex;align-items:center;gap:5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    Missing Exam Candidates:
+                  </span>
+                  <span id="dashMissingSummaryInfo" style="color:var(--text-muted);font-size:12px;">
+                    Enrolled students who have not written the exam for the filtered subject/class
+                  </span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="dashExportMissingBtn"
+                    style="font-size:12px;display:flex;align-items:center;gap:6px;background:var(--surface);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    Export Absentee Roster (CSV)
                   </button>
                 </div>
               </div>
@@ -1026,6 +1017,9 @@
                 style="font-size:12px;color:var(--text-muted)"></span>
             </div>
             <div class="table-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="scoresRefreshBtn"
+                title="Fetch latest scores directly from cloud"
+                style="display:inline-flex;align-items:center;gap:4px;">&#8635; Refresh Cloud</button>
               <button type="button" class="btn btn-secondary btn-sm" id="scoresPushCloudBtn"
                 title="Push saved device scores to Supabase cloud"
                 style="display:none;background:var(--accent);color:#fff;border-color:var(--accent)">&#8679; Push to
@@ -2495,8 +2489,8 @@
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
-  <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/admin.js?v=5.4"></script>
+  <script src="js/cbt-catalog.js?v=4.8"></script>
+  <script src="js/admin.js?v=5.7"></script>
 </body>
 
 </html>

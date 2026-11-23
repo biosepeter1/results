@@ -3050,7 +3050,7 @@ function handleTeacherFile(file) {
       try {
         $("tCbtParseMsg").style.color = "var(--text-muted)";
         $("tCbtParseMsg").textContent = "Reading Word document & extracting questions and diagrams...";
-        
+
         let docText = "";
         let parsed = null;
 
@@ -3152,7 +3152,7 @@ function handleTeacherFile(file) {
             el.insertAdjacentText("afterend", "\n");
           });
           content = doc.body ? (doc.body.textContent || "") : content;
-        } catch (e) {}
+        } catch (e) { }
       }
       $("tCbtRawText").value = content;
       parseTeacherCbtText();
@@ -3361,8 +3361,8 @@ function parseTeacherCbtText() {
     $("tCbtDuration").value = meta.detectedDuration;
   }
   if (meta.detectedSubject && $("tCbtSubject")) {
-    const opt = Array.from($("tCbtSubject").options).find(o => 
-      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) || 
+    const opt = Array.from($("tCbtSubject").options).find(o =>
+      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) ||
       meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
     );
     if (opt) $("tCbtSubject").value = opt.value;
@@ -3462,8 +3462,8 @@ function smartConvertAndPassExam(options = {}) {
     $("tCbtDuration").value = meta.detectedDuration;
   }
   if (meta.detectedSubject && $("tCbtSubject")) {
-    const opt = Array.from($("tCbtSubject").options).find(o => 
-      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) || 
+    const opt = Array.from($("tCbtSubject").options).find(o =>
+      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) ||
       meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
     );
     if (opt) $("tCbtSubject").value = opt.value;
@@ -3820,9 +3820,9 @@ function renderTeacherReviewQuestions() {
           <div class="cbt-q-header">
             <div style="display:flex;align-items:center;gap:8px">
               <span class="cbt-q-num">Question ${idx + 1}</span>
-              ${!isAnswered 
-                ? `<span style="font-size:11px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:4px;font-weight:600">⚠️ Click correct answer below</span>` 
-                : `<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
+              ${!isAnswered
+          ? `<span style="font-size:11px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:4px;font-weight:600">⚠️ Click correct answer below</span>`
+          : `<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${teacherCbtDefaults.marksPerQuestion || 0.4}</strong></span>
@@ -3835,17 +3835,17 @@ function renderTeacherReviewQuestions() {
           ${imgHtml}
           <div class="cbt-options-grid">
             ${opts.map((opt, oIdx) => {
-        const letter = String.fromCharCode(65 + oIdx);
-        const isEmptyOpt = !opt || !opt.trim();
-        const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
-        return `
+            const letter = String.fromCharCode(65 + oIdx);
+            const isEmptyOpt = !opt || !opt.trim();
+            const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
+            return `
                 <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}" title="Click to designate ${letter} as the correct answer">
                   <strong>${letter}.</strong>
                   <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </button>
               `;
-      }).join("")}
+          }).join("")}
           </div>
         </div>
       `;
@@ -4248,7 +4248,7 @@ $("tCbtSubmitBtn").onclick = async () => {
         prevDate = new Date(existingMatch.createdAt).toLocaleDateString("en-GB", {
           day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
         });
-      } catch (e) {}
+      } catch (e) { }
     }
     const prevQCount = existingMatch.numberOfQuestions || (existingMatch.questions ? existingMatch.questions.length : 0);
 
@@ -4381,7 +4381,7 @@ $("tCbtSubmitBtn").onclick = async () => {
     updateTargetStatusBadge();
 
     // Show clean success notification banner and scroll into view
-    $("tCbtSuccessTitle").textContent = isUpdate 
+    $("tCbtSuccessTitle").textContent = isUpdate
       ? `🔄 "${title}" Updated to Version ${version}!`
       : `🎉 "${title}" Successfully Submitted!`;
     $("tCbtSuccessMsg").textContent = isUpdate
@@ -4676,7 +4676,7 @@ function handleCloseTeacherPreviewModal() {
 }
 
 async function openTeacherExamPreview(docId) {
-  try { await loadTeacherCbtDefaults(); } catch (e) {}
+  try { await loadTeacherCbtDefaults(); } catch (e) { }
   const sub = teacherSubmissions.find(s => s.docId === docId);
   if (!sub) return;
   if ((!Array.isArray(sub.questions) || !sub.questions.length) && sub.numberOfQuestions > 0) {
@@ -5496,7 +5496,7 @@ function renderTeacherNotifModal() {
   }).join("");
 }
 
-window.dismissTeacherAnnouncement = function(id) {
+window.dismissTeacherAnnouncement = function (id) {
   const dismissed = getDismissedNotifIds();
   dismissed.add(id);
   setDismissedNotifIds(dismissed);
@@ -5531,7 +5531,7 @@ window.dismissTeacherAnnouncement = function(id) {
   }
 };
 
-window.toggleDismissTeacherAnnouncement = function(id) {
+window.toggleDismissTeacherAnnouncement = function (id) {
   const dismissed = getDismissedNotifIds();
   if (dismissed.has(id)) {
     dismissed.delete(id);
@@ -5583,7 +5583,7 @@ function syncTeacherOneSignalTags() {
   if (!tUser) return;
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
+  OneSignalDeferred.push(async function (OneSignal) {
     try {
       if (typeof OneSignal.login === "function") {
         await OneSignal.login(tUser);
@@ -5622,13 +5622,13 @@ async function dispatchOneSignalPushToAdmin({ title, message }) {
   try {
     let cfg = null;
     if (window.dbClient && typeof window.dbClient.getOneSignalConfig === "function") {
-      try { cfg = await window.dbClient.getOneSignalConfig(); } catch (e) {}
+      try { cfg = await window.dbClient.getOneSignalConfig(); } catch (e) { }
     }
     if (!cfg) {
       try {
         const raw = localStorage.getItem("onesignal_admin_config");
         if (raw) cfg = JSON.parse(raw);
-      } catch (e) {}
+      } catch (e) { }
     }
     const appId = (cfg?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e").trim();
     let restApiKey = (cfg?.restApiKey || "").trim();
@@ -5670,13 +5670,13 @@ async function initTeacherPushNotifications() {
     if (window.dbClient && typeof window.dbClient.getOneSignalConfig === "function") {
       try {
         config = await window.dbClient.getOneSignalConfig();
-      } catch (e) {}
+      } catch (e) { }
     }
     if (!config) {
       try {
         const raw = localStorage.getItem("onesignal_admin_config");
         if (raw) config = JSON.parse(raw);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const appId = config?.appId || "89e9469f-65f7-48aa-a798-6f6628cf4c5e";
@@ -5689,7 +5689,7 @@ async function initTeacherPushNotifications() {
     }
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
+    OneSignalDeferred.push(async function (OneSignal) {
       if (!oneSignalTeacherInitialized) {
         oneSignalTeacherInitialized = true;
         try {
@@ -5751,7 +5751,7 @@ async function initTeacherPushNotifications() {
 
         // Normal browser or installed PWA (including iOS Home Screen PWA)
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
+        OneSignalDeferred.push(async function (OneSignal) {
           try {
             await OneSignal.Notifications.requestPermission();
             const isOptedIn = await OneSignal.User.PushSubscription.optedIn;
