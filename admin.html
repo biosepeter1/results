@@ -123,7 +123,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=3.2">
+  <link rel="stylesheet" href="css/admin.css?v=3.3">
 </head>
 
 <body>
@@ -643,49 +643,88 @@
           </div>
         </div>
 
-        <!-- Two Column Layout: Class Comparison vs Subject Performance -->
+        <!-- Two Column Smart Summary: Missing Exam Results vs Mandatory Rewrites -->
         <div class="dash-two-col-grid">
-          <!-- Class Performance Breakdown -->
-          <div class="card" style="margin:0;">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">Class-by-Class Comparative Analysis</h3>
-                <div class="card-sub">Cross-cohort academic achievement comparison.</div>
+          <!-- 1. Missing Exam Results Smart Summary -->
+          <div class="card" style="margin:0;border-top:3px solid #eab308;display:flex;flex-direction:column;">
+            <div class="card-header dash-summary-card-head">
+              <div class="dash-summary-title-wrap">
+                <h3 class="card-title" style="display:flex;align-items:center;gap:8px;margin:0;">
+                  <span
+                    style="width:24px;height:24px;border-radius:6px;background:rgba(234,179,8,0.14);color:#eab308;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  </span>
+                  <span>Missing Exam Results</span>
+                </h3>
+                <div class="card-sub" style="margin-top:4px;">Who missed expected subjects &amp; which exams are incomplete.</div>
               </div>
+              <span id="dashSummaryMissingBadge" class="dash-tab-pill-badge dash-summary-badge"
+                style="background:rgba(234,179,8,0.16);color:#eab308;font-size:12px !important;padding:4px 10px !important;border:1px solid rgba(234,179,8,0.35);">0 Students</span>
             </div>
-            <div class="table-scroll">
-              <table style="width:100%;font-size:13px;">
-                <thead>
-                  <tr>
-                    <th style="text-align:left;">CLASS</th>
-                    <th style="text-align:center;">STUDENTS</th>
-                    <th style="text-align:center;">PASS RATE</th>
-                    <th style="text-align:center;">AVG SCORE</th>
-                    <th style="text-align:right;">OUTCOMES</th>
-                  </tr>
-                </thead>
-                <tbody id="dashClassBreakdownTbody">
-                  <tr>
-                    <td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted);">No class data
-                      available.</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div id="dashMissingSummaryBody" style="flex:1;display:flex;flex-direction:column;gap:12px;">
+              <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">Loading summary...</div>
+            </div>
+            <div class="dash-summary-footer">
+              <button type="button" class="btn btn-secondary btn-sm" id="dashSummaryViewMissingBtn"
+                style="font-size:12px;display:inline-flex;align-items:center;gap:6px;color:#eab308;border-color:rgba(234,179,8,0.35);">
+                <span>View Full Missing List</span> &rarr;
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashSummaryExportMissingBtn"
+                style="font-size:12px;display:inline-flex;align-items:center;gap:5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Export CSV</span>
+              </button>
             </div>
           </div>
 
-          <!-- Subject Performance Ranking (Top Performing) -->
-          <div class="card" style="margin:0;">
-            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-              <div>
-                <h3 class="card-title">Top Performing Subjects</h3>
-                <div class="card-sub">Identify top subjects meeting academic standards.</div>
+          <!-- 2. Mandatory Rewrites Smart Summary -->
+          <div class="card" style="margin:0;border-top:3px solid #f59e0b;display:flex;flex-direction:column;">
+            <div class="card-header dash-summary-card-head">
+              <div class="dash-summary-title-wrap">
+                <h3 class="card-title" style="display:flex;align-items:center;gap:8px;margin:0;">
+                  <span
+                    style="width:24px;height:24px;border-radius:6px;background:rgba(245,158,11,0.14);color:#f59e0b;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="1 4 1 10 7 10" />
+                      <polyline points="23 20 23 14 17 14" />
+                      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+                    </svg>
+                  </span>
+                  <span>Students Needing Rewrite</span>
+                </h3>
+                <div class="card-sub" id="dashSummaryRewriteSubTitle" style="margin-top:4px;">Students scoring &le;25% requiring mandatory exam resit.</div>
               </div>
-              <span id="dashBadgeSubjectTopCount" class="dash-tab-pill-badge dash-badge-pass" style="font-size:12px;padding:3px 10px;">0</span>
+              <span id="dashSummaryRewriteBadge" class="dash-tab-pill-badge dash-summary-badge"
+                style="background:rgba(245,158,11,0.16);color:#f59e0b;font-size:12px !important;padding:4px 10px !important;border:1px solid rgba(245,158,11,0.35);">0 Students</span>
             </div>
-            <div id="dashSubjectRankingList"
-              style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:4px;">
-              <div style="text-align:center;padding:16px;color:var(--text-muted);">No subject data available.</div>
+            <div id="dashRewriteSummaryBody" style="flex:1;display:flex;flex-direction:column;gap:12px;">
+              <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">Loading summary...</div>
+            </div>
+            <div class="dash-summary-footer">
+              <button type="button" class="btn btn-secondary btn-sm" id="dashSummaryViewRewriteBtn"
+                style="font-size:12px;display:inline-flex;align-items:center;gap:6px;color:#f59e0b;border-color:rgba(245,158,11,0.35);">
+                <span>View Full Rewrite List</span> &rarr;
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="dashSummaryExportRewriteBtn"
+                style="font-size:12px;display:inline-flex;align-items:center;gap:5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span>Printable Resit PDF</span>
+              </button>
             </div>
           </div>
         </div>
@@ -695,13 +734,13 @@
           <div class="card-header cbt-collapsible-header" id="dashActionCenterHeader"
             style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;"
             title="Click to expand or collapse Student Academic Action Center">
-            <div style="flex:1;min-width:240px">
+            <div style="flex:1 1 220px;min-width:0;">
               <h3 class="card-title" style="margin:0">Student Academic Action Center</h3>
               <div class="card-sub" style="margin:4px 0 0 0">Actionable drill-down for student rewrites, missing exams,
                 and academic honors.
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;max-width:100%;">
               <div class="dash-action-tabs" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary btn-sm active dash-btn-rewrite" id="dashStudentsTabRewrite"
                   style="display:inline-flex;align-items:center;gap:5px;">
@@ -2490,7 +2529,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
   <script src="js/cbt-catalog.js?v=4.8"></script>
-  <script src="js/admin.js?v=5.7"></script>
+  <script src="js/admin.js?v=6.1"></script>
 </body>
 
 </html>

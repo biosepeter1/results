@@ -399,26 +399,23 @@ function initDashboardEvents() {
     $("dashStudentsTabMissing").onclick = () => setStudentViewTab("missing");
   }
 
-  if ($("dashCardRewriteKpi")) {
-    $("dashCardRewriteKpi").onclick = () => {
-      setStudentViewTab("rewrite");
-      toggleDashActionCenterAccordion(true);
-      const card = $("dashStudentActionCenterCard");
-      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-  }
+  const openActionCenterTab = (tab) => {
+    setStudentViewTab(tab);
+    toggleDashActionCenterAccordion(true);
+    const card = $("dashStudentActionCenterCard");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
-  if ($("dashCardMissingKpi")) {
-    $("dashCardMissingKpi").onclick = () => {
-      setStudentViewTab("missing");
-      toggleDashActionCenterAccordion(true);
-      const card = $("dashStudentActionCenterCard");
-      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-  }
+  if ($("dashCardRewriteKpi")) $("dashCardRewriteKpi").onclick = () => openActionCenterTab("rewrite");
+  if ($("dashCardMissingKpi")) $("dashCardMissingKpi").onclick = () => openActionCenterTab("missing");
+  if ($("dashSummaryViewMissingBtn")) $("dashSummaryViewMissingBtn").onclick = () => openActionCenterTab("missing");
+  if ($("dashSummaryViewRewriteBtn")) $("dashSummaryViewRewriteBtn").onclick = () => openActionCenterTab("rewrite");
 
   if ($("dashExportMissingBtn")) {
     $("dashExportMissingBtn").onclick = () => exportMissingStudentsCsv();
+  }
+  if ($("dashSummaryExportMissingBtn")) {
+    $("dashSummaryExportMissingBtn").onclick = () => exportMissingStudentsCsv();
   }
 
   if ($("dashRewriteCutoffSelect")) {
@@ -430,6 +427,9 @@ function initDashboardEvents() {
 
   if ($("dashExportRewriteBtn")) {
     $("dashExportRewriteBtn").onclick = () => exportRewriteRosterCsv();
+  }
+  if ($("dashSummaryExportRewriteBtn")) {
+    $("dashSummaryExportRewriteBtn").onclick = () => exportRewriteRosterCsv();
   }
 
   if ($("dashRefreshBtn")) {
@@ -577,6 +577,9 @@ async function renderExecutiveDashboard() {
   const scopeSummary = `${termVal ? termVal : "All Terms"} · ${classVal ? classVal : "All Classes"} · ${totalAssessments.toLocaleString()} assessment records`;
   if ($("dashScopeSummary")) $("dashScopeSummary").textContent = scopeSummary;
 
+  // Pass 1: Build canonical student resolver so missing reg numbers, reversed names, or punctuation variations merge cleanly
+  const studentResolver = buildCanonicalStudentResolver(rows, _studentDirectory);
+
   // 1. Group by student to track individuals
   const studentMap = new Map();
   let passedCount = 0;
@@ -645,26 +648,31 @@ async function renderExecutiveDashboard() {
     else if (pctVal >= 50) tierPass++;
     else tierFail++;
 
-    // Student Key
-    const studentName = (r.student || r.name || "Unknown Student").toUpperCase().trim();
-    const regNo = (r.reg || r.regNo || "").trim();
-    const studentKey = `${studentName}|${regNo}`;
+    // Student Key (resolved via 2-pass identity resolver)
+    const rawStudentName = (r.student || r.name || "Unknown Student").toUpperCase().trim();
+    const rawRegNo = (r.reg || r.regNo || "").trim();
+    const rawCls = (r.class || r.className || "-").trim();
+    const rawArm = (r.arm || "-").trim();
+    const resolvedProfile = studentResolver.resolveRow(rawStudentName, rawRegNo, rawCls, rawArm);
+    const studentKey = resolvedProfile ? `CANON:${resolvedProfile.canonId}` : `${rawStudentName}|${rawRegNo}`;
 
     if (!studentMap.has(studentKey)) {
       studentMap.set(studentKey, {
         id: "stud_" + Math.random().toString(36).substr(2, 9),
-        name: studentName,
-        reg: regNo,
-        class: r.class || r.className || "-",
-        arm: r.arm || "-",
+        name: (resolvedProfile && resolvedProfile.name) ? resolvedProfile.name : rawStudentName,
+        reg: (resolvedProfile && resolvedProfile.reg) ? resolvedProfile.reg : rawRegNo,
+        class: (resolvedProfile && resolvedProfile.clsDisplay) ? resolvedProfile.clsDisplay : rawCls,
+        arm: (resolvedProfile && resolvedProfile.armKey) ? resolvedProfile.armKey : rawArm,
         term: rowTerm || "-",
         scores: [],
+        _scoreBySub: new Map(),
         totalPct: 0,
         failedSubjects: []
       });
     }
     const sObj = studentMap.get(studentKey);
-    sObj.scores.push({
+    const subCanonKey = auditCanonicalSubject(r.subject || "General") || String(r.subject || "General").toLowerCase();
+    const scoreEntry = {
       subject: r.subject || "General",
       pct: pctVal,
       score: scoreVal,
@@ -675,20 +683,10 @@ async function renderExecutiveDashboard() {
       origMax: origMax,
       term: rowTerm,
       date: r.date || r.dateTime || r.exam_date || "-"
-    });
-    sObj.totalPct += pctVal;
-    if (!isPass) {
-      sObj.failedSubjects.push({
-        subject: r.subject || "Unknown",
-        pct: pctVal,
-        score: scoreVal,
-        scaledScore: scoreVal,
-        rawScore: parsedRawScore,
-        origScoreText: r.score,
-        maxMark: targetMax,
-        origMax: origMax,
-        term: rowTerm
-      });
+    };
+    const existingSubScore = sObj._scoreBySub.get(subCanonKey);
+    if (!existingSubScore || pctVal > existingSubScore.pct) {
+      sObj._scoreBySub.set(subCanonKey, scoreEntry);
     }
 
     // Class aggregation
@@ -724,6 +722,12 @@ async function renderExecutiveDashboard() {
   let totalRewritePapers = 0;
 
   studentMap.forEach(s => {
+    if (s._scoreBySub) {
+      s.scores = Array.from(s._scoreBySub.values());
+      delete s._scoreBySub;
+      s.totalPct = s.scores.reduce((acc, sc) => acc + sc.pct, 0);
+      s.failedSubjects = s.scores.filter(sc => sc.pct < 50);
+    }
     s.avgScore = s.scores.length ? (s.totalPct / s.scores.length).toFixed(1) : 0;
     // Rewrite criteria: any subject score <= dashRewriteCutoffPct (e.g. 0/5 = 0%, 5/30 = 16.7%, 10/50 = 20%)
     s.rewriteSubjects = s.scores.filter(sc => sc.pct <= dashRewriteCutoffPct);
@@ -801,11 +805,19 @@ async function renderExecutiveDashboard() {
     const classSubjectDisplay = new Map();      // `${clsKey}|${subCanon}` -> displayName
     const studentWrittenMap = new Map();        // identityKey -> Set(subCanon)
 
+    const termResolver = buildCanonicalStudentResolver(termRows, _studentDirectory);
+    const activeArmsByClass = new Map(); // clsKey -> Set(armLow)
+
     termRows.forEach(r => {
       const clsRaw = (r.class || r.className || "").trim();
       const subRaw = (r.subject || "").trim();
       if (!clsRaw || !subRaw) return;
       const clsKey = normalizeAuditClassKey(clsRaw);
+      const armLow = String(r.arm || "").trim().toLowerCase();
+      if (armLow) {
+        if (!activeArmsByClass.has(clsKey)) activeArmsByClass.set(clsKey, new Set());
+        activeArmsByClass.get(clsKey).add(armLow);
+      }
       const subCanon = auditCanonicalSubject(subRaw);
       if (!subCanon) return;
 
@@ -814,7 +826,8 @@ async function renderExecutiveDashboard() {
       const csKey = `${clsKey}|${subCanon}`;
       if (!classSubjectDisplay.has(csKey)) classSubjectDisplay.set(csKey, subRaw);
 
-      const stId = compactAuditRegKey(r.reg) || `${normalizeAuditNameKey(r.student)}|${clsKey}`;
+      const resolved = termResolver.resolveRow(r.student || r.name, r.reg || r.regNo, clsRaw, r.arm);
+      const stId = resolved ? `C:${resolved.canonId}` : (compactAuditRegKey(r.reg) || `${normalizeAuditNameKey(r.student)}|${clsKey}`);
       if (stId) {
         if (!classTotalStudents.has(clsKey)) classTotalStudents.set(clsKey, new Set());
         classTotalStudents.get(clsKey).add(stId);
@@ -822,6 +835,11 @@ async function renderExecutiveDashboard() {
         classSubjectStudents.get(csKey).add(stId);
       }
 
+      if (resolved) {
+        const cidKey = `CID:${resolved.canonId}`;
+        if (!studentWrittenMap.has(cidKey)) studentWrittenMap.set(cidKey, new Set());
+        studentWrittenMap.get(cidKey).add(subCanon);
+      }
       indexStudentWrittenSubject(studentWrittenMap, r.reg, r.student, clsKey, subCanon);
     });
 
@@ -856,14 +874,25 @@ async function renderExecutiveDashboard() {
     const addCohortStudent = (student) => {
       if (auditIsWithdrawnStudent(student.reg, student.name)) return;
       const clsKey = normalizeAuditClassKey(student.class);
-      const regC = compactAuditRegKey(student.reg);
+      const resolved = termResolver.resolveRow(student.name, student.reg, student.class, student.arm);
+      const dedupCanon = resolved ? `CID:${resolved.canonId}` : "";
+      const regC = normalizeStudentRegForKey(student.reg);
       const nameT = sortedAuditNameTokens(student.name);
       const dedupReg = regC ? `R:${regC}` : "";
       const dedupName = nameT ? `N:${nameT}|${clsKey}` : "";
-      if ((dedupReg && seenCohortKeys.has(dedupReg)) || (dedupName && seenCohortKeys.has(dedupName))) return;
+      if ((dedupCanon && seenCohortKeys.has(dedupCanon)) || (dedupReg && seenCohortKeys.has(dedupReg)) || (dedupName && seenCohortKeys.has(dedupName))) return;
+      if (dedupCanon) seenCohortKeys.add(dedupCanon);
       if (dedupReg) seenCohortKeys.add(dedupReg);
       if (dedupName) seenCohortKeys.add(dedupName);
-      cohort.push({ ...student, _clsKey: clsKey });
+      cohort.push({
+        id: (resolved && resolved.reg) || student.id,
+        name: (resolved && resolved.name) || student.name,
+        reg: (resolved && resolved.reg) || student.reg || "",
+        class: (resolved && resolved.clsDisplay) || student.class,
+        arm: (resolved && resolved.armKey) || student.arm || "",
+        _clsKey: clsKey,
+        _canonId: resolved ? resolved.canonId : null
+      });
     };
 
     if (_studentDirectory && _studentDirectory.length > 0) {
@@ -875,6 +904,11 @@ async function renderExecutiveDashboard() {
         if (targetClsKey && sClsKey !== targetClsKey) return;
         const sArmLow = (s.arm || "").trim().toLowerCase();
         if (targetArmLow && dirHasArms && sArmLow !== targetArmLow) return;
+        // When viewing All Arms, only audit arms that actually participated in this term
+        const clsActiveArms = activeArmsByClass.get(sClsKey);
+        if (!targetArmLow && dirHasArms && clsActiveArms && clsActiveArms.size > 0 && sArmLow && !clsActiveArms.has(sArmLow)) {
+          return;
+        }
         addCohortStudent({
           id: s.reg || s.fullName,
           name: s.fullName,
@@ -912,8 +946,19 @@ async function renderExecutiveDashboard() {
       if (!administered || !administered.size) return;
 
       const written = getStudentWrittenSubjects(studentWrittenMap, st.reg, st.name, clsKey);
+      if (st._canonId !== null && st._canonId !== undefined) {
+        const cidSubs = studentWrittenMap.get(`CID:${st._canonId}`);
+        if (cidSubs) cidSubs.forEach(s => written.add(s));
+      }
       const missingSubjs = [];
       const explicitCurr = curConfigMap[clsKey];
+      const totalInClass = classTotalStudents.get(clsKey)?.size || 0;
+      const isExpectedInTerm = (canon) => {
+        if (!administered.has(canon)) return false;
+        if (totalInClass < 10) return true;
+        const cnt = classSubjectStudents.get(`${clsKey}|${canon}`)?.size || 0;
+        return cnt >= Math.max(3, Math.floor(totalInClass * 0.20));
+      };
 
       if (explicitCurr) {
         if (targetSubCanon) {
@@ -932,13 +977,13 @@ async function renderExecutiveDashboard() {
         } else {
           explicitCurr.core.forEach(coreSub => {
             const coreCanon = auditCanonicalSubject(coreSub);
-            if (administered.has(coreCanon) && !written.has(coreCanon)) {
+            if (isExpectedInTerm(coreCanon) && !written.has(coreCanon)) {
               missingSubjs.push(coreSub);
             }
           });
 
           (explicitCurr.choiceGroups || []).forEach(group => {
-            const activeOptions = group.options.filter(opt => administered.has(auditCanonicalSubject(opt)));
+            const activeOptions = group.options.filter(opt => isExpectedInTerm(auditCanonicalSubject(opt)));
             if (!activeOptions.length) return;
             const satAnyOption = group.options.some(opt => written.has(auditCanonicalSubject(opt)));
             if (!satAnyOption) {
@@ -998,49 +1043,9 @@ async function renderExecutiveDashboard() {
   if ($("dashTierCountFail")) $("dashTierCountFail").textContent = tierFail.toLocaleString();
   if ($("dashTierPctFail")) $("dashTierPctFail").textContent = `${pFail}% of scores`;
 
-  // ── 4. Render Class Comparative Analysis ──
-  const classList = Array.from(classMap.values()).sort((a, b) => a.className.localeCompare(b.className));
-  const classTbody = $("dashClassBreakdownTbody");
-  if (classTbody) {
-    if (!classList.length) {
-      classTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted);">No class data available.</td></tr>`;
-    } else {
-      classTbody.innerHTML = classList.map(c => {
-        const cPassRate = c.totalScores ? ((c.passes / c.totalScores) * 100).toFixed(1) : "0.0";
-        const cAvg = c.totalScores ? (c.scoreSum / c.totalScores).toFixed(1) : "0.0";
-        const rateNum = Number(cPassRate);
-        const statusBadge = rateNum >= 80 ? `<span class="status-badge badge-excellent">Excellent</span>` :
-          (rateNum >= 60 ? `<span class="status-badge badge-good">Good</span>` :
-            `<span class="status-badge badge-support">Needs Support</span>`);
-
-        return `
-          <tr style="border-bottom:1px solid var(--border-subtle);">
-            <td style="padding:10px 8px;font-weight:600;color:var(--text);">${esc(c.className)}</td>
-            <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${c.students.size}</td>
-            <td style="padding:10px 8px;text-align:center;font-weight:700;color:${rateNum >= 70 ? 'var(--status-good)' : (rateNum >= 50 ? 'var(--status-avg)' : 'var(--status-fail)')}">${cPassRate}%</td>
-            <td style="padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;">${cAvg}%</td>
-            <td style="padding:10px 8px;text-align:right;">
-              <span style="color:var(--status-good);font-weight:700;">${c.passes}P</span> / <span style="color:var(--status-fail);font-weight:700;">${c.fails}F</span> ${statusBadge}
-            </td>
-          </tr>
-        `;
-      }).join("");
-    }
-  }
-
-  // ── 5. Render Subject Radar ──
-  dashSubjectStats = Array.from(subjectMap.values()).map(s => {
-    s.passRate = s.total ? Number(((s.passes / s.total) * 100).toFixed(1)) : 0;
-    s.avgScore = s.total ? Number((s.scoreSum / s.total).toFixed(1)) : 0;
-    return s;
-  });
-
-  const subjectTopCount = dashSubjectStats.filter(s => s.passRate >= 75).length;
-  const subjectFailCount = dashSubjectStats.filter(s => s.fails > 0).length;
-  if ($("dashBadgeSubjectTopCount")) $("dashBadgeSubjectTopCount").textContent = subjectTopCount;
-  if ($("dashBadgeSubjectFailCount")) $("dashBadgeSubjectFailCount").textContent = subjectFailCount;
-
-  renderDashboardSubjectRadar();
+  // ── 4 & 5. Render Smart Two-Column Summaries (Missing Results & Mandatory Rewrites) ──
+  renderDashboardMissingSummary();
+  renderDashboardRewriteSummary();
 
   // ── 6. Render Student Action Center ──
   if ($("dashBadgeFailCount")) $("dashBadgeFailCount").textContent = dashAtRiskStudents.length.toLocaleString();
@@ -1050,39 +1055,204 @@ async function renderExecutiveDashboard() {
   renderDashboardStudentActionCenter();
 }
 
-function renderDashboardSubjectRadar() {
-  const container = $("dashSubjectRankingList");
-  if (!container) return;
+function buildActionSummaryStats(students, getSubNamesFn) {
+  const byClass = new Map();
+  const bySubject = new Map();
+  let totalPapers = 0;
 
-  if (!dashSubjectStats || !dashSubjectStats.length) {
-    container.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted);">No subject data available.</div>`;
-    return;
-  }
+  (students || []).forEach(st => {
+    const subs = getSubNamesFn(st) || [];
+    const paperCount = subs.length;
+    totalPapers += paperCount;
 
-  const renderSubjectRow = (s) => {
-    const badgeColor = s.passRate >= 75 ? "#10b981" : (s.passRate >= 50 ? "#f59e0b" : "#ef4444");
-    const accentBorder = "border-left:4px solid #10b981;";
+    const cls = (st.class || "Unassigned").trim();
+    if (!byClass.has(cls)) byClass.set(cls, { className: cls, students: 0, papers: 0 });
+    const cObj = byClass.get(cls);
+    cObj.students++;
+    cObj.papers += paperCount;
 
+    subs.forEach(subName => {
+      const sub = (subName || "General").trim();
+      bySubject.set(sub, (bySubject.get(sub) || 0) + 1);
+    });
+  });
+
+  const classList = Array.from(byClass.values()).sort((a, b) => a.className.localeCompare(b.className));
+  const subjectList = Array.from(bySubject.entries())
+    .map(([subject, count]) => ({ subject, count }))
+    .sort((a, b) => b.count - a.count || a.subject.localeCompare(b.subject));
+
+  return { totalStudents: (students || []).length, totalPapers, classList, subjectList };
+}
+
+function renderSummaryEmptyCard(title, message) {
+  return `
+    <div style="text-align:center;padding:28px 16px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.28);">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,0.14);color:#10b981;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-weight:700;font-size:14px;color:#10b981;margin-bottom:4px;">${esc(title)}</div>
+      <div style="font-size:12px;color:var(--text-muted);max-width:340px;margin:0 auto;line-height:1.45;">${esc(message)}</div>
+    </div>
+  `;
+}
+
+function renderSummaryInsightAndClasses(insightHtml, classList, accentColor, accentBg, paperLabel) {
+  const chipsHtml = classList.map(c => `
+    <div class="dash-summary-class-chip" style="border-left:3px solid ${accentColor};">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">${esc(c.className)}</div>
+      <div style="font-size:17px;font-weight:800;color:${accentColor};line-height:1.2;margin-top:2px;">${c.students.toLocaleString()}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${c.papers.toLocaleString()} ${paperLabel}${c.papers !== 1 ? "s" : ""}</div>
+    </div>
+  `).join("");
+
+  return `
+    <div style="padding:9px 12px;border-radius:var(--radius);background:${accentBg};border:1px solid ${accentColor}40;font-size:12px;color:var(--text);line-height:1.45;">
+      ${insightHtml}
+    </div>
+    <div class="dash-summary-class-chips">${chipsHtml}</div>
+  `;
+}
+
+function renderSummarySubjectBars(subjectList, sectionTitle, barColor, unitSingular) {
+  if (!subjectList.length) return "";
+  const topSubjects = subjectList.slice(0, 4);
+  const maxVal = topSubjects[0].count || 1;
+  const rows = topSubjects.map(item => {
+    const pct = Math.max(6, Math.round((item.count / maxVal) * 100));
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);${accentBorder}width:100%;box-sizing:border-box;gap:8px;">
-        <div style="min-width:0;flex:1;overflow:hidden;">
-          <div style="font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.subject)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${s.total} evaluated · Avg: <strong style="color:var(--text);">${s.avgScore}%</strong>
-          </div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+        <div class="dash-summary-bar-row">
+          <span class="dash-summary-bar-label">${esc(item.subject)}</span>
+          <span style="color:${barColor};font-weight:700;flex-shrink:0;font-variant-numeric:tabular-nums;">${item.count.toLocaleString()} ${unitSingular}${item.count !== 1 ? "s" : ""}</span>
         </div>
-        <div style="text-align:right;flex-shrink:0;white-space:nowrap;">
-          <div style="font-size:12px;font-weight:700;color:${badgeColor};">${s.passRate}% Pass</div>
-          <div style="font-size:11px;color:#10b981;font-weight:600;">
-            ${(s.total - s.fails).toLocaleString()} passed
-          </div>
+        <div class="dash-summary-bar-track">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;"></div>
         </div>
       </div>
     `;
-  };
+  }).join("");
 
-  const bestList = [...dashSubjectStats].sort((a, b) => b.passRate - a.passRate || b.avgScore - a.avgScore);
-  container.innerHTML = bestList.slice(0, 10).map(s => renderSubjectRow(s)).join("");
+  return `
+    <div style="padding:10px 12px;background:var(--surface-alt);border-radius:var(--radius);border:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:8px;min-width:0;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">${esc(sectionTitle)}</div>
+      ${rows}
+    </div>
+  `;
+}
+
+function renderDashboardMissingSummary() {
+  const container = $("dashMissingSummaryBody");
+  const badge = $("dashSummaryMissingBadge");
+  const listBtn = $("dashSummaryViewMissingBtn");
+  const list = dashMissingStudents || [];
+
+  if (badge) badge.textContent = `${list.length.toLocaleString()} Student${list.length !== 1 ? "s" : ""}`;
+  if (listBtn) listBtn.innerHTML = `<span>View Full Missing List (${list.length.toLocaleString()})</span> &rarr;`;
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = renderSummaryEmptyCard(
+      "All Expected Exams Completed",
+      "Every active student in this analytical scope has a recorded score for every expected subject."
+    );
+    return;
+  }
+
+  const stats = buildActionSummaryStats(list, st => st.missingSubjects || []);
+  const topCls = [...stats.classList].sort((a, b) => b.students - a.students)[0];
+  const topSub = stats.subjectList[0];
+  const insight = `<strong>${stats.totalStudents.toLocaleString()} student${stats.totalStudents !== 1 ? "s" : ""}</strong> have <strong>${stats.totalPapers.toLocaleString()}</strong> unwritten exam${stats.totalPapers !== 1 ? "s" : ""}` +
+    (topCls ? ` — highest in <strong>${esc(topCls.className)}</strong> (${topCls.students})` : "") +
+    (topSub ? `, mostly <strong>${esc(topSub.subject)}</strong> (${topSub.count}).` : ".");
+
+  const previewHtml = list.slice(0, 4).map(st => {
+    const subs = st.missingSubjects || [];
+    const chips = subs.slice(0, 2).map(sub =>
+      `<span class="dash-summary-chip" style="background:rgba(234,179,8,0.14);color:#eab308;border:1px solid rgba(234,179,8,0.3);">${esc(sub)}</span>`
+    ).join("");
+    const extraChip = subs.length > 2
+      ? `<span class="dash-summary-chip" style="background:var(--border-subtle);color:var(--text-muted);font-weight:700;">+${subs.length - 2} more</span>`
+      : "";
+    return `
+      <div class="dash-summary-preview-row">
+        <div class="dash-summary-student-info">
+          <div class="dash-summary-student-name">${esc(st.name)}</div>
+          <div class="dash-summary-student-meta">${esc(st.class || "-")}${st.arm ? ` · ${esc(st.arm)}` : ""}${st.reg ? ` · ${esc(st.reg)}` : ""}</div>
+        </div>
+        <div class="dash-summary-chips">${chips}${extraChip}</div>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    ${renderSummaryInsightAndClasses(insight, stats.classList, "#eab308", "rgba(234,179,8,0.09)", "missing exam")}
+    ${renderSummarySubjectBars(stats.subjectList, "Most Missed Subjects", "#eab308", "student")}
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Top Affected Students</div>
+      ${previewHtml}
+    </div>
+  `;
+}
+
+function renderDashboardRewriteSummary() {
+  const container = $("dashRewriteSummaryBody");
+  const badge = $("dashSummaryRewriteBadge");
+  const subTitle = $("dashSummaryRewriteSubTitle");
+  const listBtn = $("dashSummaryViewRewriteBtn");
+  const list = dashRewriteStudents || [];
+
+  const totalPapers = list.reduce((acc, st) => acc + ((st.rewriteSubjects || []).length), 0);
+  if (subTitle) subTitle.textContent = `Students scoring ≤${dashRewriteCutoffPct}% requiring mandatory exam resit.`;
+  if (badge) badge.textContent = `${list.length.toLocaleString()} Student${list.length !== 1 ? "s" : ""} · ${totalPapers.toLocaleString()} Paper${totalPapers !== 1 ? "s" : ""}`;
+  if (listBtn) listBtn.innerHTML = `<span>View Full Rewrite List (${list.length.toLocaleString()})</span> &rarr;`;
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = renderSummaryEmptyCard(
+      "Zero Mandatory Rewrites",
+      `No evaluated scores fall at or below the ≤${dashRewriteCutoffPct}% rewrite cutoff under this filter.`
+    );
+    return;
+  }
+
+  const stats = buildActionSummaryStats(list, st => (st.rewriteSubjects || []).map(r => r.subject));
+  const topCls = [...stats.classList].sort((a, b) => b.students - a.students)[0];
+  const topSub = stats.subjectList[0];
+  const insight = `<strong>${stats.totalStudents.toLocaleString()} student${stats.totalStudents !== 1 ? "s" : ""}</strong> scored &le;${dashRewriteCutoffPct}% across <strong>${stats.totalPapers.toLocaleString()} paper${stats.totalPapers !== 1 ? "s" : ""}</strong>` +
+    (topCls ? ` — highest in <strong>${esc(topCls.className)}</strong> (${topCls.students})` : "") +
+    (topSub ? `, led by <strong>${esc(topSub.subject)}</strong> (${topSub.count} papers).` : ".");
+
+  const previewHtml = list.slice(0, 4).map(st => {
+    const subs = st.rewriteSubjects || [];
+    const chips = subs.slice(0, 2).map(rSub => {
+      const maxMark = rSub.maxMark || 20;
+      const scVal = (rSub.scaledScore !== undefined && !isNaN(rSub.scaledScore)) ? rSub.scaledScore : rSub.pct;
+      return `<span class="dash-summary-chip" style="background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.35);">${esc(rSub.subject)}: ${scVal}/${maxMark} (${rSub.pct}%)</span>`;
+    }).join("");
+    const extraChip = subs.length > 2
+      ? `<span class="dash-summary-chip" style="background:var(--border-subtle);color:var(--text-muted);font-weight:700;">+${subs.length - 2} more</span>`
+      : "";
+    return `
+      <div class="dash-summary-preview-row" onclick="window.openStudentScoreModal('${st.id}', true);" title="Click to view Resit Slip"
+        style="cursor:pointer;transition:background 0.15s;">
+        <div class="dash-summary-student-info">
+          <div class="dash-summary-student-name">${esc(st.name)}</div>
+          <div class="dash-summary-student-meta">${esc(st.class || "-")}${st.arm ? ` · ${esc(st.arm)}` : ""} · Avg: <strong style="color:#ef4444;">${st.avgScore}%</strong></div>
+        </div>
+        <div class="dash-summary-chips">${chips}${extraChip}</div>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    ${renderSummaryInsightAndClasses(insight, stats.classList, "#f59e0b", "rgba(245,158,11,0.09)", "paper")}
+    ${renderSummarySubjectBars(stats.subjectList, "Subjects With Most Rewrites", "#f59e0b", "paper")}
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Priority Students (Click for Resit Slip)</div>
+      ${previewHtml}
+    </div>
+  `;
 }
 
 let dashStudentByIdMap = new Map();
@@ -3219,6 +3389,244 @@ function isSubjectInClassCurriculum(className, subjectName) {
 function auditIsWithdrawnStudent(reg, fullName) {
   if (typeof isWithdrawnStudent === "function") return isWithdrawnStudent(reg, fullName);
   return false;
+}
+
+function normalizeStudentRegForKey(reg) {
+  const clean = String(reg || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!clean || clean === "NA" || clean === "NONE" || clean === "NULL" || clean === "0" || clean === "NIL") return "";
+  return clean;
+}
+
+function normalizeStudentNameTokens(name) {
+  return String(name || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function isOfficialStudentReg(regC) {
+  return /^STDS\d+/i.test(String(regC || ""));
+}
+
+function areStudentRegsCompatible(regA, regB) {
+  if (!regA || !regB) return true;
+  if (regA === regB) return true;
+  // Two DIFFERENT official STDS registration numbers belong to two distinct students;
+  // temporary CBT IDs (e.g. STD1785, ST-2026-223) can merge with an official STDS profile.
+  if (isOfficialStudentReg(regA) && isOfficialStudentReg(regB)) return false;
+  return true;
+}
+
+function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
+  const canonicalProfiles = [];
+  const byReg = new Map();
+  const byExactNameCls = new Map();
+  const bySortedTokCls = new Map();
+
+  const indexProfile = (profile) => {
+    if (profile.regC) byReg.set(profile.regC, profile);
+    if (profile.normName) {
+      const k = `${profile.normName}|${profile.clsKey}`;
+      if (!byExactNameCls.has(k)) byExactNameCls.set(k, []);
+      if (!byExactNameCls.get(k).includes(profile)) byExactNameCls.get(k).push(profile);
+    }
+    if (profile.sortedTok) {
+      const tk = `${profile.sortedTok}|${profile.clsKey}`;
+      if (!bySortedTokCls.has(tk)) bySortedTokCls.set(tk, []);
+      if (!bySortedTokCls.get(tk).includes(profile)) bySortedTokCls.get(tk).push(profile);
+    }
+  };
+
+  const registerProfile = (name, reg, cls, arm) => {
+    const tokens = normalizeStudentNameTokens(name);
+    const normName = tokens.join(" ");
+    const sortedTok = [...tokens].sort().join(" ");
+    const regC = normalizeStudentRegForKey(reg);
+    const regIsOfficial = isOfficialStudentReg(regC);
+    const clsKey = normalizeAuditClassKey(cls || "");
+    const armKey = String(arm || "").trim().toUpperCase();
+    if (!regC && !normName) return null;
+
+    if (regC && byReg.has(regC)) {
+      const existing = byReg.get(regC);
+      if (normName && (!existing.normName || tokens.length > existing.tokens.length)) {
+        existing.name = normName;
+        existing.normName = normName;
+        existing.tokens = tokens;
+        existing.sortedTok = sortedTok;
+        indexProfile(existing);
+      }
+      if (!existing.armKey && armKey && armKey !== "-") existing.armKey = armKey;
+      if (!existing.clsKey && clsKey && clsKey !== "-") {
+        existing.clsKey = clsKey;
+        existing.clsDisplay = String(cls || "").trim();
+      }
+      return existing;
+    }
+
+    const findCompatibleMatch = (candidates) => {
+      if (!candidates) return null;
+      return candidates.find(p => {
+        if (!areStudentRegsCompatible(regC, p.regC)) return false;
+        if (!regC && !p.regC && armKey && armKey !== "-" && p.armKey && p.armKey !== "-" && armKey !== p.armKey) return false;
+        return true;
+      }) || null;
+    };
+
+    let matched = normName ? findCompatibleMatch(byExactNameCls.get(`${normName}|${clsKey}`)) : null;
+    if (!matched && sortedTok) {
+      matched = findCompatibleMatch(bySortedTokCls.get(`${sortedTok}|${clsKey}`));
+    }
+
+    if (matched) {
+      if (regIsOfficial && !matched.isOfficial) {
+        matched.reg = String(reg || "").trim();
+        matched.regC = regC;
+        matched.isOfficial = true;
+        if (normName && tokens.length >= matched.tokens.length) {
+          matched.name = normName;
+          matched.normName = normName;
+          matched.tokens = tokens;
+          matched.sortedTok = sortedTok;
+        }
+        if (armKey && armKey !== "-") matched.armKey = armKey;
+      } else if (regC && !matched.regC) {
+        matched.reg = String(reg || "").trim();
+        matched.regC = regC;
+      }
+      if (regC) byReg.set(regC, matched);
+      if ((!matched.armKey || matched.armKey === "-") && armKey && armKey !== "-") matched.armKey = armKey;
+      indexProfile(matched);
+      return matched;
+    }
+
+    const profile = {
+      canonId: canonicalProfiles.length,
+      name: normName || regC,
+      normName,
+      tokens,
+      sortedTok,
+      reg: String(reg || "").trim(),
+      regC,
+      isOfficial: regIsOfficial,
+      clsKey,
+      clsDisplay: String(cls || "").trim(),
+      armKey
+    };
+    canonicalProfiles.push(profile);
+    indexProfile(profile);
+    return profile;
+  };
+
+  // Pass 1a: Active Student Directory (authoritative official STDS profiles)
+  (studentDirectory || []).forEach(s => {
+    const statusLow = String(s.status || "").trim().toLowerCase();
+    if (statusLow === "inactive" || statusLow === "withdrawn") return;
+    if (auditIsWithdrawnStudent(s.reg, s.fullName)) return;
+    registerProfile(s.fullName, s.reg, s.class, s.arm);
+  });
+
+  // Pass 1b: Score rows bearing official STDS registration numbers first
+  (scoreRows || []).forEach(r => {
+    const regC = normalizeStudentRegForKey(r.reg || r.regNo);
+    if (isOfficialStudentReg(regC)) {
+      registerProfile(r.student || r.name, r.reg || r.regNo, r.class || r.className, r.arm);
+    }
+  });
+
+  const findTokenMatchForTempRow = (tokens, regC, clsKey, armKey) => {
+    if (tokens.length < 2) return null;
+    const tSet = new Set(tokens);
+
+    // 1. Bidirectional subset match (e.g. "ABATI KIKI" <-> "ABATI MARTHA KIKI",
+    //    or "ABAMBA EJIRO OGHENE MICHEAL" <-> "ABAMBA MICHEAL OGHENE")
+    const subsetHits = canonicalProfiles.filter(p => {
+      if (p.clsKey !== clsKey) return false;
+      if (!areStudentRegsCompatible(regC, p.regC)) return false;
+      if (p.tokens.length < 2) return false;
+      const pSet = new Set(p.tokens);
+      return tokens.every(t => pSet.has(t)) || p.tokens.every(t => tSet.has(t));
+    });
+    if (subsetHits.length === 1) return subsetHits[0];
+    if (subsetHits.length > 1) {
+      const sameArm = subsetHits.filter(p => armKey && p.armKey === armKey);
+      if (sameArm.length === 1) return sameArm[0];
+      const officialOnly = subsetHits.filter(p => p.isOfficial);
+      if (officialOnly.length === 1) return officialOnly[0];
+    }
+
+    // 2. Surname + given-name overlap match for temp IDs when middle/hyphen differs
+    //    (e.g. "OLAIYA-OLOKOBA MICHEAL" STD1765 <-> "OLAIYA OLUWAMAYOWA MICHEAL" STDS8-2025-111)
+    if (!isOfficialStudentReg(regC)) {
+      const surname = tokens[0];
+      const overlapHits = canonicalProfiles.filter(p => {
+        if (!p.isOfficial || p.clsKey !== clsKey) return false;
+        if (!p.tokens.length || p.tokens[0] !== surname) return false;
+        const pSet = new Set(p.tokens);
+        const sharedCount = tokens.filter(t => pSet.has(t)).length;
+        return sharedCount >= 2;
+      });
+      if (overlapHits.length === 1) return overlapHits[0];
+    }
+    return null;
+  };
+
+  const resolveRow = (name, reg, cls, arm) => {
+    const tokens = normalizeStudentNameTokens(name);
+    const normName = tokens.join(" ");
+    const sortedTok = [...tokens].sort().join(" ");
+    const regC = normalizeStudentRegForKey(reg);
+    const clsKey = normalizeAuditClassKey(cls || "");
+    const armKey = String(arm || "").trim().toUpperCase();
+
+    if (regC && byReg.has(regC)) return byReg.get(regC);
+
+    if (normName) {
+      const exacts = (byExactNameCls.get(`${normName}|${clsKey}`) || []).filter(p =>
+        areStudentRegsCompatible(regC, p.regC) &&
+        (isOfficialStudentReg(p.regC) || !regC || !armKey || armKey === "-" || !p.armKey || armKey === p.armKey)
+      );
+      if (exacts.length === 1) {
+        if (regC) byReg.set(regC, exacts[0]);
+        return exacts[0];
+      }
+    }
+
+    if (sortedTok) {
+      const tokMatches = (bySortedTokCls.get(`${sortedTok}|${clsKey}`) || []).filter(p =>
+        areStudentRegsCompatible(regC, p.regC) &&
+        (isOfficialStudentReg(p.regC) || !regC || !armKey || armKey === "-" || !p.armKey || armKey === p.armKey)
+      );
+      if (tokMatches.length === 1) {
+        if (regC) byReg.set(regC, tokMatches[0]);
+        return tokMatches[0];
+      }
+    }
+
+    if (!isOfficialStudentReg(regC)) {
+      const tokenHit = findTokenMatchForTempRow(tokens, regC, clsKey, armKey);
+      if (tokenHit) {
+        if (regC) byReg.set(regC, tokenHit);
+        return tokenHit;
+      }
+    }
+
+    return registerProfile(name, reg, cls, arm);
+  };
+
+  // Pass 1c: Score rows with >= 3 name tokens (even without official STDS reg),
+  // resolved through resolveRow so temp multi-token aliases match STDS profiles first.
+  (scoreRows || []).forEach(r => {
+    const regC = normalizeStudentRegForKey(r.reg || r.regNo);
+    const tokens = normalizeStudentNameTokens(r.student || r.name);
+    if (!isOfficialStudentReg(regC) && tokens.length >= 3) {
+      resolveRow(r.student || r.name, r.reg || r.regNo, r.class || r.className, r.arm);
+    }
+  });
+
+  return { resolveRow };
 }
 
 // Parse student directory CSV (matches the school's export format)
