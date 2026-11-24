@@ -4634,7 +4634,7 @@ function triggerJsonDownload(filename, data) {
 // ── CBT Submissions Filtering & Pagination State Helpers ──
 function getSubClass(sub) {
   if (sub.className && sub.className !== "All" && sub.className !== "—") return sub.className;
-  const match = (sub.title || "").match(/Year\s*([0-9]+)/i);
+  const match = (sub.title || "").match(/\b(?:Year|Yr)\s*([0-9]+)\b/i);
   if (match) return `Year ${match[1]}`;
   return sub.className || "All";
 }
@@ -5429,6 +5429,50 @@ function getSanitizedSlug(title) {
   return (title || "cbtApp_v2").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "cbt_exam";
 }
 
+function formatCbtFilenameClass(rawClass) {
+  const cls = String(rawClass || "").trim();
+  if (!cls || cls === "All" || cls === "—" || cls === "-") return "";
+  const yrMatch = cls.match(/^(?:Year|Yr)\s*([0-9]+)(.*)$/i);
+  if (yrMatch) {
+    const rest = (yrMatch[2] || "").trim();
+    return rest ? `Yr ${yrMatch[1]} ${rest}` : `Yr ${yrMatch[1]}`;
+  }
+  return cls;
+}
+
+function formatCbtFilenameSubject(rawSubject, fallbackTitle) {
+  let subName = String(rawSubject || "").trim();
+  if (!subName || subName === "General" || subName === "—" || subName === "-") {
+    subName = String(fallbackTitle || "CBT").trim();
+  }
+  // Convert ALL CAPS fallback titles into readable Title Case
+  if (subName === subName.toUpperCase() && /[A-Z]/.test(subName)) {
+    const smallWords = new Set(["and", "of", "the", "in", "for", "to"]);
+    subName = subName.toLowerCase().split(/\s+/).map((w, idx) =>
+      (idx > 0 && smallWords.has(w)) ? w : (w.charAt(0).toUpperCase() + w.slice(1))
+    ).join(" ");
+  }
+  return subName;
+}
+
+function sanitizeDownloadFilenamePart(str) {
+  return String(str || "")
+    .replace(/[\\/:*?"<>|\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\.+$/, "");
+}
+
+function buildCbtExportFilename(sub, kind) {
+  const typeLabel = (kind === "questions") ? "Question" : "Exam";
+  const resolvedSubject = formatCbtFilenameSubject(getSubSubject(sub), sub && sub.title);
+  const resolvedClass = formatCbtFilenameClass(getSubClass(sub));
+  const baseName = sanitizeDownloadFilenamePart(
+    [resolvedSubject, typeLabel, resolvedClass].filter(Boolean).join(" ")
+  ) || `CBT ${typeLabel}`;
+  return `${baseName}.json`;
+}
+
 function buildExportData(sub) {
   const examId = sub.examId || (sub._id?.$oid) || generateObjectId();
   const classInfo = resolveCbtClass(sub.className);
@@ -5527,8 +5571,7 @@ function downloadSubmissionExamsJson(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!sub) return;
   const { exams } = buildExportData(sub);
-  const slug = getSanitizedSlug(sub.title);
-  triggerJsonDownload(`${slug}.exams.json`, exams);
+  triggerJsonDownload(buildCbtExportFilename(sub, "exams"), exams);
 }
 
 async function ensureSubmissionQuestions(sub) {
@@ -5552,8 +5595,7 @@ async function downloadSubmissionQuestionsJson(docId) {
   if (!sub) return;
   await ensureSubmissionQuestions(sub);
   const { questions } = buildExportData(sub);
-  const slug = getSanitizedSlug(sub.title);
-  triggerJsonDownload(`${slug}.questions.json`, questions);
+  triggerJsonDownload(buildCbtExportFilename(sub, "questions"), questions);
 }
 
 async function downloadSubmissionBothJson(docId) {
@@ -5561,10 +5603,9 @@ async function downloadSubmissionBothJson(docId) {
   if (!sub) return;
   await ensureSubmissionQuestions(sub);
   const { exams, questions } = buildExportData(sub);
-  const slug = getSanitizedSlug(sub.title);
-  triggerJsonDownload(`${slug}.exams.json`, exams);
+  triggerJsonDownload(buildCbtExportFilename(sub, "exams"), exams);
   setTimeout(() => {
-    triggerJsonDownload(`${slug}.questions.json`, questions);
+    triggerJsonDownload(buildCbtExportFilename(sub, "questions"), questions);
   }, 400);
 }
 
