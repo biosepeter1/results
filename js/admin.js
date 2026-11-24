@@ -306,7 +306,6 @@ function initDashboardEvents() {
         convSel.value = tSel.value;
         if (typeof refreshConversionUI === "function") refreshConversionUI();
       }
-      populateDashboardClassAndArmFilters();
       renderExecutiveDashboard();
     });
   }
@@ -473,21 +472,37 @@ function initDashboardEvents() {
   }
 }
 
+let _dashFilterLastRowsRef = null;
+let _dashFilterTermSig = "";
+let _dashFilterClassSubSig = "";
+let _dashFilterArmSig = "";
+
 function syncDashboardFilterOptions() {
   if (!allScoreRows || !allScoreRows.length) return;
   const tSel = $("dashFilterTerm");
   if (!tSel) return;
 
-  const currentTermVal = tSel.value;
-  const terms = [...new Set(allScoreRows.map(r => r.term).filter(Boolean))].sort();
+  if (_dashFilterLastRowsRef !== allScoreRows) {
+    _dashFilterTermSig = "";
+    _dashFilterClassSubSig = "";
+    _dashFilterArmSig = "";
+    _dashFilterLastRowsRef = allScoreRows;
+  }
 
-  tSel.innerHTML = `<option value="">All Terms (${terms.length} terms)</option>` +
-    terms.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  const dataSig = `${allScoreRows.length}|${allScoreRows[0]?.term || ""}|${allScoreRows[allScoreRows.length - 1]?.term || ""}`;
+  if (_dashFilterTermSig !== dataSig || !tSel.options || tSel.options.length <= 1) {
+    const currentTermVal = tSel.value;
+    const terms = [...new Set(allScoreRows.map(r => r.term).filter(Boolean))].sort();
 
-  if (currentTermVal && terms.includes(currentTermVal)) {
-    tSel.value = currentTermVal;
-  } else if (adminCurrentTerm && terms.includes(adminCurrentTerm)) {
-    tSel.value = adminCurrentTerm;
+    tSel.innerHTML = `<option value="">All Terms (${terms.length} terms)</option>` +
+      terms.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+
+    if (currentTermVal && terms.includes(currentTermVal)) {
+      tSel.value = currentTermVal;
+    } else if (adminCurrentTerm && terms.includes(adminCurrentTerm)) {
+      tSel.value = adminCurrentTerm;
+    }
+    _dashFilterTermSig = dataSig;
   }
 
   populateDashboardClassAndArmFilters();
@@ -500,21 +515,25 @@ function populateDashboardClassAndArmFilters() {
   if (!cSel) return;
 
   const selectedTerm = tSel ? tSel.value : "";
-  const rows = selectedTerm ? allScoreRows.filter(r => r.term === selectedTerm) : allScoreRows;
+  const classSubSig = `${allScoreRows.length}|${selectedTerm}`;
+  if (_dashFilterClassSubSig !== classSubSig) {
+    const rows = selectedTerm ? allScoreRows.filter(r => r.term === selectedTerm) : allScoreRows;
 
-  const currentClassVal = cSel.value;
-  const classes = [...new Set(rows.map(r => r.class || r.className).filter(Boolean))].sort();
-  cSel.innerHTML = `<option value="">All Classes (${classes.length})</option>` +
-    classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    const currentClassVal = cSel.value;
+    const classes = [...new Set(rows.map(r => r.class || r.className).filter(Boolean))].sort();
+    cSel.innerHTML = `<option value="">All Classes (${classes.length})</option>` +
+      classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
 
-  if (classes.includes(currentClassVal)) cSel.value = currentClassVal;
+    if (classes.includes(currentClassVal)) cSel.value = currentClassVal;
 
-  if (sSel) {
-    const currentSub = sSel.value;
-    const subjects = [...new Set(rows.map(r => r.subject).filter(Boolean))].sort();
-    sSel.innerHTML = `<option value="">All Subjects (${subjects.length})</option>` +
-      subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
-    if (subjects.includes(currentSub)) sSel.value = currentSub;
+    if (sSel) {
+      const currentSub = sSel.value;
+      const subjects = [...new Set(rows.map(r => r.subject).filter(Boolean))].sort();
+      sSel.innerHTML = `<option value="">All Subjects (${subjects.length})</option>` +
+        subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+      if (subjects.includes(currentSub)) sSel.value = currentSub;
+    }
+    _dashFilterClassSubSig = classSubSig;
   }
 
   populateDashboardArmFilter();
@@ -528,10 +547,18 @@ function populateDashboardArmFilter() {
 
   const selectedTerm = tSel ? tSel.value : "";
   const selectedClass = cSel ? cSel.value : "";
+  const armSig = `${allScoreRows.length}|${selectedTerm}|${selectedClass}`;
+  if (_dashFilterArmSig === armSig) return;
+  _dashFilterArmSig = armSig;
 
   let rows = allScoreRows || [];
-  if (selectedTerm) rows = rows.filter(r => r.term === selectedTerm);
-  if (selectedClass) rows = rows.filter(r => (r.class || r.className) === selectedClass);
+  if (selectedTerm && selectedClass) {
+    rows = rows.filter(r => r.term === selectedTerm && (r.class || r.className) === selectedClass);
+  } else if (selectedTerm) {
+    rows = rows.filter(r => r.term === selectedTerm);
+  } else if (selectedClass) {
+    rows = rows.filter(r => (r.class || r.className) === selectedClass);
+  }
 
   const currentArmVal = aSel.value;
   const arms = [...new Set(rows.map(r => r.arm).filter(Boolean))].sort();
@@ -546,6 +573,8 @@ function getDashboardFilteredRows() {
   const cls = $("dashFilterClass") ? $("dashFilterClass").value : "";
   const arm = $("dashFilterArm") ? $("dashFilterArm").value : "";
   const sub = $("dashFilterSubject") ? $("dashFilterSubject").value : "";
+
+  if (!term && !cls && !arm && !sub) return allScoreRows || [];
 
   return (allScoreRows || []).filter(r => {
     if (term && r.term !== term) return false;
@@ -563,7 +592,7 @@ async function renderExecutiveDashboard() {
   if (!allScoreRows || !allScoreRows.length) {
     await loadStudentScores();
   }
-  if (typeof loadStudentDirectoryFromCloud === "function") {
+  if (!_studentDirectoryLoaded && typeof loadStudentDirectoryFromCloud === "function") {
     await loadStudentDirectoryFromCloud();
   }
 
@@ -600,6 +629,11 @@ async function renderExecutiveDashboard() {
   // Group by Subject
   const subjectMap = new Map();
 
+  // Pre-resolve conversion settings & original max marks ONCE per term instead of per row
+  const dashSelectedTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
+  const convByTermCache = new Map();
+  const origMaxByTermCache = new Map();
+
   rows.forEach(r => {
     // Extract raw score and original max mark
     let parsedRawScore = NaN;
@@ -607,33 +641,58 @@ async function renderExecutiveDashboard() {
 
     if (r.score !== undefined && r.score !== null && r.score !== "") {
       const str = String(r.score).trim();
-      const m = str.match(/^([\d.]+)\s*(?:of|\/)\s*([\d.]+)$/i);
-      if (m) {
-        parsedRawScore = parseFloat(m[1]);
-        parsedOrigMax = parseFloat(m[2]);
+      const slashIdx = str.indexOf("/");
+      const ofIdx = slashIdx === -1 ? str.toLowerCase().indexOf("of") : -1;
+      if (slashIdx !== -1 || ofIdx !== -1) {
+        const m = str.match(/^([\d.]+)\s*(?:of|\/)\s*([\d.]+)$/i);
+        if (m) {
+          parsedRawScore = parseFloat(m[1]);
+          parsedOrigMax = parseFloat(m[2]);
+        } else {
+          parsedRawScore = parseFloat(str);
+        }
       } else {
         parsedRawScore = parseFloat(str);
       }
     }
 
-    const dashSelectedTerm = $("dashFilterTerm") ? $("dashFilterTerm").value : "";
     const rowTerm = r.term || dashSelectedTerm || adminCurrentTerm || "";
-    const convSetting = getConversionForTerm(rowTerm);
-    const origMax = parsedOrigMax || (convSetting ? convSetting.originalMax : (detectOriginalMaxForTerm(allScoreRows, rowTerm) || 20));
+    let convSetting = convByTermCache.get(rowTerm);
+    if (convSetting === undefined) {
+      convSetting = getConversionForTerm(rowTerm) || null;
+      convByTermCache.set(rowTerm, convSetting);
+    }
+
+    let termOrigMax = null;
+    if (!parsedOrigMax && !convSetting) {
+      termOrigMax = origMaxByTermCache.get(rowTerm);
+      if (termOrigMax === undefined) {
+        termOrigMax = detectOriginalMaxForTerm(allScoreRows, rowTerm) || 20;
+        origMaxByTermCache.set(rowTerm, termOrigMax);
+      }
+    }
+
+    const origMax = parsedOrigMax || (convSetting ? convSetting.originalMax : (termOrigMax || 20));
     const targetMax = convSetting ? convSetting.targetMax : origMax;
 
-    // Converted / scaled score
-    const scaledScore = (!isNaN(parsedRawScore) && convSetting)
-      ? applyScoreConversion(parsedRawScore, rowTerm)
-      : parsedRawScore;
+    // Converted / scaled score (computed inline using cached term conversion)
+    let scaledScore = parsedRawScore;
+    if (!isNaN(parsedRawScore) && convSetting && convSetting.originalMax && convSetting.targetMax && convSetting.originalMax !== convSetting.targetMax) {
+      scaledScore = Math.round(parsedRawScore * (convSetting.targetMax / convSetting.originalMax) * 100) / 100;
+    }
 
     // Percentage
     const rawPct = r.pct !== undefined ? parseFloat(r.pct) : NaN;
-    const convPct = (!isNaN(parsedRawScore) && convSetting)
-      ? applyPctConversion(parsedRawScore, rowTerm)
-      : null;
-
-    const pctVal = convPct !== null ? convPct : (!isNaN(rawPct) ? rawPct : (!isNaN(parsedRawScore) ? Math.round((parsedRawScore / origMax) * 100 * 10) / 10 : 0));
+    let pctVal;
+    if (!isNaN(parsedRawScore) && convSetting && convSetting.originalMax && convSetting.targetMax) {
+      pctVal = Math.round((scaledScore / convSetting.targetMax) * 100 * 10) / 10;
+    } else if (!isNaN(rawPct)) {
+      pctVal = rawPct;
+    } else if (!isNaN(parsedRawScore)) {
+      pctVal = Math.round((parsedRawScore / origMax) * 100 * 10) / 10;
+    } else {
+      pctVal = 0;
+    }
     const scoreVal = !isNaN(scaledScore) ? scaledScore : (!isNaN(parsedRawScore) ? parsedRawScore : pctVal);
 
     const isPass = pctVal >= 50;
@@ -788,14 +847,28 @@ async function renderExecutiveDashboard() {
     const selectedDashClass = ($("dashFilterClass") ? $("dashFilterClass").value : "").trim();
     const selectedDashArm = ($("dashFilterArm") ? $("dashFilterArm").value : "").trim();
     const selectedDashSubj = ($("dashFilterSubject") ? $("dashFilterSubject").value : "").trim();
-    const selectedDashTerm = ($("dashFilterTerm") ? $("dashFilterTerm").value : "").trim() || (adminCurrentTerm || "");
+    const dashFilterTermRaw = ($("dashFilterTerm") ? $("dashFilterTerm").value : "").trim();
+    const selectedDashTerm = dashFilterTermRaw || (adminCurrentTerm || "");
 
     const targetTermNorm = normalizeTermKey(selectedDashTerm);
-    const termRows = (allScoreRows || []).filter(r => {
-      if (!selectedDashTerm) return true;
-      if (!r.term) return true;
-      return r.term.toLowerCase() === selectedDashTerm.toLowerCase() || normalizeTermKey(r.term) === targetTermNorm;
-    });
+    const canReuseFilteredRows = (!selectedDashClass && !selectedDashArm && !selectedDashSubj && (
+      !selectedDashTerm || (dashFilterTermRaw && rows.length > 0)
+    ));
+    let termRows;
+    if (!selectedDashTerm) {
+      termRows = allScoreRows || [];
+    } else if (dashFilterTermRaw && !selectedDashClass && !selectedDashArm && !selectedDashSubj && !rows.some(r => !r.term)) {
+      // Exact term matches rows, just also include any blank-term / variant-term rows quickly if present
+      termRows = (allScoreRows || []).filter(r => {
+        if (!r.term || r.term === selectedDashTerm) return true;
+        return normalizeTermKey(r.term) === targetTermNorm;
+      });
+    } else {
+      termRows = (allScoreRows || []).filter(r => {
+        if (!r.term || r.term === selectedDashTerm) return true;
+        return normalizeTermKey(r.term) === targetTermNorm;
+      });
+    }
 
     // Build lookup of subjects actually administered per class level in this term,
     // plus an auto-detected fallback curriculum for classes not in SCHOOL_CLASS_CURRICULUM.
@@ -805,7 +878,8 @@ async function renderExecutiveDashboard() {
     const classSubjectDisplay = new Map();      // `${clsKey}|${subCanon}` -> displayName
     const studentWrittenMap = new Map();        // identityKey -> Set(subCanon)
 
-    const termResolver = buildCanonicalStudentResolver(termRows, _studentDirectory);
+    const canReuseResolver = (termRows.length === rows.length && !selectedDashClass && !selectedDashArm && !selectedDashSubj);
+    const termResolver = canReuseResolver ? studentResolver : buildCanonicalStudentResolver(termRows, _studentDirectory);
     const activeArmsByClass = new Map(); // clsKey -> Set(armLow)
 
     termRows.forEach(r => {
@@ -3318,6 +3392,7 @@ function setUploadProgress(pct, text) {
 
 let _studentDirectory = []; // { fullName, reg, class, arm, gender, status }
 let _studentDirectoryPromise = null;
+let _studentDirectoryLoaded = false;
 
 function auditCanonicalSubject(subjectName) {
   if (typeof canonicalSubjectKey === "function") return canonicalSubjectKey(subjectName);
@@ -3424,6 +3499,9 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
   const byReg = new Map();
   const byExactNameCls = new Map();
   const bySortedTokCls = new Map();
+  const byTokenCls = new Map();
+  const resolveMemo = new Map();
+  let pass1Done = false;
 
   const indexProfile = (profile) => {
     if (profile.regC) byReg.set(profile.regC, profile);
@@ -3437,13 +3515,33 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
       if (!bySortedTokCls.has(tk)) bySortedTokCls.set(tk, []);
       if (!bySortedTokCls.get(tk).includes(profile)) bySortedTokCls.get(tk).push(profile);
     }
+    if (profile.tokenSet && profile.tokens.length >= 2) {
+      profile.tokenSet.forEach(tok => {
+        const ttk = `${tok}|${profile.clsKey}`;
+        let bucket = byTokenCls.get(ttk);
+        if (!bucket) { bucket = []; byTokenCls.set(ttk, bucket); }
+        if (!bucket.includes(profile)) bucket.push(profile);
+      });
+    }
   };
 
   const registerProfile = (name, reg, cls, arm) => {
+    const regC = normalizeStudentRegForKey(reg);
+    const rawNameKey = String(name || "").trim().toUpperCase();
+
+    // Fast path: already-indexed registration number with identical name avoids regex/token sorting
+    if (regC && byReg.has(regC)) {
+      const existing = byReg.get(regC);
+      if (rawNameKey && rawNameKey === existing._lastRawName) {
+        const armKeyFast = String(arm || "").trim().toUpperCase();
+        if (!existing.armKey && armKeyFast && armKeyFast !== "-") existing.armKey = armKeyFast;
+        return existing;
+      }
+    }
+
     const tokens = normalizeStudentNameTokens(name);
     const normName = tokens.join(" ");
-    const sortedTok = [...tokens].sort().join(" ");
-    const regC = normalizeStudentRegForKey(reg);
+    const sortedTok = tokens.length > 1 ? [...tokens].sort().join(" ") : normName;
     const regIsOfficial = isOfficialStudentReg(regC);
     const clsKey = normalizeAuditClassKey(cls || "");
     const armKey = String(arm || "").trim().toUpperCase();
@@ -3451,10 +3549,12 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
 
     if (regC && byReg.has(regC)) {
       const existing = byReg.get(regC);
+      existing._lastRawName = rawNameKey;
       if (normName && (!existing.normName || tokens.length > existing.tokens.length)) {
         existing.name = normName;
         existing.normName = normName;
         existing.tokens = tokens;
+        existing.tokenSet = new Set(tokens);
         existing.sortedTok = sortedTok;
         indexProfile(existing);
       }
@@ -3489,6 +3589,7 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
           matched.name = normName;
           matched.normName = normName;
           matched.tokens = tokens;
+          matched.tokenSet = new Set(tokens);
           matched.sortedTok = sortedTok;
         }
         if (armKey && armKey !== "-") matched.armKey = armKey;
@@ -3504,9 +3605,11 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
 
     const profile = {
       canonId: canonicalProfiles.length,
+      _lastRawName: rawNameKey,
       name: normName || regC,
       normName,
       tokens,
+      tokenSet: new Set(tokens),
       sortedTok,
       reg: String(reg || "").trim(),
       regC,
@@ -3540,15 +3643,32 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
     if (tokens.length < 2) return null;
     const tSet = new Set(tokens);
 
+    // Inverted token lookup within same class instead of O(N) full scan across all students
+    const candidates = [];
+    const seenCand = new Set();
+    for (let i = 0; i < tokens.length; i++) {
+      const bucket = byTokenCls.get(`${tokens[i]}|${clsKey}`);
+      if (!bucket) continue;
+      for (let j = 0; j < bucket.length; j++) {
+        const p = bucket[j];
+        if (!seenCand.has(p)) {
+          seenCand.add(p);
+          candidates.push(p);
+        }
+      }
+    }
+    if (!candidates.length) return null;
+
     // 1. Bidirectional subset match (e.g. "ABATI KIKI" <-> "ABATI MARTHA KIKI",
     //    or "ABAMBA EJIRO OGHENE MICHEAL" <-> "ABAMBA MICHEAL OGHENE")
-    const subsetHits = canonicalProfiles.filter(p => {
-      if (p.clsKey !== clsKey) return false;
-      if (!areStudentRegsCompatible(regC, p.regC)) return false;
-      if (p.tokens.length < 2) return false;
-      const pSet = new Set(p.tokens);
-      return tokens.every(t => pSet.has(t)) || p.tokens.every(t => tSet.has(t));
-    });
+    const subsetHits = [];
+    for (let i = 0; i < candidates.length; i++) {
+      const p = candidates[i];
+      if (!areStudentRegsCompatible(regC, p.regC)) continue;
+      if (tokens.every(t => p.tokenSet.has(t)) || p.tokens.every(t => tSet.has(t))) {
+        subsetHits.push(p);
+      }
+    }
     if (subsetHits.length === 1) return subsetHits[0];
     if (subsetHits.length > 1) {
       const sameArm = subsetHits.filter(p => armKey && p.armKey === armKey);
@@ -3561,70 +3681,91 @@ function buildCanonicalStudentResolver(scoreRows, studentDirectory) {
     //    (e.g. "OLAIYA-OLOKOBA MICHEAL" STD1765 <-> "OLAIYA OLUWAMAYOWA MICHEAL" STDS8-2025-111)
     if (!isOfficialStudentReg(regC)) {
       const surname = tokens[0];
-      const overlapHits = canonicalProfiles.filter(p => {
-        if (!p.isOfficial || p.clsKey !== clsKey) return false;
-        if (!p.tokens.length || p.tokens[0] !== surname) return false;
-        const pSet = new Set(p.tokens);
-        const sharedCount = tokens.filter(t => pSet.has(t)).length;
-        return sharedCount >= 2;
-      });
+      const overlapHits = [];
+      for (let i = 0; i < candidates.length; i++) {
+        const p = candidates[i];
+        if (!p.isOfficial || !p.tokens.length || p.tokens[0] !== surname) continue;
+        let sharedCount = 0;
+        for (let k = 0; k < tokens.length; k++) {
+          if (p.tokenSet.has(tokens[k])) sharedCount++;
+        }
+        if (sharedCount >= 2) overlapHits.push(p);
+      }
       if (overlapHits.length === 1) return overlapHits[0];
     }
     return null;
   };
 
   const resolveRow = (name, reg, cls, arm) => {
+    const memoKey = pass1Done ? `${name || ""}|${reg || ""}|${cls || ""}|${arm || ""}` : "";
+    if (memoKey && resolveMemo.has(memoKey)) return resolveMemo.get(memoKey);
+
     const tokens = normalizeStudentNameTokens(name);
     const normName = tokens.join(" ");
-    const sortedTok = [...tokens].sort().join(" ");
+    const sortedTok = tokens.length > 1 ? [...tokens].sort().join(" ") : normName;
     const regC = normalizeStudentRegForKey(reg);
     const clsKey = normalizeAuditClassKey(cls || "");
     const armKey = String(arm || "").trim().toUpperCase();
 
-    if (regC && byReg.has(regC)) return byReg.get(regC);
+    let result = null;
+    if (regC && byReg.has(regC)) {
+      result = byReg.get(regC);
+    }
 
-    if (normName) {
+    if (!result && normName) {
       const exacts = (byExactNameCls.get(`${normName}|${clsKey}`) || []).filter(p =>
         areStudentRegsCompatible(regC, p.regC) &&
         (isOfficialStudentReg(p.regC) || !regC || !armKey || armKey === "-" || !p.armKey || armKey === p.armKey)
       );
       if (exacts.length === 1) {
         if (regC) byReg.set(regC, exacts[0]);
-        return exacts[0];
+        result = exacts[0];
       }
     }
 
-    if (sortedTok) {
+    if (!result && sortedTok) {
       const tokMatches = (bySortedTokCls.get(`${sortedTok}|${clsKey}`) || []).filter(p =>
         areStudentRegsCompatible(regC, p.regC) &&
         (isOfficialStudentReg(p.regC) || !regC || !armKey || armKey === "-" || !p.armKey || armKey === p.armKey)
       );
       if (tokMatches.length === 1) {
         if (regC) byReg.set(regC, tokMatches[0]);
-        return tokMatches[0];
+        result = tokMatches[0];
       }
     }
 
-    if (!isOfficialStudentReg(regC)) {
+    if (!result && !isOfficialStudentReg(regC)) {
       const tokenHit = findTokenMatchForTempRow(tokens, regC, clsKey, armKey);
       if (tokenHit) {
         if (regC) byReg.set(regC, tokenHit);
-        return tokenHit;
+        result = tokenHit;
       }
     }
 
-    return registerProfile(name, reg, cls, arm);
+    if (!result) result = registerProfile(name, reg, cls, arm);
+    if (memoKey && result && resolveMemo.size < 4000) resolveMemo.set(memoKey, result);
+    return result;
   };
 
   // Pass 1c: Score rows with >= 3 name tokens (even without official STDS reg),
   // resolved through resolveRow so temp multi-token aliases match STDS profiles first.
+  const seenTempTriplets = new Set();
   (scoreRows || []).forEach(r => {
-    const regC = normalizeStudentRegForKey(r.reg || r.regNo);
-    const tokens = normalizeStudentNameTokens(r.student || r.name);
-    if (!isOfficialStudentReg(regC) && tokens.length >= 3) {
-      resolveRow(r.student || r.name, r.reg || r.regNo, r.class || r.className, r.arm);
+    const rReg = r.reg || r.regNo || "";
+    const regC = normalizeStudentRegForKey(rReg);
+    if (isOfficialStudentReg(regC)) return;
+    const rName = r.student || r.name || "";
+    const rCls = r.class || r.className || "";
+    const rArm = r.arm || "";
+    const seenKey = `${regC}|${rName}|${rCls}|${rArm}`;
+    if (seenTempTriplets.has(seenKey)) return;
+    seenTempTriplets.add(seenKey);
+    const tokens = normalizeStudentNameTokens(rName);
+    if (tokens.length >= 3) {
+      resolveRow(rName, rReg, rCls, rArm);
     }
   });
+  pass1Done = true;
 
   return { resolveRow };
 }
@@ -3694,6 +3835,7 @@ function renderDirectorySummary(students) {
 
 async function loadStudentDirectoryFromCloud(forceRefresh = false) {
   if (_studentDirectoryPromise && !forceRefresh) return _studentDirectoryPromise;
+  if (forceRefresh) _studentDirectoryLoaded = false;
   _studentDirectoryPromise = (async () => {
     try {
       const result = await window.dbClient.getStudentDirectory();
@@ -3708,6 +3850,8 @@ async function loadStudentDirectoryFromCloud(forceRefresh = false) {
       }
     } catch (e) {
       console.warn("Could not load student directory:", e);
+    } finally {
+      _studentDirectoryLoaded = true;
     }
     return _studentDirectory;
   })();
@@ -6087,12 +6231,26 @@ const SCORES_CACHE_KEY = "admin_exam_scores_cache_v3";
 // ── Per-Term Score Conversion ──────────────────────────────────────────
 const SCORE_CONVERSION_KEY = "SCORE_CONVERSION_SETTING_v1";
 
+let _convConfigCacheRaw = "__UNSET__";
+let _convConfigCacheVal = { terms: {} };
+let _convTermLookupCacheRaw = "__UNSET__";
+const _convTermLookupCache = new Map();
+
 function getConversionConfig() {
   try {
-    const raw = localStorage.getItem(SCORE_CONVERSION_KEY);
-    if (!raw) return { terms: {} };
+    const raw = localStorage.getItem(SCORE_CONVERSION_KEY) || "";
+    if (raw === _convConfigCacheRaw) return _convConfigCacheVal;
+    if (!raw) {
+      _convConfigCacheRaw = "";
+      _convConfigCacheVal = { terms: {} };
+      return _convConfigCacheVal;
+    }
     const parsed = JSON.parse(raw);
-    if (!parsed) return { terms: {} };
+    if (!parsed) {
+      _convConfigCacheRaw = raw;
+      _convConfigCacheVal = { terms: {} };
+      return _convConfigCacheVal;
+    }
     let terms = parsed.terms || {};
     // Normalize legacy single-term setting:
     if (parsed.originalMax && parsed.targetMax) {
@@ -6116,12 +6274,16 @@ function getConversionConfig() {
         hasDupes = true;
       }
     }
+    let finalRaw = raw;
     if (hasDupes) {
       try {
-        localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify({ terms: cleanTerms }));
+        finalRaw = JSON.stringify({ terms: cleanTerms });
+        localStorage.setItem(SCORE_CONVERSION_KEY, finalRaw);
       } catch (_) {}
     }
-    return { terms: cleanTerms };
+    _convConfigCacheRaw = finalRaw;
+    _convConfigCacheVal = { terms: cleanTerms };
+    return _convConfigCacheVal;
   } catch (e) {
     return { terms: {} };
   }
@@ -6151,51 +6313,67 @@ function getConversionForTerm(term) {
 
   const dashTerm = (typeof $("dashFilterTerm") !== "undefined" && $("dashFilterTerm")) ? $("dashFilterTerm").value : "";
   const effectiveTerm = term || dashTerm || adminCurrentTerm || (typeof activeCbtExamTerm !== "undefined" ? activeCbtExamTerm : "");
+  const cacheKey = effectiveTerm || "__EMPTY__";
+  if (_convTermLookupCacheRaw === _convConfigCacheRaw && _convTermLookupCache.has(cacheKey)) {
+    return _convTermLookupCache.get(cacheKey);
+  }
+  if (_convTermLookupCacheRaw !== _convConfigCacheRaw) {
+    _convTermLookupCache.clear();
+    _convTermLookupCacheRaw = _convConfigCacheRaw;
+  }
+
+  let matched = null;
   if (!effectiveTerm) {
     if (config.terms["__ALL__"]) {
       const c = config.terms["__ALL__"];
-      if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+      if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) matched = c;
     }
-    return null;
+    _convTermLookupCache.set(cacheKey, matched);
+    return matched;
   }
 
   // 1. Direct exact match
   if (config.terms[effectiveTerm]) {
     const c = config.terms[effectiveTerm];
-    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) matched = c;
   }
 
   // 2. Normalized case-insensitive and punctuation-insensitive match
-  const tNorm = normalizeAdminTermKey(effectiveTerm);
-  if (tNorm) {
-    for (const [k, c] of Object.entries(config.terms)) {
-      if (k === "__ALL__" || !c) continue;
-      const kNorm = normalizeAdminTermKey(k);
-      if (kNorm && (kNorm === tNorm || kNorm.includes(tNorm) || tNorm.includes(kNorm))) {
-        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  if (!matched) {
+    const tNorm = normalizeAdminTermKey(effectiveTerm);
+    if (tNorm) {
+      for (const [k, c] of Object.entries(config.terms)) {
+        if (k === "__ALL__" || !c) continue;
+        const kNorm = normalizeAdminTermKey(k);
+        if (kNorm && (kNorm === tNorm || kNorm.includes(tNorm) || tNorm.includes(kNorm))) {
+          if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) { matched = c; break; }
+        }
       }
     }
   }
 
   // 3. Semantic / canonical assessment matching (e.g. "Mid Term Test" matches "Mid Term Examination", "Mid Term", "midterm")
-  const tCat = getCanonicalAdminTermCategory(effectiveTerm);
-  if (tCat) {
-    for (const [k, c] of Object.entries(config.terms)) {
-      if (k === "__ALL__" || !c) continue;
-      const kCat = getCanonicalAdminTermCategory(k);
-      if (kCat && (kCat === tCat || (kCat.endsWith("midterm") && tCat.endsWith("midterm")) || (kCat.endsWith("firsttest") && tCat.endsWith("firsttest")) || (kCat.endsWith("exam") && tCat.endsWith("exam")))) {
-        if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+  if (!matched) {
+    const tCat = getCanonicalAdminTermCategory(effectiveTerm);
+    if (tCat) {
+      for (const [k, c] of Object.entries(config.terms)) {
+        if (k === "__ALL__" || !c) continue;
+        const kCat = getCanonicalAdminTermCategory(k);
+        if (kCat && (kCat === tCat || (kCat.endsWith("midterm") && tCat.endsWith("midterm")) || (kCat.endsWith("firsttest") && tCat.endsWith("firsttest")) || (kCat.endsWith("exam") && tCat.endsWith("exam")))) {
+          if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) { matched = c; break; }
+        }
       }
     }
   }
 
   // 4. Global "__ALL__" rule (applied across all terms ONLY if school explicitly set All Terms)
-  if (config.terms["__ALL__"]) {
+  if (!matched && config.terms["__ALL__"]) {
     const c = config.terms["__ALL__"];
-    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) return c;
+    if (c.originalMax && c.targetMax && c.originalMax !== c.targetMax) matched = c;
   }
 
-  return null;
+  _convTermLookupCache.set(cacheKey, matched);
+  return matched;
 }
 
 function getScoreConversion() {
@@ -6203,6 +6381,9 @@ function getScoreConversion() {
 }
 
 function setScoreConversion(config) {
+  _convConfigCacheRaw = "__UNSET__";
+  _convTermLookupCacheRaw = "__UNSET__";
+  _convTermLookupCache.clear();
   if (config && config.terms && Object.keys(config.terms).length > 0) {
     localStorage.setItem(SCORE_CONVERSION_KEY, JSON.stringify(config));
   } else {
@@ -6291,14 +6472,30 @@ function populateConversionTermSelect(terms) {
   }
 }
 
+const _origMaxByRowsCache = new WeakMap();
+
 function detectOriginalMaxForTerm(rows, term) {
   if (!Array.isArray(rows) || !rows.length) return null;
-  const termRows = rows.filter(r => !term || term === "__ALL__" || r.term === term);
-  if (!termRows.length) return null;
+  const termKey = term || "__ALL__";
+  const len = rows.length;
+  const firstRow = rows[0];
+  const lastRow = rows[len - 1];
+  let rowCache = _origMaxByRowsCache.get(rows);
+  if (!rowCache || rowCache.len !== len || rowCache.firstRow !== firstRow || rowCache.lastRow !== lastRow) {
+    rowCache = { len, firstRow, lastRow, terms: new Map() };
+    _origMaxByRowsCache.set(rows, rowCache);
+  }
+  if (rowCache.terms.has(termKey)) return rowCache.terms.get(termKey);
+
   const counts = {};
-  for (let i = 0; i < Math.min(termRows.length, 500); i++) {
-    const r = termRows[i];
-    const m = String(r.score || "").match(/(?:of|\/)\s*(\d+(?:\.\d+)?)/i);
+  let sampled = 0;
+  const isAll = !term || term === "__ALL__";
+  for (let i = 0; i < len && sampled < 500; i++) {
+    const r = rows[i];
+    if (!isAll && r.term !== term) continue;
+    sampled++;
+    const rawStr = String(r.score || "");
+    const m = (rawStr.includes("/") || rawStr.toLowerCase().includes("of")) ? rawStr.match(/(?:of|\/)\s*(\d+(?:\.\d+)?)/i) : null;
     let val = null;
     if (m) {
       val = Math.round(parseFloat(m[1]));
@@ -6313,6 +6510,10 @@ function detectOriginalMaxForTerm(rows, term) {
     }
     if (val && val > 0 && val <= 1000) counts[val] = (counts[val] || 0) + 1;
   }
+  if (!sampled) {
+    rowCache.terms.set(termKey, null);
+    return null;
+  }
   let best = null, maxCount = 0;
   for (const [val, count] of Object.entries(counts)) {
     if (count > maxCount) {
@@ -6320,6 +6521,7 @@ function detectOriginalMaxForTerm(rows, term) {
       best = parseFloat(val);
     }
   }
+  rowCache.terms.set(termKey, best);
   return best;
 }
 
@@ -6832,8 +7034,9 @@ function buildAdminTermTabs() {
     adminCurrentTerm = null;
     scoresCurrentPage = 1;
     updateAdminTermTabs();
-    buildAdminFilters();
-    applyScoreFilters();
+    const scoped = termScopedRows();
+    buildAdminFilters(scoped);
+    applyScoreFilters(scoped);
 
     const sel = document.getElementById("convTermSelect");
     if (sel) {
@@ -6843,7 +7046,6 @@ function buildAdminTermTabs() {
     const tSel = $("dashFilterTerm");
     if (tSel) {
       tSel.value = "";
-      populateDashboardClassAndArmFilters();
     }
   };
   $tabs.appendChild(allTab);
@@ -6857,8 +7059,9 @@ function buildAdminTermTabs() {
       adminCurrentTerm = term;
       scoresCurrentPage = 1;
       updateAdminTermTabs();
-      buildAdminFilters();
-      applyScoreFilters();
+      const scoped = termScopedRows();
+      buildAdminFilters(scoped);
+      applyScoreFilters(scoped);
 
       const sel = document.getElementById("convTermSelect");
       if (sel) {
@@ -6868,7 +7071,6 @@ function buildAdminTermTabs() {
       const tSel = $("dashFilterTerm");
       if (tSel) {
         tSel.value = term;
-        populateDashboardClassAndArmFilters();
       }
     };
     $tabs.appendChild(btn);
@@ -6898,34 +7100,41 @@ function updateAdminTermTabs() {
   $("scoresTableHeadingText").textContent = (adminCurrentTerm || "All terms") + " — Examination Scores";
 }
 
+const _termNormCache = new Map();
 function normalizeTermKey(str) {
-  return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const raw = String(str || "");
+  if (_termNormCache.has(raw)) return _termNormCache.get(raw);
+  const res = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (_termNormCache.size < 200) _termNormCache.set(raw, res);
+  return res;
 }
 
 function termScopedRows() {
   if (!adminCurrentTerm) return allScoreRows;
   const targetNorm = normalizeTermKey(adminCurrentTerm);
+  const targetIsMid = targetNorm.includes("midterm");
+  const targetIsFirstTest = targetNorm.includes("firsttest");
+  const targetIsFirstTerm = targetNorm.includes("firstterm");
   return allScoreRows.filter(r => {
     if (!r.term) return false;
     if (r.term === adminCurrentTerm) return true;
     const rNorm = normalizeTermKey(r.term);
     if (rNorm === targetNorm) return true;
-    // Tolerant semantic match: e.g. "Mid Term Test" matches "Mid-Term Test", "Midterm", etc.
-    if (targetNorm.includes("midterm") && rNorm.includes("midterm")) return true;
-    if (targetNorm.includes("firsttest") && rNorm.includes("firsttest")) return true;
-    if (targetNorm.includes("firstterm") && rNorm.includes("firstterm")) return true;
+    if (targetIsMid && rNorm.includes("midterm")) return true;
+    if (targetIsFirstTest && rNorm.includes("firsttest")) return true;
+    if (targetIsFirstTerm && rNorm.includes("firstterm")) return true;
     return false;
   });
 }
 
-function buildAdminFilters() {
-  const s = termScopedRows();
+function buildAdminFilters(precomputedRows) {
+  const s = precomputedRows || termScopedRows();
   populateFilter($("scoresFilterClass"), [...new Set(s.map(r => r.class).filter(Boolean))].sort());
-  updateDependentFilters();
+  updateDependentFilters(s);
 }
 
-function updateDependentFilters() {
-  const s = termScopedRows();
+function updateDependentFilters(precomputedRows) {
+  const s = precomputedRows || termScopedRows();
   const selectedClass = $("scoresFilterClass").value;
 
   // Filter rows for the selected class to determine available subjects and arms
@@ -6951,17 +7160,18 @@ function populateFilter(sel, vals) {
   if (vals.includes(currentVal)) sel.value = currentVal;
 }
 
-function applyScoreFilters() {
+function applyScoreFilters(precomputedRows) {
   const sub = $("scoresFilterSubject").value;
   const cls = $("scoresFilterClass").value;
   const arm = $("scoresFilterArm").value;
   const q = ($("scoresSearchInput").value || "").trim().toLowerCase();
 
-  activeFilteredRows = termScopedRows().filter(r => {
+  const baseRows = precomputedRows || termScopedRows();
+  activeFilteredRows = (!sub && !cls && !arm && !q) ? baseRows : baseRows.filter(r => {
     if (sub && r.subject !== sub) return false;
     if (cls && r.class !== cls) return false;
     if (arm && r.arm !== arm) return false;
-    if (q && !r.student.toLowerCase().includes(q) && !r.reg.toLowerCase().includes(q)) return false;
+    if (q && !(r.student || "").toLowerCase().includes(q) && !(r.reg || "").toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -6985,11 +7195,15 @@ function updateScoreDistributionChart(rows) {
     return;
   }
 
-  const fail = rows.filter(r => (r.pct || 0) < 50).length;
-  const p50 = rows.filter(r => (r.pct || 0) >= 50 && (r.pct || 0) < 60).length;
-  const p60 = rows.filter(r => (r.pct || 0) >= 60 && (r.pct || 0) < 70).length;
-  const p70 = rows.filter(r => (r.pct || 0) >= 70 && (r.pct || 0) < 80).length;
-  const p80 = rows.filter(r => (r.pct || 0) >= 80).length;
+  let fail = 0, p50 = 0, p60 = 0, p70 = 0, p80 = 0;
+  for (let i = 0; i < total; i++) {
+    const p = rows[i].pct || 0;
+    if (p < 50) fail++;
+    else if (p < 60) p50++;
+    else if (p < 70) p60++;
+    else if (p < 80) p70++;
+    else p80++;
+  }
 
   const pctOf = count => Math.round((count / total) * 100);
 
@@ -7033,22 +7247,28 @@ function updateSortIndicators() {
 }
 
 function getSortedAdminRows() {
-  return [...activeFilteredRows].sort((a, b) => {
-    let va = a[adminSortCol];
-    let vb = b[adminSortCol];
-    if (adminSortCol === "pct" || adminSortCol === "score") {
-      va = Number(a.pct) || 0;
-      vb = Number(b.pct) || 0;
-    } else if (adminSortCol === "index") {
-      return 0;
-    } else {
-      va = String(va || "").toLowerCase();
-      vb = String(vb || "").toLowerCase();
-    }
-    if (va < vb) return adminSortAsc ? -1 : 1;
-    if (va > vb) return adminSortAsc ? 1 : -1;
-    return 0;
-  });
+  if (adminSortCol === "index") return activeFilteredRows;
+  const len = activeFilteredRows.length;
+  if (len <= 1) return activeFilteredRows;
+  const dir = adminSortAsc ? 1 : -1;
+  if (adminSortCol === "pct" || adminSortCol === "score") {
+    return [...activeFilteredRows].sort((a, b) => {
+      const va = Number(a.pct) || 0;
+      const vb = Number(b.pct) || 0;
+      return va < vb ? -dir : (va > vb ? dir : 0);
+    });
+  }
+  const col = adminSortCol;
+  // Precompute lowercase keys once (Schwarzian transform) instead of .toLowerCase() inside every comparator step
+  const keyed = new Array(len);
+  for (let i = 0; i < len; i++) {
+    const row = activeFilteredRows[i];
+    keyed[i] = { k: String(row[col] || "").toLowerCase(), row };
+  }
+  keyed.sort((a, b) => (a.k < b.k ? -dir : (a.k > b.k ? dir : 0)));
+  const out = new Array(len);
+  for (let i = 0; i < len; i++) out[i] = keyed[i].row;
+  return out;
 }
 
 function renderScoresTableOnly() {

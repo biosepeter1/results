@@ -294,7 +294,7 @@ function refreshTeacherCbtSubjects() {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   CBT_CONFIG.subjects = merged;
 }
 refreshTeacherCbtSubjects();
@@ -313,7 +313,7 @@ function refreshCbtTermsAndSessions() {
       const p = JSON.parse(rawS);
       if (p && typeof p === "object") Object.assign(mergedSessions, p);
     }
-  } catch (e) {}
+  } catch (e) { }
   CBT_CONFIG.terms = mergedTerms;
   CBT_CONFIG.sessions = mergedSessions;
 }
@@ -385,22 +385,31 @@ const SUBJECT_CANONICAL_ALIASES = {
   "social citizenship": "social and citizenship studies"
 };
 
+const _subjectCanonCache = new Map();
 function canonicalSubjectKey(subjectName) {
-  const clean = String(subjectName || "").trim().toLowerCase().replace(/\s+/g, " ");
-  if (!clean) return "";
-  return SUBJECT_CANONICAL_ALIASES[clean] || clean;
+  const raw = String(subjectName || "");
+  if (_subjectCanonCache.has(raw)) return _subjectCanonCache.get(raw);
+  const clean = raw.trim().toLowerCase().replace(/\s+/g, " ");
+  const res = clean ? (SUBJECT_CANONICAL_ALIASES[clean] || clean) : "";
+  if (_subjectCanonCache.size < 500) _subjectCanonCache.set(raw, res);
+  return res;
 }
 
+const _classLevelCanonCache = new Map();
 function normalizeClassLevelKey(className) {
-  const s = String(className || "").trim().toUpperCase().replace(/\s+/g, " ");
-  if (!s) return "";
-  if (s === "JSS 1" || s === "JSS1" || s === "YEAR7" || s.startsWith("YEAR 7 ")) return "YEAR 7";
-  if (s === "JSS 2" || s === "JSS2" || s === "YEAR8" || s.startsWith("YEAR 8 ")) return "YEAR 8";
-  if (s === "JSS 3" || s === "JSS3" || s === "YEAR9" || s.startsWith("YEAR 9 ")) return "YEAR 9";
-  if (s === "SSS 1" || s === "SS 1" || s === "SSS1" || s === "YEAR10") return "YEAR 10";
-  if (s === "SSS 2" || s === "SS 2" || s === "SSS2" || s === "YEAR11") return "YEAR 11";
-  if (s === "SSS 3" || s === "SS 3" || s === "SSS3" || s === "YEAR12") return "YEAR 12";
-  return s;
+  const raw = String(className || "");
+  if (_classLevelCanonCache.has(raw)) return _classLevelCanonCache.get(raw);
+  const s = raw.trim().toUpperCase().replace(/\s+/g, " ");
+  let res = s;
+  if (!s) res = "";
+  else if (s === "JSS 1" || s === "JSS1" || s === "YEAR7" || s.startsWith("YEAR 7 ")) res = "YEAR 7";
+  else if (s === "JSS 2" || s === "JSS2" || s === "YEAR8" || s.startsWith("YEAR 8 ")) res = "YEAR 8";
+  else if (s === "JSS 3" || s === "JSS3" || s === "YEAR9" || s.startsWith("YEAR 9 ")) res = "YEAR 9";
+  else if (s === "SSS 1" || s === "SS 1" || s === "SSS1" || s === "YEAR10") res = "YEAR 10";
+  else if (s === "SSS 2" || s === "SS 2" || s === "SSS2" || s === "YEAR11") res = "YEAR 11";
+  else if (s === "SSS 3" || s === "SS 3" || s === "SSS3" || s === "YEAR12") res = "YEAR 12";
+  if (_classLevelCanonCache.size < 200) _classLevelCanonCache.set(raw, res);
+  return res;
 }
 
 const JUNIOR_EARLY_CURRICULUM = {
