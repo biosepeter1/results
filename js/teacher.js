@@ -2697,6 +2697,27 @@ $("tCbtClearTextBtn").onclick = () => {
   teacherParsedQuestions = [];
 };
 
+// Preserve Word / HTML rich formatting (superscripts, subscripts, Word OMML equations, numbered lists) on paste
+if ($("tCbtRawText")) {
+  $("tCbtRawText").addEventListener("paste", (e) => {
+    try {
+      const html = e.clipboardData && e.clipboardData.getData("text/html");
+      if (!html) return;
+      const hasMathOrStruct = /<(?:sup|sub|math|mfrac|msqrt|msup|msub|ol)\b|msEquation|m:oMath|katex|MathJax/i.test(html);
+      if (!hasMathOrStruct) return;
+      const converted = extractCleanTextFromRichHtml(html);
+      if (!converted || !converted.trim()) return;
+      e.preventDefault();
+      const ta = $("tCbtRawText");
+      const start = ta.selectionStart || 0;
+      const end = ta.selectionEnd || 0;
+      const current = ta.value || "";
+      ta.value = current.slice(0, start) + converted + current.slice(end);
+      ta.selectionStart = ta.selectionEnd = start + converted.length;
+    } catch (_) { }
+  });
+}
+
 // File drop/upload
 function checkTargetQuestionsNotice() {
   const targetVal = $("tCbtTargetQuestions")?.value.trim();
@@ -2904,16 +2925,504 @@ function convertToStandardCbtText(questions) {
   }).join("\n\n");
 }
 
+// ── Math Unicode & Rich HTML / Word OMML Equation Helpers ──
+const CBT_SUPERSCRIPT_MAP = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+  "+": "⁺", "-": "⁻", "−": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+  "n": "ⁿ", "i": "ⁱ", "a": "ᵃ", "b": "ᵇ", "c": "ᶜ", "d": "ᵈ",
+  "e": "ᵉ", "f": "ᶠ", "g": "ᵍ", "h": "ʰ", "j": "ʲ", "k": "ᵏ",
+  "l": "ˡ", "m": "ᵐ", "o": "ᵒ", "p": "ᵖ", "r": "ʳ", "s": "ˢ",
+  "t": "ᵗ", "u": "ᵘ", "v": "ᵛ", "w": "ʷ", "x": "ˣ", "y": "ʸ", "z": "ᶻ"
+};
+
+const CBT_SUBSCRIPT_MAP = {
+  "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+  "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+  "+": "₊", "-": "₋", "−": "₋", "=": "₌", "(": "₍", ")": "₎",
+  "a": "ₐ", "e": "ₑ", "h": "ₕ", "i": "ᵢ", "j": "ⱼ", "k": "ₖ",
+  "l": "ₗ", "m": "ₘ", "n": "ₙ", "o": "ₒ", "p": "ₚ", "r": "ᵣ",
+  "s": "ₛ", "t": "ₜ", "u": "ᵤ", "v": "ᵥ", "x": "ₓ"
+};
+
+function formatMathScriptText(raw, isSub) {
+  const txt = String(raw || "").replace(/\s+/g, "").trim();
+  if (!txt) return "";
+  if (!txt.includes("\\")) {
+    const map = isSub ? CBT_SUBSCRIPT_MAP : CBT_SUPERSCRIPT_MAP;
+    let mapped = "";
+    for (const ch of txt) {
+      if (!map[ch]) {
+        mapped = "";
+        break;
+      }
+      mapped += map[ch];
+    }
+    if (mapped) return mapped;
+  }
+  const prefix = isSub ? "_" : "^";
+  return `${prefix}{${txt}}`;
+}
+
+function formatFractionText(numRaw, denRaw) {
+  const num = String(numRaw || "").replace(/\s+/g, " ").trim();
+  const den = String(denRaw || "").replace(/\s+/g, " ").trim();
+  if (!num && !den) return "";
+  return `\\frac{${num}}{${den}}`;
+}
+
+function formatRadicalText(degRaw, exprRaw) {
+  const deg = String(degRaw || "").trim();
+  const expr = String(exprRaw || "").replace(/\s+/g, " ").trim();
+  if (!expr) return "";
+  if (deg && deg !== "2") return `\\sqrt[${deg}]{${expr}}`;
+  return `\\sqrt{${expr}}`;
+}
+
+function ommlTag(node) {
+  return ((node && (node.localName || node.nodeName)) || "").replace(/^.*:/, "").toLowerCase();
+}
+
+function ommlAttr(el, name) {
+  if (!el || !el.getAttribute) return "";
+  return el.getAttribute(`m:${name}`) || el.getAttribute(`w:${name}`) || el.getAttribute(name) || "";
+}
+
+function ommlDirectChildren(node, localName) {
+  const res = [];
+  const target = String(localName || "").toLowerCase();
+  if (!node || !node.childNodes) return res;
+  for (let i = 0; i < node.childNodes.length; i++) {
+    const ch = node.childNodes[i];
+    if (ch.nodeType === 1 && ommlTag(ch) === target) {
+      res.push(ch);
+    }
+  }
+  return res;
+}
+
+function ommlFirstChild(node, localName) {
+  return ommlDirectChildren(node, localName)[0] || null;
+}
+
+function ommlNodeToText(node) {
+  if (!node) return "";
+  if (node.nodeType === 3) return node.nodeValue || "";
+  if (node.nodeType !== 1) return "";
+  const tag = ommlTag(node);
+
+  if (tag === "rpr" || tag === "fpr" || tag === "radpr" || tag === "dpr" || tag === "ssuppr" || tag === "ssubpr" || tag === "ssubsuppr" || tag === "narypr" || tag === "ctrlpr" || tag === "argpr" || tag === "mrpr" || tag === "mpr" || tag === "funcpr" || tag === "accpr" || tag === "barpr" || tag === "boxpr") {
+    return "";
+  }
+  if (tag === "t") return node.textContent || "";
+  if (tag === "f") {
+    const num = ommlNodeToText(ommlFirstChild(node, "num"));
+    const den = ommlNodeToText(ommlFirstChild(node, "den"));
+    return formatFractionText(num, den);
+  }
+  if (tag === "rad") {
+    const deg = ommlNodeToText(ommlFirstChild(node, "deg"));
+    const base = ommlNodeToText(ommlFirstChild(node, "e"));
+    return formatRadicalText(deg, base);
+  }
+  if (tag === "ssup") {
+    const base = ommlNodeToText(ommlFirstChild(node, "e"));
+    const sup = ommlNodeToText(ommlFirstChild(node, "sup"));
+    return base + formatMathScriptText(sup, false);
+  }
+  if (tag === "ssub") {
+    const base = ommlNodeToText(ommlFirstChild(node, "e"));
+    const sub = ommlNodeToText(ommlFirstChild(node, "sub"));
+    return base + formatMathScriptText(sub, true);
+  }
+  if (tag === "ssubsup") {
+    const base = ommlNodeToText(ommlFirstChild(node, "e"));
+    const sub = ommlNodeToText(ommlFirstChild(node, "sub"));
+    const sup = ommlNodeToText(ommlFirstChild(node, "sup"));
+    return base + formatMathScriptText(sub, true) + formatMathScriptText(sup, false);
+  }
+  if (tag === "d") {
+    const dPr = ommlFirstChild(node, "dPr");
+    const begEl = dPr ? ommlFirstChild(dPr, "begChr") : null;
+    const endEl = dPr ? ommlFirstChild(dPr, "endChr") : null;
+    const sepEl = dPr ? ommlFirstChild(dPr, "sepChr") : null;
+    const beg = (begEl && ommlAttr(begEl, "val")) || "(";
+    const end = (endEl && ommlAttr(endEl, "val")) || ")";
+    const sep = (sepEl && ommlAttr(sepEl, "val")) || ", ";
+    const args = ommlDirectChildren(node, "e").map(el => ommlNodeToText(el));
+    return `${beg}${args.join(sep)}${end}`;
+  }
+  if (tag === "nary") {
+    const nPr = ommlFirstChild(node, "naryPr");
+    const chrEl = nPr ? ommlFirstChild(nPr, "chr") : null;
+    const op = (chrEl && ommlAttr(chrEl, "val")) || "∑";
+    const sub = ommlNodeToText(ommlFirstChild(node, "sub"));
+    const sup = ommlNodeToText(ommlFirstChild(node, "sup"));
+    const eTxt = ommlNodeToText(ommlFirstChild(node, "e"));
+    return `${op}${sub ? formatMathScriptText(sub, true) : ""}${sup ? formatMathScriptText(sup, false) : ""} ${eTxt}`.trim();
+  }
+  if (tag === "func") {
+    const fn = ommlNodeToText(ommlFirstChild(node, "fName"));
+    const eTxt = ommlNodeToText(ommlFirstChild(node, "e"));
+    return `${fn} ${eTxt}`.trim();
+  }
+  if (tag === "r") {
+    const rPr = ommlFirstChild(node, "rPr");
+    const vaEl = rPr ? ommlFirstChild(rPr, "vertAlign") : null;
+    const va = vaEl ? ommlAttr(vaEl, "val") : "";
+    let raw = "";
+    for (let i = 0; i < node.childNodes.length; i++) raw += ommlNodeToText(node.childNodes[i]);
+    if (va === "superscript") return formatMathScriptText(raw, false);
+    if (va === "subscript") return formatMathScriptText(raw, true);
+    return raw;
+  }
+
+  let out = "";
+  for (let i = 0; i < node.childNodes.length; i++) {
+    const ch = node.childNodes[i];
+    const part = ommlNodeToText(ch);
+    out += part;
+  }
+  return out;
+}
+
+const CBT_CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function calcZipCrc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CBT_CRC32_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+async function inflateDeflateRawBytes(compressedBytes) {
+  if (typeof DecompressionStream === "undefined") return null;
+  const ds = new DecompressionStream("deflate-raw");
+  const writer = ds.writable.getWriter();
+  writer.write(compressedBytes);
+  writer.close();
+  const ab = await new Response(ds.readable).arrayBuffer();
+  return new Uint8Array(ab);
+}
+
+// Pre-process Word .docx ZIP archive in memory so Word Equation Editor (<m:oMath>) objects
+// (fractions, radicals, exponents, subscripts) become clean inline text before Mammoth converts to HTML.
+async function preprocessDocxEquations(arrayBuffer) {
+  try {
+    if (!arrayBuffer || arrayBuffer.byteLength < 64 || typeof DOMParser === "undefined" || typeof DecompressionStream === "undefined") {
+      return arrayBuffer;
+    }
+    const bytes = new Uint8Array(arrayBuffer);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+    let eocd = -1;
+    const minOff = Math.max(0, bytes.length - 65558);
+    for (let i = bytes.length - 22; i >= minOff; i--) {
+      if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) {
+        eocd = i;
+        break;
+      }
+    }
+    if (eocd < 0) return arrayBuffer;
+
+    const totalEntries = view.getUint16(eocd + 10, true);
+    const cdOffset = view.getUint32(eocd + 16, true);
+    if (cdOffset + 46 > bytes.length) return arrayBuffer;
+
+    const decoder = new TextDecoder("utf-8");
+    const encoder = new TextEncoder();
+    const entries = [];
+    let docEntry = null;
+    let p = cdOffset;
+
+    for (let i = 0; i < totalEntries && p + 46 <= bytes.length; i++) {
+      if (view.getUint32(p, true) !== 0x02014b50) break;
+      const versionMade = view.getUint16(p + 4, true);
+      const versionNeeded = view.getUint16(p + 6, true);
+      const flags = view.getUint16(p + 8, true);
+      const method = view.getUint16(p + 10, true);
+      const modTime = view.getUint16(p + 12, true);
+      const modDate = view.getUint16(p + 14, true);
+      const crc = view.getUint32(p + 16, true);
+      const compSize = view.getUint32(p + 20, true);
+      const uncompSize = view.getUint32(p + 24, true);
+      const nameLen = view.getUint16(p + 28, true);
+      const extraLen = view.getUint16(p + 30, true);
+      const cmtLen = view.getUint16(p + 32, true);
+      const diskStart = view.getUint16(p + 34, true);
+      const intAttr = view.getUint16(p + 36, true);
+      const extAttr = view.getUint32(p + 38, true);
+      const lhOff = view.getUint32(p + 42, true);
+
+      const nameBytes = bytes.slice(p + 46, p + 46 + nameLen);
+      const name = decoder.decode(nameBytes);
+      const lNameLen = view.getUint16(lhOff + 26, true);
+      const lExtraLen = view.getUint16(lhOff + 28, true);
+      const dataStart = lhOff + 30 + lNameLen + lExtraLen;
+      const rawData = bytes.slice(dataStart, dataStart + compSize);
+
+      const entry = {
+        name, nameBytes, versionMade, versionNeeded,
+        flags: flags & ~0x08, // Stored/copied lengths are placed directly in headers
+        method, modTime, modDate, crc, compSize, uncompSize,
+        diskStart, intAttr, extAttr, rawData
+      };
+      entries.push(entry);
+      if (name === "word/document.xml") docEntry = entry;
+      p += 46 + nameLen + extraLen + cmtLen;
+    }
+
+    if (!docEntry) return arrayBuffer;
+
+    let docXmlBytes = docEntry.rawData;
+    if (docEntry.method === 8) {
+      docXmlBytes = await inflateDeflateRawBytes(docEntry.rawData);
+    } else if (docEntry.method !== 0) {
+      return arrayBuffer;
+    }
+    if (!docXmlBytes) return arrayBuffer;
+
+    const xmlStr = decoder.decode(docXmlBytes);
+    if (!/<m:oMath/i.test(xmlStr)) return arrayBuffer;
+
+    const xmlDoc = new DOMParser().parseFromString(xmlStr, "application/xml");
+    if (!xmlDoc || xmlDoc.getElementsByTagName("parsererror").length > 0) return arrayBuffer;
+
+    const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const oMathParas = Array.from(xmlDoc.getElementsByTagNameNS("*", "oMathPara"));
+    const replaceMathNode = (mathNode) => {
+      const parent = mathNode.parentNode;
+      if (!parent) return;
+      const eqText = ommlNodeToText(mathNode);
+      if (!eqText) {
+        parent.removeChild(mathNode);
+        return;
+      }
+      const rEl = xmlDoc.createElementNS(W_NS, "w:r");
+      const tEl = xmlDoc.createElementNS(W_NS, "w:t");
+      tEl.setAttribute("xml:space", "preserve");
+      tEl.textContent = eqText;
+      rEl.appendChild(tEl);
+      parent.replaceChild(rEl, mathNode);
+    };
+
+    oMathParas.forEach(replaceMathNode);
+    Array.from(xmlDoc.getElementsByTagNameNS("*", "oMath")).forEach(node => {
+      if (node.parentNode) replaceMathNode(node);
+    });
+
+    const updatedXml = new XMLSerializer().serializeToString(xmlDoc);
+    const updatedBytes = encoder.encode(updatedXml);
+    docEntry.method = 0;
+    docEntry.flags = docEntry.flags & ~0x08;
+    docEntry.crc = calcZipCrc32(updatedBytes);
+    docEntry.compSize = updatedBytes.length;
+    docEntry.uncompSize = updatedBytes.length;
+    docEntry.rawData = updatedBytes;
+
+    // Rebuild Stored/Patched ZIP buffer cleanly
+    let localTotal = 0;
+    let cdTotal = 0;
+    entries.forEach(e => {
+      e._newLhOff = localTotal;
+      localTotal += 30 + e.nameBytes.length + e.rawData.length;
+      cdTotal += 46 + e.nameBytes.length;
+    });
+    const outBytes = new Uint8Array(localTotal + cdTotal + 22);
+    const outView = new DataView(outBytes.buffer);
+
+    let off = 0;
+    entries.forEach(e => {
+      outView.setUint32(off, 0x04034b50, true);
+      outView.setUint16(off + 4, e.versionNeeded || 20, true);
+      outView.setUint16(off + 6, e.flags, true);
+      outView.setUint16(off + 8, e.method, true);
+      outView.setUint16(off + 10, e.modTime, true);
+      outView.setUint16(off + 12, e.modDate, true);
+      outView.setUint32(off + 14, e.crc, true);
+      outView.setUint32(off + 18, e.compSize, true);
+      outView.setUint32(off + 22, e.uncompSize, true);
+      outView.setUint16(off + 26, e.nameBytes.length, true);
+      outView.setUint16(off + 28, 0, true);
+      outBytes.set(e.nameBytes, off + 30);
+      outBytes.set(e.rawData, off + 30 + e.nameBytes.length);
+      off += 30 + e.nameBytes.length + e.rawData.length;
+    });
+
+    const newCdOff = off;
+    entries.forEach(e => {
+      outView.setUint32(off, 0x02014b50, true);
+      outView.setUint16(off + 4, e.versionMade || 20, true);
+      outView.setUint16(off + 6, e.versionNeeded || 20, true);
+      outView.setUint16(off + 8, e.flags, true);
+      outView.setUint16(off + 10, e.method, true);
+      outView.setUint16(off + 12, e.modTime, true);
+      outView.setUint16(off + 14, e.modDate, true);
+      outView.setUint32(off + 16, e.crc, true);
+      outView.setUint32(off + 20, e.compSize, true);
+      outView.setUint32(off + 24, e.uncompSize, true);
+      outView.setUint16(off + 28, e.nameBytes.length, true);
+      outView.setUint16(off + 30, 0, true);
+      outView.setUint16(off + 32, 0, true);
+      outView.setUint16(off + 34, e.diskStart || 0, true);
+      outView.setUint16(off + 36, e.intAttr || 0, true);
+      outView.setUint32(off + 38, e.extAttr || 0, true);
+      outView.setUint32(off + 42, e._newLhOff, true);
+      outBytes.set(e.nameBytes, off + 46);
+      off += 46 + e.nameBytes.length;
+    });
+
+    outView.setUint32(off, 0x06054b50, true);
+    outView.setUint16(off + 4, 0, true);
+    outView.setUint16(off + 6, 0, true);
+    outView.setUint16(off + 8, entries.length, true);
+    outView.setUint16(off + 10, entries.length, true);
+    outView.setUint32(off + 12, cdTotal, true);
+    outView.setUint32(off + 16, newCdOff, true);
+    outView.setUint16(off + 20, 0, true);
+    return outBytes.buffer;
+  } catch (e) {
+    console.warn("preprocessDocxEquations fallback:", e);
+    return arrayBuffer;
+  }
+}
+
+function htmlMathMlToText(node) {
+  if (!node) return "";
+  if (node.nodeType === 3) return node.nodeValue || "";
+  if (node.nodeType !== 1) return "";
+  const tag = (node.localName || node.tagName || "").toLowerCase();
+  if (tag === "mfrac" && node.children.length >= 2) {
+    return formatFractionText(htmlMathMlToText(node.children[0]), htmlMathMlToText(node.children[1]));
+  }
+  if (tag === "msqrt") {
+    let inner = "";
+    for (let i = 0; i < node.childNodes.length; i++) inner += htmlMathMlToText(node.childNodes[i]);
+    return formatRadicalText("", inner);
+  }
+  if (tag === "mroot" && node.children.length >= 2) {
+    return formatRadicalText(htmlMathMlToText(node.children[1]), htmlMathMlToText(node.children[0]));
+  }
+  if (tag === "msup" && node.children.length >= 2) {
+    return htmlMathMlToText(node.children[0]) + formatMathScriptText(htmlMathMlToText(node.children[1]), false);
+  }
+  if (tag === "msub" && node.children.length >= 2) {
+    return htmlMathMlToText(node.children[0]) + formatMathScriptText(htmlMathMlToText(node.children[1]), true);
+  }
+  if (tag === "msubsup" && node.children.length >= 3) {
+    return htmlMathMlToText(node.children[0]) +
+      formatMathScriptText(htmlMathMlToText(node.children[1]), true) +
+      formatMathScriptText(htmlMathMlToText(node.children[2]), false);
+  }
+  let out = "";
+  for (let i = 0; i < node.childNodes.length; i++) out += htmlMathMlToText(node.childNodes[i]);
+  return out;
+}
+
+function extractCleanTextFromDoc(doc) {
+  if (!doc || !doc.body) return "";
+
+  // Strip non-content tags so Word clipboard CSS/head definitions and duplicate KaTeX visual layers never leak into text
+  doc.querySelectorAll("style, script, title, head, meta, link").forEach(el => el.remove());
+  if (doc.querySelector(".katex-mathml math")) {
+    doc.querySelectorAll(".katex-html").forEach(el => el.remove());
+  }
+
+  // 1. Convert Word OMML <m:oMath> / MathML <math> elements to clean math text
+  doc.querySelectorAll("math").forEach(mEl => {
+    mEl.replaceWith(doc.createTextNode(htmlMathMlToText(mEl)));
+  });
+  Array.from(doc.getElementsByTagName("*")).forEach(el => {
+    if (!el.parentNode) return;
+    const ln = ommlTag(el);
+    if (ln === "omathpara" || (ln === "omath" && !(el.parentElement && ommlTag(el.parentElement) === "omathpara"))) {
+      const eqText = ommlNodeToText(el);
+      el.replaceWith(doc.createTextNode(eqText));
+    }
+  });
+
+  // 2. Convert <sup> and <sub> before flattening textContent so exponents/subscripts are never lost
+  doc.querySelectorAll("sup").forEach(sup => {
+    sup.replaceWith(doc.createTextNode(formatMathScriptText(sup.textContent || "", false)));
+  });
+  doc.querySelectorAll("sub").forEach(sub => {
+    sub.replaceWith(doc.createTextNode(formatMathScriptText(sub.textContent || "", true)));
+  });
+
+  // 3. Convert <ol> ordered list items (Word auto-numbering) into explicit 1./A. markers when not already numbered
+  doc.querySelectorAll("ol").forEach(ol => {
+    const typeAttr = (ol.getAttribute("type") || "1").trim();
+    const startNum = parseInt(ol.getAttribute("start") || "1", 10) || 1;
+    const isNestedInLi = Boolean(ol.parentElement && ol.parentElement.tagName === "LI");
+    const useLetters = typeAttr === "A" || typeAttr === "a" || (isNestedInLi && typeAttr === "1");
+    let liIdx = 0;
+    Array.from(ol.children).forEach(child => {
+      if (child.tagName !== "LI") return;
+      const curText = (child.textContent || "").trim();
+      const alreadyNumbered = /^\s*(?:\(?[A-Ea-e0-9]+[\.\)\:\-])\s+/.test(curText);
+      if (!alreadyNumbered) {
+        const marker = useLetters
+          ? `${String.fromCharCode(65 + liIdx)}. `
+          : `${startNum + liIdx}. `;
+        child.insertAdjacentText("afterbegin", marker);
+      }
+      liIdx++;
+    });
+  });
+
+  // 4. Preserve all block linebreaks so paragraphs, table rows, and headers don't jam together
+  doc.querySelectorAll("p, div, tr, li, h1, h2, h3, h4, h5, h6, blockquote").forEach(el => {
+    el.insertAdjacentText("afterend", "\n\n");
+  });
+  doc.querySelectorAll("br").forEach(el => {
+    el.insertAdjacentText("afterend", "\n");
+  });
+  doc.querySelectorAll("td, th").forEach(el => {
+    el.insertAdjacentText("afterend", "\n");
+  });
+
+  return doc.body.textContent || "";
+}
+
+function extractCleanTextFromRichHtml(html) {
+  let cleanHtml = String(html || "");
+  const hasConditionalOmml = /(?:<!--|<!)\[if\s+gte\s+msEquation[^\]]*\]>/i.test(cleanHtml);
+  // Reveal Word conditional OMML blocks embedded inside Microsoft Office clipboard HTML comments
+  cleanHtml = cleanHtml.replace(/<!--\[if\s+gte\s+msEquation[^\]]*\]>([\s\S]*?)<!\[endif\]-->/gi, "$1");
+  cleanHtml = cleanHtml.replace(/<!\[if\s+gte\s+msEquation[^\]]*\]>([\s\S]*?)<!\[endif\]>/gi, "$1");
+  // Drop redundant non-equation fallback image/placeholder blocks when OMML was present
+  if (hasConditionalOmml) {
+    cleanHtml = cleanHtml.replace(/<!--\[if\s+!msEquation[^\]]*\]>[\s\S]*?<!\[endif\]-->/gi, "");
+    cleanHtml = cleanHtml.replace(/<!\[if\s+!msEquation[^\]]*\]>[\s\S]*?<!\[endif\]>/gi, "");
+  }
+  // HTML5 DOMParser does not self-close unknown XML tags like <m:fPr/> or <m:deg/>; expand them so child elements stay siblings
+  cleanHtml = cleanHtml.replace(/<((?:m|w):[A-Za-z0-9_-]+)([^>]*?)\/>/gi, "<$1$2></$1>");
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(cleanHtml, "text/html");
+  return extractCleanTextFromDoc(doc);
+}
+
 // ── Smart Exam Text Normalizer ──
 // Takes raw text (from Word .docx, .doc, or copy-paste) and ensures:
-// 1. School exam headers, banners, and vertical watermarks are stripped
+// 1. School exam headers before Question 1, banners, and vertical watermarks are stripped
 // 2. Paper II (Theory) / Essay questions are cleanly separated from objective multiple choice
 // 3. Options (tight, inline, or across columns) are each placed on clean lines
-// 4. Questions start on clean new lines
+// 4. Mathematical acronyms (H.C.F, L.C.M, G.C.D) and algebraic expressions (4ab., c + d.) are NEVER split
 function normalizeExamText(text) {
   if (!text) return "";
 
-  let t = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  let t = String(text)
+    .replace(/\u00A0/g, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
 
   // A. Cut off Theory / Essay / Paper II sections so CBT only gets objective multiple choice questions
   const theoryMatch = t.search(/\n\s*(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|PART\s*(?:II|2)|THEORY\b|ESSAY\b|PAPER\s*II\s*\(Theory\))/i);
@@ -2921,52 +3430,86 @@ function normalizeExamText(text) {
     t = t.substring(0, theoryMatch);
   }
 
-  // B. Strip school headers and metadata lines before Question 1
-  t = t.replace(/^(?:HONEYLAND|COLLEGE|HIGH SCHOOL|SECONDARY SCHOOL|COMPREHENSIVE|ACADEMY)[^\n]*\n+/gim, "");
-  t = t.replace(/^(?:SESSION|TERM|EXAM|CLASS|SUBJECT|DURATION|TIME\s*ALLOWED|INSTRUCTIONS?)[^\n]*\n+/gim, "");
+  // B. Strip school headers and metadata lines ONLY before the first numbered question
+  const firstQMatch = t.match(/^\s*(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?1\)?[\.\)\:\-]\s+/im);
+  if (firstQMatch && firstQMatch.index !== undefined) {
+    let preamble = t.slice(0, firstQMatch.index);
+    const body = t.slice(firstQMatch.index);
+    preamble = preamble.replace(/^(?:HONEYLAND|COLLEGE|HIGH SCHOOL|SECONDARY SCHOOL|COMPREHENSIVE|ACADEMY|OFFICIAL|SESSION|TERM|EXAM|CLASS|SUBJECT|DURATION|TIME\s*ALLOWED|INSTRUCTIONS?)[^\n]*\n*/gim, "");
+    t = (preamble.trim() ? preamble.trim() + "\n\n" : "") + body;
+  }
 
-  // C. Strip vertical column watermarks (lines containing only a single letter e.g. H\nO\nN\nE\nY\n...)
-  t = t.replace(/\n\s*[A-Za-z]\s*(?=\n)/g, "\n");
+  // C. Strip vertical column watermarks ONLY when 4+ consecutive single-letter lines occur (e.g. H\nO\nN\nE\nY\nL\nA\nN\nD)
+  t = t.replace(/(?:\n[ \t]*[A-Za-z][ \t]*){4,}(?=\n|$)/g, "\n");
 
-  // D. Separate Answer Key summary header if jammed
-  t = t.replace(/([^\n])\s*(✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS))/gi, "$1\n\n$2");
-  t = t.replace(/(✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS)[^\n]*)/gi, "$1\n");
-  t = t.replace(/([^\n])\s*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
+  // D. Separate Answer Key summary header if jammed (avoid splitting ordinary prose word "answers")
+  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$)))/gi, "$1\n\n$2");
+  t = t.replace(/((?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$))[^\n]*)/gi, "$1\n");
+  t = t.replace(/([^\n])[^\S\r\n]*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
 
-  // E. Separate Answer labels jammed directly after option text (e.g. "Endoplasmic reticulumAnswer: B")
-  t = t.replace(/([^\n])\s*(Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=]\s*/gi, "$1\nAnswer: ");
+  // E. Separate Answer labels jammed directly after option/question text (e.g. "reticulumAnswer: B", "12Answer: C", "D. Answer: A")
+  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=][^\S\r\n]*([A-Ea-e]))(?=$|[^\S\r\n]*[\.\)\,\;\r\n]|[^\S\r\n]+\d+[\.\)])/gi, "$1\nAnswer: $3");
 
   // Separate Points / Marks metadata lines if jammed
-  t = t.replace(/([^\n])\s*((?:Points?|Marks?|Scores?|Weight|Pts)\s*[\:\-\=]?\s*\d*(?:\.\d+)?)/gi, "$1\n$2");
+  t = t.replace(/([^\n\r])[^\S\r\n]*((?:Points?|Marks?|Scores?|Weight|Pts)\s*[\:\-\=][^\S\r\n]*\d+(?:\.\d+)?)(?=$|[^\S\r\n]*[\r\n])/gi, "$1\n$2");
 
-  // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is...")
-  t = t.replace(/(Answer:\s*[A-Ea-e])\s*(\d+[\.\)\:\-]\s*)/gi, "$1\n\n$2");
-  t = t.replace(/(Answer:\s*[^\n]+?)\s*(\d+[\.\)\:\-]\s+[A-Za-z])/gi, "$1\n\n$2");
+  // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is..." or "Answer: B 4. (−8)...")
+  t = t.replace(/(Answer:[^\S\r\n]*[A-Ea-e])[^\S\r\n]*(\d+[\.\)\:\-][^\S\r\n]*)/gi, "$1\n\n$2");
+  t = t.replace(/(Answer:[^\S\r\n]*[^\n]+?)[^\S\r\n]*(\d+[\.\)][^\S\r\n]+\S)/gi, "$1\n\n$2");
 
   // G. Separate Diagram markers if jammed
-  t = t.replace(/([^\n])\s*(\[\s*🖼️\s*Diagram Attached\s*\])/gi, "$1\n\n$2");
-  t = t.replace(/(\[\s*🖼️\s*Diagram Attached\s*\])\s*([^\n])/gi, "$1\n\n$2");
-  t = t.replace(/([^\n])\s*(\[\[CBT_IMG_TOKEN_\d+\]\])/gi, "$1\n\n$2");
-  t = t.replace(/(\[\[CBT_IMG_TOKEN_\d+\]\])\s*([^\n])/gi, "$1\n\n$2");
+  t = t.replace(/([^\n])[^\S\r\n]*(\[\s*🖼️\s*Diagram Attached\s*\])/gi, "$1\n\n$2");
+  t = t.replace(/(\[\s*🖼️\s*Diagram Attached\s*\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
+  t = t.replace(/([^\n])[^\S\r\n]*(\[\[CBT_IMG_TOKEN_\d+\]\])/gi, "$1\n\n$2");
+  t = t.replace(/(\[\[CBT_IMG_TOKEN_\d+\]\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
 
-  // H. Separate Option A jammed directly against question text, blanks, or punctuation:
-  // e.g. "temperature?A. Fahrenheit" or "__________A. Sun" or "things --------A. Breathe"
-  t = t.replace(/([_\-\?\.\:\!\]\)])\s*([Aa])[\.\)]\s*/g, "$1\n$2. ");
+  // H. Separate Option A jammed directly against question text, blanks, or punctuation on the SAME line (never consume newlines)
+  t = t.replace(/([^\n\r]*?(?:[_\-\?\:\!\)\]]|[^A-Z\r\n]\.))[^\S\r\n]*(A)[\.\)][^\S\r\n]*(?=\S|$)/gm, "$1\n$2. ");
+  t = t.replace(/([^\n\r]+?)[ \t]+(A)[\.\)][ \t]*(?=\S|$)/gm, "$1\n$2. ");
 
-  // Inline Option A preceded by words (e.g. "energy that   A. cannot be replaced")
-  t = t.replace(/([^\n\r]+?)[ \t]+([Aa])[\.\)]\s+/g, "$1\n$2. ");
+  // I. Separate Options B-E jammed against previous text/options WITHOUT breaking acronyms (H.C.F, G.C.D, L.C.M)
+  //    or algebraic expressions ending in lowercase variable letters (4ab., c + d.)
+  t = t.split("\n").map(line => {
+    const trimmed = line.trim();
+    // Preserve header / answer-key / answer lines untouched
+    if (/^(?:Answer|Ans|✅)/i.test(trimmed)) return line;
 
-  // I. Separate Options B, C, D, E jammed against previous text or tight dots:
-  // e.g. "germs.C. the body" or "germsD. the food" or "Refuse B. Pollutants"
-  t = t.replace(/([^\n])\s+([B-Eb-e])[\.\)]\s*/g, "$1\n$2. ");
-  t = t.replace(/([a-zA-Z0-9_\-\.\?])([B-Eb-e])[\.\)]\s*/g, "$1\n$2. ");
+    // 1. Space before uppercase option marker B. / C. / D. / E. on the same line (never consume trailing space so consecutive blank options like "B.  C." aren't skipped!)
+    let out = line.replace(/(^|[^\S\r\n]+)([B-E])[\.\)](?=$|[^\S\r\n])/g, (m, pre, ltr, offset) => {
+      if (offset === 0 && !pre) return `${ltr}.`;
+      return `\n${ltr}.`;
+    });
+
+    // 2. Missing space before uppercase option marker jammed onto lowercase word/digit/punctuation (e.g. "germsD. food", "50?B. 40")
+    //    Explicitly skips dotted acronyms like "H.C.F" or "G.C.D)" where the preceding char is "[A-Za-z]."
+    out = out.replace(/([a-z0-9₦$€%²³⁴⁵⁶⁷⁸⁹⁾\?\!\)])([B-E])[\.\)]/g, (m, prev, ltr) => {
+      return `${prev}\n${ltr}.`;
+    });
+
+    // 3. Lowercase inline options ONLY when line already has at least two sequential markers like "a. ... b. ..."
+    if (/(?:^|\s)a[\.\)]\s+\S/.test(out) && /\sb[\.\)]\s+\S/.test(out)) {
+      out = out.replace(/(^|[^\S\r\n]+)([a-e])[\.\)](?=$|[^\S\r\n])/g, (m, pre, ltr, offset) => {
+        if (offset === 0 && !pre) return `${ltr.toUpperCase()}.`;
+        return `\n${ltr.toUpperCase()}.`;
+      });
+    }
+
+    // Normalize whitespace directly after split option markers (e.g. "B.   20" -> "B. 20", blank "B.   " -> "B.")
+    out = out.replace(/(^|\n)([A-Ea-e]\.)[^\S\r\n]*/g, (m, nl, lbl, offset, full) => {
+      const after = full.slice(offset + m.length);
+      return `${nl}${lbl}${after && after[0] !== "\n" ? " " : ""}`;
+    });
+
+    return out;
+  }).join("\n");
 
   // J. Clean up questions in the main exam section (separate questions jammed together on the SAME line)
-  const parts = t.split(/✅?\s*(?:ANSWER\s*KEY|ANSWERS|CORRECT\s*ANSWERS)/i);
+  const parts = t.split(/(?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$))/i);
   let mainExam = parts[0];
   const answerKeySection = parts[1] !== undefined ? parts.slice(1).join("\n") : null;
 
-  mainExam = mainExam.replace(/([^\r\n])[^\S\r\n]+(\d+[\.\)\:\-][^\S\r\n]+[A-Za-z])/g, "$1\n\n$2");
+  // Require "." or ")" (not ":", so "ratio 4: x" is never split into a question!)
+  mainExam = mainExam.replace(/([^\r\n])[^\S\r\n]+(\d+[\.\)][^\S\r\n]+[A-Za-z])/g, "$1\n\n$2");
 
   if (answerKeySection) {
     const formattedKey = answerKeySection
@@ -2981,7 +3524,7 @@ function normalizeExamText(text) {
   return t.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-// Convert Mammoth HTML with images into questions and display text
+// Convert Mammoth HTML with images, equations, superscripts, subscripts, and numbered lists into questions & display text
 async function parseExamFromMammothHtml(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
@@ -3001,18 +3544,7 @@ async function parseExamFromMammothHtml(html) {
     }
   }
 
-  // Preserve all block linebreaks so paragraphs, table rows, and headers don't jam together
-  doc.querySelectorAll("p, div, tr, li, h1, h2, h3, h4, h5, h6, blockquote").forEach(el => {
-    el.insertAdjacentText("afterend", "\n\n");
-  });
-  doc.querySelectorAll("br").forEach(el => {
-    el.insertAdjacentText("afterend", "\n");
-  });
-  doc.querySelectorAll("td, th").forEach(el => {
-    el.insertAdjacentText("afterend", "\n");
-  });
-
-  const rawText = doc.body ? (doc.body.textContent || "") : "";
+  const rawText = extractCleanTextFromDoc(doc);
   const normalizedText = normalizeExamText(rawText);
 
   return parseExamText(normalizedText, rawImages);
@@ -3056,7 +3588,8 @@ function handleTeacherFile(file) {
 
         if (fNameLow.endsWith(".docx")) {
           if (window.mammoth) {
-            const res = await window.mammoth.convertToHtml({ arrayBuffer: ev.target.result });
+            const patchedBuffer = await preprocessDocxEquations(ev.target.result);
+            const res = await window.mammoth.convertToHtml({ arrayBuffer: patchedBuffer });
             parsed = await parseExamFromMammothHtml(res.value);
           } else {
             throw new Error("Mammoth library not loaded");
@@ -3065,7 +3598,8 @@ function handleTeacherFile(file) {
           // .doc file: Check if PK zip (misnamed docx) or OLE CFBF
           const docExtract = extractWordDocText(ev.target.result);
           if (docExtract.isZipDocx && window.mammoth) {
-            const res = await window.mammoth.convertToHtml({ arrayBuffer: ev.target.result });
+            const patchedBuffer = await preprocessDocxEquations(ev.target.result);
+            const res = await window.mammoth.convertToHtml({ arrayBuffer: patchedBuffer });
             parsed = await parseExamFromMammothHtml(res.value);
           } else if (docExtract.text) {
             docText = docExtract.text;
@@ -3143,15 +3677,7 @@ function handleTeacherFile(file) {
       let content = ev.target.result;
       if (file && file.name && file.name.toLowerCase().endsWith(".doc") && /<html/i.test(content)) {
         try {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(content, "text/html");
-          doc.querySelectorAll("p, div, tr, li, h1, h2, h3, h4, h5, h6, blockquote").forEach(el => {
-            el.insertAdjacentText("afterend", "\n\n");
-          });
-          doc.querySelectorAll("br").forEach(el => {
-            el.insertAdjacentText("afterend", "\n");
-          });
-          content = doc.body ? (doc.body.textContent || "") : content;
+          content = extractCleanTextFromRichHtml(content) || content;
         } catch (e) { }
       }
       $("tCbtRawText").value = content;
@@ -3172,7 +3698,7 @@ function parseExamText(rawText, rawImages = []) {
   let defaultedAnswersCount = 0;
 
   const qRegex = /^(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?(\d+)\)?[\.\)\:\-]\s*(.*)$/i;
-  const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-Ea-e])[\.\:\-])\s*(.*)$/;
+  const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-E])\:|\b([A-Ea-e])\-)\s*(.*)$/;
   const ansRegex = /^(?:answer|ans|correct(?:\s*(?:answer|option|choice))?|option)\s*[\:\-\=]\s*([A-Ea-e]|[^\r\n]+)$/i;
   const pointsRegex = /^(?:points?|marks?|scores?|weight|pts)\s*[\:\-\=]?\s*\d*(?:\.\d+)?\s*$/i;
   const tokenRegex = /\[\[CBT_IMG_TOKEN_(\d+)\]\]/;
@@ -3274,7 +3800,8 @@ function parseExamText(rawText, rawImages = []) {
         image: null,
         options: [],
         correctAnswer: "",
-        correctLetter: ""
+        correctLetter: "",
+        _hasAnswer: false
       };
       continue;
     }
@@ -3295,6 +3822,7 @@ function parseExamText(rawText, rawImages = []) {
       } else {
         currentQ.correctAnswer = val;
       }
+      currentQ._hasAnswer = true;
       continue;
     }
 
@@ -3302,18 +3830,18 @@ function parseExamText(rawText, rawImages = []) {
     const optMatch = line.match(optRegex);
     if (optMatch) {
       const isStar = optMatch[1] === "*";
-      const letter = (optMatch[2] || optMatch[3] || optMatch[4]).toUpperCase();
-      const text = optMatch[5].trim();
+      const letter = (optMatch[2] || optMatch[3] || optMatch[4] || optMatch[5]).toUpperCase();
+      const text = (optMatch[6] || "").trim();
       currentQ.options.push({ letter, text });
       if (isStar) currentQ.correctLetter = letter;
       continue;
     }
 
-    // Inline multi-option fallback
-    const inlineMatch = line.match(/[A-Ea-e][\.\)]\s*[^A-Ea-e\.\)]+/g);
-    if (inlineMatch && inlineMatch.length >= 2) {
-      inlineMatch.forEach(chunk => {
-        const m = chunk.trim().match(/^([A-Ea-e])[\.\)]\s*(.*)$/);
+    // Inline multi-option fallback (e.g. two options on the same line: "A. 10.5 apples  B. 20.5 bananas")
+    const inlineSplits = line.split(/(?:^|\s+)(?=\(?[A-E][\.\)]\s+\S)/);
+    if (inlineSplits.filter(s => /^\(?[A-E][\.\)]\s+/.test(s.trim())).length >= 2) {
+      inlineSplits.forEach(chunk => {
+        const m = chunk.trim().match(/^\(?([A-E])[\.\)]\s*(.*)$/);
         if (m) {
           currentQ.options.push({ letter: m[1].toUpperCase(), text: m[2].trim() });
         }
@@ -3321,10 +3849,15 @@ function parseExamText(rawText, rawImages = []) {
       continue;
     }
 
-    // Continuation of question text before options
-    if (currentQ.options.length === 0) {
-      if (!/^\s*\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]\s*$/i.test(line)) {
+    // Continuation of question text or multi-line wrapped option text (ignore dividers / page footers / text after Answer:)
+    if (!/^\s*\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]\s*$/i.test(line) &&
+        !/^[-_=*]{3,}$/.test(line) &&
+        !/^page\s+\d+(?:\s+of\s+\d+)?$/i.test(line)) {
+      if (currentQ.options.length === 0) {
         currentQ.text += (currentQ.text ? " " : "") + line;
+      } else if (!currentQ._hasAnswer) {
+        const lastOpt = currentQ.options[currentQ.options.length - 1];
+        if (lastOpt) lastOpt.text += (lastOpt.text ? " " : "") + line;
       }
     }
   }
@@ -3745,12 +4278,14 @@ function renderTeacherReviewQuestions() {
       ` : "";
 
       const otherIssues = val.issues.filter(i => i.type !== "question_incomplete" || !i.message.includes("Correct answer not selected"));
+      const hasBlankOptionIssue = otherIssues.some(i => /has no text \(blank\)/i.test(i.message || ""));
       const otherIssuesHtml = otherIssues.length > 0 ? `
         <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 14px;">
           <div style="font-weight:700;color:#ef4444;font-size:12.5px;margin-bottom:4px">⚠️ Additional Issues to Fix:</div>
           <ul style="margin:0 0 0 16px;font-size:12px;color:var(--text);line-height:1.5">
             ${otherIssues.map(iss => `<li><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
           </ul>
+          ${hasBlankOptionIssue ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(239,68,68,0.3);font-size:11.5px;color:var(--text-muted)">💡 <strong>Word Equations Tip:</strong> If copying &amp; pasting from a Word viewer dropped equations (fractions, roots, exponents), upload the <strong>.docx file directly</strong> using <em>Upload Exam File</em> so all equations convert automatically.</div>` : ""}
         </div>
       ` : "";
 
@@ -3831,7 +4366,7 @@ function renderTeacherReviewQuestions() {
             </div>
           </div>
           ${issueBarHtml}
-          <div class="cbt-q-text" style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap">${esc(q.text)}</div>
+          <div class="cbt-q-text" style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text) : esc(q.text)}</div>
           ${imgHtml}
           <div class="cbt-options-grid">
             ${opts.map((opt, oIdx) => {
@@ -3841,7 +4376,7 @@ function renderTeacherReviewQuestions() {
             return `
                 <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}" title="Click to designate ${letter} as the correct answer">
                   <strong>${letter}.</strong>
-                  <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : esc(opt)}</span>
+                  <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : (typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(opt) : esc(opt))}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </button>
               `;
@@ -4757,7 +5292,7 @@ function renderTeacherSubmittedPreviewQuestions() {
               <button type="button" class="btn-text" data-teacher-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
-          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap">${esc(q.text || "")}</div>
+          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || "")}</div>
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {
@@ -4766,7 +5301,7 @@ function renderTeacherSubmittedPreviewQuestions() {
         return `
                 <div class="q-option-item ${isCorrect ? 'correct' : ''}">
                   <strong style="color:${isCorrect ? 'var(--status-good)' : 'var(--text-muted)'}">${letter}.</strong>
-                  <span>${esc(opt)}</span>
+                  <span>${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(opt) : esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </div>
               `;

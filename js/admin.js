@@ -5516,9 +5516,30 @@ function buildExportData(sub) {
 
   const questions = (sub.questions || []).map(q => {
     const qId = q._id?.$oid || q.id || generateObjectId();
-    const opts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+    const plainOpts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+    const hasMathFormatter = typeof formatCbtMathHtml === "function";
+    const formatForExport = (val) => {
+      const s = String(val == null ? "" : val);
+      return hasMathFormatter ? formatCbtMathHtml(s) : s;
+    };
+
+    const exportedOpts = plainOpts.map(formatForExport);
+    let matchedIdx = -1;
+    if (q.correctLetter && /^[A-E]$/i.test(q.correctLetter)) {
+      const li = q.correctLetter.toUpperCase().charCodeAt(0) - 65;
+      if (li >= 0 && li < plainOpts.length) matchedIdx = li;
+    }
+    if (matchedIdx < 0 && q.correctAnswer) {
+      const targetLow = String(q.correctAnswer).trim().toLowerCase();
+      matchedIdx = plainOpts.findIndex(o => o.trim().toLowerCase() === targetLow);
+    }
+    const exportedCorrect = (matchedIdx >= 0 && exportedOpts[matchedIdx] !== undefined)
+      ? exportedOpts[matchedIdx]
+      : (q.correctAnswer ? formatForExport(q.correctAnswer) : (exportedOpts[0] || ""));
+
     const imgData = q.image || null;
-    let exportText = q.text || "";
+    let exportText = formatForExport(q.text || "");
     if (imgData && !exportText.includes("<img")) {
       exportText = `${exportText}<br><img src="${imgData}" style="max-width:100%;max-height:260px;margin:8px 0;border-radius:4px;display:block" />`;
     }
@@ -5526,8 +5547,8 @@ function buildExportData(sub) {
       _id: { $oid: qId },
       text: exportText,
       image: imgData,
-      options: opts,
-      correctAnswer: q.correctAnswer || (opts[0] || ""),
+      options: exportedOpts,
+      correctAnswer: exportedCorrect,
       points: parseFloat(sub.marksPerQuestion !== undefined && sub.marksPerQuestion !== null ? sub.marksPerQuestion : (q.points || adminCbtDefaults.marksPerQuestion || 0.4)),
       test_id: { $oid: examId },
       subject: { $oid: realSubjectId },
@@ -5821,7 +5842,7 @@ function renderCBTPreviewQuestions() {
               <button type="button" class="btn-text" data-admin-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
-          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap">${esc(q.text || "")}</div>
+          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || "")}</div>
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {
@@ -5830,7 +5851,7 @@ function renderCBTPreviewQuestions() {
         return `
                 <div class="q-option-item ${isCorrect ? 'correct' : ''}">
                   <strong style="color:${isCorrect ? 'var(--status-good)' : 'var(--text-muted)'}">${letter}.</strong>
-                  <span>${esc(opt)}</span>
+                  <span>${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(opt) : esc(opt)}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
                 </div>
               `;

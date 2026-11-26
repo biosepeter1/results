@@ -515,3 +515,299 @@ function isWithdrawnStudent(reg, fullName) {
   const nNorm = String(fullName || "").trim().toUpperCase().replace(/\s+/g, " ");
   return Boolean(nNorm && _WITHDRAWN_NAME_SET.has(nNorm));
 }
+
+// ── Shared Stacked Math & Rich HTML Renderer (Teacher Portal, Admin Portal, & CBT Export) ──
+const CBT_SUP_UNICODE_TO_ASCII = {
+  "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4",
+  "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9",
+  "⁺": "+", "⁻": "-", "⁼": "=", "⁽": "(", "⁾": ")",
+  "ⁿ": "n", "ⁱ": "i", "ᵃ": "a", "ᵇ": "b", "ᶜ": "c", "ᵈ": "d",
+  "ᵉ": "e", "ᶠ": "f", "ᵍ": "g", "ʰ": "h", "ʲ": "j", "ᵏ": "k",
+  "ˡ": "l", "ᵐ": "m", "ᵒ": "o", "ᵖ": "p", "ʳ": "r", "ˢ": "s",
+  "ᵗ": "t", "ᵘ": "u", "ᵛ": "v", "ʷ": "w", "ˣ": "x", "ʸ": "y", "ᶻ": "z"
+};
+
+const CBT_SUB_UNICODE_TO_ASCII = {
+  "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4",
+  "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9",
+  "₊": "+", "₋": "-", "₌": "=", "₍": "(", "₎": ")",
+  "ₐ": "a", "ₑ": "e", "ₕ": "h", "ᵢ": "i", "ⱼ": "j", "ₖ": "k",
+  "ₗ": "l", "ₘ": "m", "ₙ": "n", "ₒ": "o", "ₚ": "p", "ᵣ": "r",
+  "ₛ": "s", "ₜ": "t", "ᵤ": "u", "ᵥ": "v", "ₓ": "x"
+};
+
+function escapeCbtHtml(str) {
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function readBalancedMathGroup(str, openIdx, openCh = "{", closeCh = "}") {
+  if (!str || str[openIdx] !== openCh) return null;
+  let depth = 0;
+  for (let i = openIdx; i < str.length; i++) {
+    if (str[i] === openCh) depth++;
+    else if (str[i] === closeCh) {
+      depth--;
+      if (depth === 0) {
+        return { content: str.slice(openIdx + 1, i), nextIdx: i + 1 };
+      }
+    }
+  }
+  return null;
+}
+
+function stripOuterMathParens(s) {
+  const t = String(s || "").trim();
+  if (t.length >= 2 && t[0] === "(" && t[t.length - 1] === ")") {
+    let d = 0;
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] === "(") d++;
+      else if (t[i] === ")") {
+        d--;
+        if (d === 0) {
+          return i === t.length - 1 ? t.slice(1, -1).trim() : t;
+        }
+      }
+    }
+  }
+  return t;
+}
+
+function isSafeBareMathFraction(num, den, fullStr, startIdx, endIdx) {
+  if (!num || !den) return false;
+  // Never break URLs (http://), decimal numbers (1.5/2 or 1/2.5), or multi-part dates (26/11/2026)
+  const before = startIdx > 0 ? fullStr[startIdx - 1] : "";
+  const after = endIdx < fullStr.length ? fullStr[endIdx] : "";
+  if (before === "/" || before === ":" || after === "/") return false;
+  if (before === "." && /\d/.test(startIdx > 1 ? fullStr[startIdx - 2] : "")) return false;
+  if (after === "." && /\d/.test(fullStr[endIdx + 1] || "")) return false;
+  if (/^\d{1,4}$/.test(num) && /^\d{1,4}$/.test(den)) {
+    const restAfter = fullStr.slice(endIdx);
+    const restBefore = fullStr.slice(0, startIdx);
+    if (/^\s*\/\s*\d+/.test(restAfter) || /\d+\s*\/\s*$/.test(restBefore)) return false;
+  }
+  // Must have digits, Unicode superscripts/subscripts, or Greek math letters on at least one side
+  const hasMathSignal = /[\d⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ⁿπθ]/.test(num) || /[\d⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ⁿπθ]/.test(den);
+  if (!hasMathSignal) return false;
+  // Avoid matching mixed words + slashes like "10/month" or "1/day"
+  if (/^[A-Za-z]{2,}$/.test(num) || /^[A-Za-z]{2,}$/.test(den)) {
+    if (!/^[a-z]{1,2}$/.test(den) || /^(?:km|hr|hrs|sec|min|mo|wk|yr|pa|am|pm|kg|mg|ml|cm|mm|or|and|no|na|to|of|in|on|at|by|is)$/i.test(den) || /^(?:km|hr|hrs|sec|min|mo|wk|yr|pa|am|pm|kg|mg|ml|cm|mm|or|and|no|na|to|of|in|on|at|by|is)$/i.test(num)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function buildStackedFractionHtml(numHtml, denHtml) {
+  return `<span style="display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;line-height:1.12;margin:0 3px;font-size:0.92em;font-family:'Cambria Math','Times New Roman',Georgia,serif"><span style="padding:0 4px 2px;border-bottom:1.5px solid currentColor;text-align:center;white-space:nowrap">${numHtml}</span><span style="padding:2px 4px 0;text-align:center;white-space:nowrap">${denHtml}</span></span>`;
+}
+
+function buildRadicalHtml(degHtml, bodyHtml, isTallContent) {
+  const degPart = degHtml ? `<sup style="font-size:0.68em;vertical-align:top;margin-right:-2px;line-height:1">${degHtml}</sup>` : "";
+  const sqrtSize = isTallContent ? "1.95em" : "1.15em";
+  return `${degPart}<span style="display:inline-flex;align-items:stretch;vertical-align:middle;margin:0 2px"><span style="display:inline-flex;align-items:center;font-family:'Cambria Math','Times New Roman',Georgia,serif;font-size:${sqrtSize};line-height:0.85;padding-right:1px;user-select:none">√</span><span style="border-top:1.5px solid currentColor;padding:2px 4px 0 2px;display:inline-flex;align-items:center">${bodyHtml}</span></span>`;
+}
+
+function buildSupSubHtml(tag, innerHtml) {
+  const va = tag === "sup" ? "super" : "sub";
+  return `<${tag} style="font-size:0.74em;line-height:0;vertical-align:${va}">${innerHtml}</${tag}>`;
+}
+
+function renderMathInlineRuns(expr) {
+  const str = String(expr == null ? "" : expr);
+  if (!str) return "";
+  let out = "";
+  let i = 0;
+
+  while (i < str.length) {
+    // 1. \frac{num}{den}
+    if (str.startsWith("\\frac", i)) {
+      let j = i + 5;
+      while (j < str.length && /\s/.test(str[j])) j++;
+      const g1 = readBalancedMathGroup(str, j, "{", "}");
+      if (g1) {
+        let k = g1.nextIdx;
+        while (k < str.length && /\s/.test(str[k])) k++;
+        const g2 = readBalancedMathGroup(str, k, "{", "}");
+        if (g2) {
+          out += buildStackedFractionHtml(renderMathInlineRuns(g1.content), renderMathInlineRuns(g2.content));
+          i = g2.nextIdx;
+          continue;
+        }
+      }
+    }
+
+    // 2. \sqrt[deg]{body} or \sqrt{body}
+    if (str.startsWith("\\sqrt", i)) {
+      let j = i + 5;
+      let deg = "";
+      if (str[j] === "[") {
+        const dg = readBalancedMathGroup(str, j, "[", "]");
+        if (dg) {
+          deg = dg.content;
+          j = dg.nextIdx;
+        }
+      }
+      while (j < str.length && /\s/.test(str[j])) j++;
+      const bg = readBalancedMathGroup(str, j, "{", "}");
+      if (bg) {
+        const bodyHtml = renderMathInlineRuns(bg.content);
+        const isTall = /border-bottom:1\.5px/.test(bodyHtml);
+        out += buildRadicalHtml(deg ? renderMathInlineRuns(deg) : "", bodyHtml, isTall);
+        i = bg.nextIdx;
+        continue;
+      }
+    }
+
+    // 3. Explicit braced scripts ^{...} or _{...}
+    if ((str[i] === "^" || str[i] === "_") && str[i + 1] === "{") {
+      const grp = readBalancedMathGroup(str, i + 1, "{", "}");
+      if (grp) {
+        out += buildSupSubHtml(str[i] === "^" ? "sup" : "sub", renderMathInlineRuns(grp.content));
+        i = grp.nextIdx;
+        continue;
+      }
+    }
+
+    // 4. Parenthesized / plain plain-text exponents e.g. x^(2), 10^6
+    if ((str[i] === "^" || str[i] === "_") && (str[i + 1] === "(" || /^[a-zA-Z0-9]$/.test(str[i + 1] || ""))) {
+      if (str[i + 1] === "(") {
+        const pg = readBalancedMathGroup(str, i + 1, "(", ")");
+        if (pg) {
+          out += buildSupSubHtml(str[i] === "^" ? "sup" : "sub", renderMathInlineRuns(pg.content));
+          i = pg.nextIdx;
+          continue;
+        }
+      } else {
+        out += buildSupSubHtml(str[i] === "^" ? "sup" : "sub", escapeCbtHtml(str[i + 1]));
+        i += 2;
+        continue;
+      }
+    }
+
+    // 5. Plain √(...) or simple √token when user pasted plain text
+    if (str[i] === "√") {
+      if (str[i + 1] === "(") {
+        const pg = readBalancedMathGroup(str, i + 1, "(", ")");
+        if (pg) {
+          const bodyHtml = renderMathInlineRuns(pg.content);
+          const isTall = /border-bottom:1\.5px/.test(bodyHtml);
+          out += buildRadicalHtml("", bodyHtml, isTall);
+          i = pg.nextIdx;
+          continue;
+        }
+      } else {
+        const tokM = str.slice(i + 1).match(/^([0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+(?:\^[0-9a-zA-Z]+)?)/);
+        if (tokM) {
+          const bodyHtml = renderMathInlineRuns(tokM[1]);
+          out += buildRadicalHtml("", bodyHtml, false);
+          i += 1 + tokM[1].length;
+          continue;
+        }
+      }
+    }
+
+    // 6. Unicode superscript runs (²³⁴⁻³⁻¹²ⁿ) -> crisp typographic <sup>
+    if (CBT_SUP_UNICODE_TO_ASCII[str[i]]) {
+      let mapped = "";
+      let j = i;
+      while (j < str.length && CBT_SUP_UNICODE_TO_ASCII[str[j]]) {
+        mapped += CBT_SUP_UNICODE_TO_ASCII[str[j]];
+        j++;
+      }
+      out += buildSupSubHtml("sup", escapeCbtHtml(mapped));
+      i = j;
+      continue;
+    }
+
+    // 7. Unicode subscript runs -> crisp <sub>
+    if (CBT_SUB_UNICODE_TO_ASCII[str[i]]) {
+      let mapped = "";
+      let j = i;
+      while (j < str.length && CBT_SUB_UNICODE_TO_ASCII[str[j]]) {
+        mapped += CBT_SUB_UNICODE_TO_ASCII[str[j]];
+        j++;
+      }
+      out += buildSupSubHtml("sub", escapeCbtHtml(mapped));
+      i = j;
+      continue;
+    }
+
+    // 8. Safe standalone plain math fractions e.g. 12xy²/18x²y, 3 1/16, (-1/4), 72/50
+    const slice = str.slice(i);
+    const bareFracM = slice.match(/^(\([0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉⁺⁻+\-−\s]{1,24}\)|[0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ⁿ]{1,18})\/(\([0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉⁺⁻+\-−\s]{1,24}\)|[0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ⁿ]{1,18})/);
+    if (bareFracM && (i === 0 || !/[0-9a-zA-Zπ⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉ⁿ\/.]/.test(str[i - 1]))) {
+      const rawNum = bareFracM[1];
+      const rawDen = bareFracM[2];
+      const endIdx = i + bareFracM[0].length;
+      if (isSafeBareMathFraction(rawNum, rawDen, str, i, endIdx)) {
+        const cleanNum = stripOuterMathParens(rawNum);
+        const cleanDen = stripOuterMathParens(rawDen);
+        out += buildStackedFractionHtml(renderMathInlineRuns(cleanNum), renderMathInlineRuns(cleanDen));
+        i = endIdx;
+        continue;
+      }
+    }
+
+    out += escapeCbtHtml(str[i]);
+    i++;
+  }
+
+  return out;
+}
+
+function sanitizeCbtLegacyHtml(html) {
+  const s = String(html || "");
+  try {
+    if (typeof DOMParser !== "undefined") {
+      const doc = new DOMParser().parseFromString(s, "text/html");
+      if (doc && doc.body && typeof doc.querySelectorAll === "function") {
+        doc.querySelectorAll("script, iframe, object, embed, link, meta, style, form").forEach(el => el.remove());
+        doc.querySelectorAll("*").forEach(el => {
+          Array.from(el.attributes || []).forEach(attr => {
+            const n = attr.name.toLowerCase();
+            const v = attr.value || "";
+            if (n.startsWith("on") || (/^\s*javascript:/i.test(v))) {
+              el.removeAttribute(attr.name);
+            }
+          });
+        });
+        // Render any \frac / \sqrt math inside existing text nodes cleanly
+        const walkText = (node) => {
+          if (!node) return;
+          if (node.nodeType === 3) {
+            const txt = node.nodeValue || "";
+            if (/\\frac\b|\\sqrt\b|\^\{|_\{/.test(txt)) {
+              const span = doc.createElement("span");
+              span.innerHTML = renderMathInlineRuns(txt);
+              node.replaceWith(span);
+            }
+            return;
+          }
+          Array.from(node.childNodes || []).forEach(walkText);
+        };
+        walkText(doc.body);
+        if (typeof doc.body.innerHTML === "string") return doc.body.innerHTML;
+      }
+    }
+  } catch (e) { }
+  return s
+    .replace(/<\s*(script|iframe|object|embed|style|form)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|iframe|object|embed|link|meta|form)\b[^>]*\/?>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/javascript\s*:/gi, "");
+}
+
+function formatCbtMathHtml(rawText) {
+  const s = String(rawText == null ? "" : rawText);
+  if (!s) return "";
+  const looksLikeLegacyHtml = /<(?:\/(?:p|div|span|sup|sub|strong|em|b|i|u|math)|(?:p|div|span|sup|sub|strong|em|b|i|u)(?:\s[^>]*)?>|br\s*\/?>|img\s+[^>]*src=)/i.test(s);
+  if (looksLikeLegacyHtml) {
+    return sanitizeCbtLegacyHtml(s);
+  }
+  return renderMathInlineRuns(s);
+}

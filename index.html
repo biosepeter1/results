@@ -16,14 +16,17 @@
   <link rel="preload" as="image" href="logos/honeyland_logo.png">
   <style>
     /* ── Critical Anti-FOUC & Full-Page App Loader ── */
-    html.app-loading, html.app-loading body {
+    html.app-loading,
+    html.app-loading body {
       background-color: #161b22 !important;
       margin: 0 !important;
       overflow: hidden !important;
     }
-    html.app-loading body > *:not(#app-loader) {
+
+    html.app-loading body>*:not(#app-loader) {
       display: none !important;
     }
+
     #app-loader {
       position: fixed;
       inset: 0;
@@ -36,11 +39,13 @@
       gap: 16px;
       transition: opacity 0.22s ease, visibility 0.22s ease;
     }
+
     #app-loader.app-loader-fade {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
     }
+
     .app-loader-card {
       display: flex;
       flex-direction: column;
@@ -48,12 +53,14 @@
       justify-content: center;
       gap: 14px;
     }
+
     .app-loader-logo {
       height: 72px;
       width: auto;
       object-fit: contain;
       animation: appLoaderPulse 1.4s ease-in-out infinite;
     }
+
     .app-loader-spinner {
       width: 22px;
       height: 22px;
@@ -62,18 +69,32 @@
       border-radius: 50%;
       animation: appLoaderSpin 0.75s linear infinite;
     }
+
     @keyframes appLoaderPulse {
-      0%, 100% { transform: scale(1); opacity: 0.92; }
-      50% { transform: scale(1.06); opacity: 1; }
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.92;
+      }
+
+      50% {
+        transform: scale(1.06);
+        opacity: 1;
+      }
     }
+
     @keyframes appLoaderSpin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     /* ── Critical Modal Protection (Guarantees zero FOUC leakage) ── */
     .modal-overlay {
       display: none !important;
     }
+
     .modal-overlay.open {
       display: flex !important;
     }
@@ -87,6 +108,7 @@
       padding: 24px 16px;
       box-sizing: border-box;
     }
+
     .login-card {
       width: 100%;
       max-width: 400px;
@@ -188,8 +210,7 @@
         <div class="header-brand-inner">
           <!-- Brand Identity -->
           <a href="#" class="menu-brand" onclick="switchTeacherPortalTab('scores'); return false;">
-            <img src="logos/honeyland_logo.png" alt="Honeyland Crest"
-              class="menu-brand-logo">
+            <img src="logos/honeyland_logo.png" alt="Honeyland Crest" class="menu-brand-logo">
             <div class="menu-brand-text">
               <span class="menu-brand-title">Honeyland Schools</span>
               <span class="menu-brand-sub">Academic Assessment &amp; CBT Portal</span>
@@ -279,8 +300,7 @@
     <aside class="mobile-offcanvas-drawer" id="teacherMobileDrawer" aria-label="Mobile Navigation Menu">
       <div class="drawer-header">
         <div style="display:flex;align-items:center;gap:10px">
-          <img src="logos/honeyland_logo.png" alt="Logo"
-            style="height:32px;width:auto">
+          <img src="logos/honeyland_logo.png" alt="Logo" style="height:32px;width:auto">
           <div>
             <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:0.5px">HONEYLAND</div>
             <div style="font-size:10px;color:var(--text-muted)">TEACHER PORTAL</div>
@@ -376,7 +396,8 @@
           <div class="push-optin-icon" id="teacherPushOptInIcon">🔔</div>
           <div class="push-optin-text">
             <div class="push-optin-title" id="teacherPushOptInTitle">Enable Instant Device Push Alerts</div>
-            <div class="push-optin-desc" id="teacherPushOptInDesc">Receive real-time vibrations and lock screen popups on your phone or laptop
+            <div class="push-optin-desc" id="teacherPushOptInDesc">Receive real-time vibrations and lock screen popups
+              on your phone or laptop
               whenever the Exam Committee broadcasts notices—even when your browser is closed.</div>
           </div>
         </div>
@@ -928,8 +949,10 @@
               <span id="teacherPreviewPendingText">You have unsaved changes.</span>
             </div>
             <div style="display:flex;gap:8px;">
-              <button type="button" class="btn btn-secondary btn-sm" id="teacherPreviewDiscardBtn" style="font-size:12px;padding:4px 10px;">Discard</button>
-              <button type="button" class="btn btn-sm btn-primary" id="teacherPreviewSaveAllBtn" style="font-size:12px;padding:4px 14px;font-weight:700;">💾 Save Changes</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="teacherPreviewDiscardBtn"
+                style="font-size:12px;padding:4px 10px;">Discard</button>
+              <button type="button" class="btn btn-sm btn-primary" id="teacherPreviewSaveAllBtn"
+                style="font-size:12px;padding:4px 14px;font-weight:700;">💾 Save Changes</button>
             </div>
           </div>
 
@@ -946,7 +969,8 @@
             <div style="font-size:12px;color:var(--text-muted)" id="teacherPreviewModalFootnote"></div>
             <div style="display:flex;gap:8px;">
               <button class="btn btn-secondary" id="teacherPreviewModalCloseBottomBtn" type="button">Close</button>
-              <button class="btn btn-primary" id="teacherPreviewSaveBottomBtn" type="button" style="display:none;font-weight:700;">💾 Save Changes</button>
+              <button class="btn btn-primary" id="teacherPreviewSaveBottomBtn" type="button"
+                style="display:none;font-weight:700;">💾 Save Changes</button>
             </div>
           </div>
         </div>
@@ -963,8 +987,7 @@
       <!-- Printable Official Header -->
       <div id="teacherModalSchoolHeader"
         style="display:none;text-align:center;margin-bottom:16px;border-bottom:2px solid #333;padding-bottom:12px;">
-        <img src="logos/honeyland_logo.png" alt="Logo"
-          style="height:60px;width:auto;margin:0 auto 6px;display:block;">
+        <img src="logos/honeyland_logo.png" alt="Logo" style="height:60px;width:auto;margin:0 auto 6px;display:block;">
         <div style="font-size:16px;font-weight:800;letter-spacing:0.5px;color:#000;">HONEYLAND INT'L SCHOOLS</div>
         <div style="font-size:12px;color:#444;">ACADEMIC EVALUATION &amp; OFFICIAL EXAMINATION DOSSIER</div>
         <div style="font-weight:700;font-size:13px;margin-top:6px;letter-spacing:0.5px;text-transform:uppercase;"
@@ -1133,15 +1156,21 @@
         <button class="btn-close" id="iosPushGuideCloseBtn" type="button">&times;</button>
       </div>
       <div style="padding:16px 0;font-size:13.5px;line-height:1.6;color:var(--text-secondary);">
-        <p style="margin-bottom:12px;">Apple requires web apps to be added to the iPhone Home Screen before notifications can be activated:</p>
+        <p style="margin-bottom:12px;">Apple requires web apps to be added to the iPhone Home Screen before
+          notifications can be activated:</p>
         <ol style="padding-left:20px;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;color:var(--text);">
           <li>Open this portal in <strong>Safari</strong> (Apple does not support notifications in Chrome for iOS).</li>
-          <li>Tap the <strong>Share</strong> button at the bottom of Safari (<span style="font-size:15px;font-weight:bold;color:var(--accent);">⎋</span> or the square with an up-arrow).</li>
+          <li>Tap the <strong>Share</strong> button at the bottom of Safari (<span
+              style="font-size:15px;font-weight:bold;color:var(--accent);">⎋</span> or the square with an up-arrow).
+          </li>
           <li>Scroll down and tap <strong>"Add to Home Screen"</strong>, then tap <strong>Add</strong>.</li>
-          <li>Open <strong>Honeyland</strong> from your iPhone Home Screen and tap <strong>Allow Push Alerts</strong>!</li>
+          <li>Open <strong>Honeyland</strong> from your iPhone Home Screen and tap <strong>Allow Push Alerts</strong>!
+          </li>
         </ol>
-        <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:#93c5fd;">
-          💡 <em>Once launched from your Home Screen, you will receive instant vibrations and lock-screen alerts just like a native app.</em>
+        <div
+          style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:#93c5fd;">
+          💡 <em>Once launched from your Home Screen, you will receive instant vibrations and lock-screen alerts just
+            like a native app.</em>
         </div>
       </div>
       <div class="modal-actions" style="justify-content:flex-end;">
@@ -1157,8 +1186,8 @@
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
-  <script src="js/cbt-catalog.js?v=4.5"></script>
-  <script src="js/teacher.js?v=5.4"></script>
+  <script src="js/cbt-catalog.js?v=5.0"></script>
+  <script src="js/teacher.js?v=5.6"></script>
 </body>
 
 </html>
