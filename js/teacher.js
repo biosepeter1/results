@@ -2238,8 +2238,17 @@ function initTeacherCbtForm() {
     subjectHtml = allCatalogSubjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
   }
 
+  const refreshReviewIfLoaded = () => {
+    if (Array.isArray(teacherParsedQuestions) && teacherParsedQuestions.length > 0 && $("tCbtReviewCard")?.style.display !== "none") {
+      renderTeacherReviewQuestions();
+    }
+  };
+
   $("tCbtSubject").innerHTML = subjectHtml;
-  $("tCbtSubject").onchange = () => updateTeacherExamTitle();
+  $("tCbtSubject").onchange = () => {
+    updateTeacherExamTitle();
+    refreshReviewIfLoaded();
+  };
 
   // Populate Classes
   const classes = (teacher.classes && teacher.classes.length) ? teacher.classes : ["Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12"];
@@ -2247,6 +2256,7 @@ function initTeacherCbtForm() {
   $("tCbtClass").onchange = () => {
     populateCbtClassArms($("tCbtClass").value);
     updateTeacherExamTitle();
+    refreshReviewIfLoaded();
   };
 
   // Populate Cohort Arms for selected class
@@ -2259,6 +2269,7 @@ function initTeacherCbtForm() {
   if ($("tCbtTitle")) {
     $("tCbtTitle").oninput = (e) => {
       e.target.value = e.target.value.toUpperCase();
+      refreshReviewIfLoaded();
     };
   }
 
@@ -2267,6 +2278,11 @@ function initTeacherCbtForm() {
   if ($("tCbtLaunchDate") && !$("tCbtLaunchDate").value) {
     $("tCbtLaunchDate").value = todayStr;
   }
+
+  ["tCbtLaunchDate", "tCbtGateOpen", "tCbtGateClose"].forEach(id => {
+    const el = $(id);
+    if (el) el.onchange = refreshReviewIfLoaded;
+  });
 
   // Initialize Planned Target Questions Controls & Validation Status
   if (typeof initTargetQuestionsControls === "function") {
@@ -2681,12 +2697,14 @@ if ($("tCbtInsertSampleBtn")) {
       teacherParsedQuestions[2].image = sampleImg;
     }
 
-    $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-    $("tCbtReviewCard").style.display = "block";
+    teacherEditingReviewQIdx = null;
+    teacherReviewTempImage = undefined;
+    $("tCbtQuestionCount").textContent = `${teacherParsedQuestions.length} detected`;
     $("tCbtSubmitSuccess").style.display = "none";
     $("tCbtParseMsg").style.color = "var(--status-good)";
     $("tCbtParseMsg").textContent = "✓ 5 Mathematics sample questions loaded (with math signs & Question 3 diagram). Review below!";
-    renderTeacherReviewQuestions();
+    renderTeacherReviewQuestions({ animateCards: true });
+    revealAndScrollToReviewCard({ animateCards: true });
   };
 }
 
@@ -2695,6 +2713,11 @@ $("tCbtClearTextBtn").onclick = () => {
   $("tCbtReviewCard").style.display = "none";
   $("tCbtParseMsg").textContent = "";
   teacherParsedQuestions = [];
+  teacherEditingReviewQIdx = null;
+  teacherReviewTempImage = undefined;
+  wasTeacherExamReady = false;
+  updateTargetStatusBadge();
+  syncTeacherSubmitDock(null);
 };
 
 // Preserve Word / HTML rich formatting (superscripts, subscripts, Word OMML equations, numbered lists) on paste
@@ -2906,9 +2929,32 @@ function extractExamMetadata(text) {
 // Transforms any parsed questions back into clean, official template syntax
 function convertToStandardCbtText(questions) {
   if (!Array.isArray(questions) || !questions.length) return "";
-  return questions.map((q, idx) => {
+  const blocks = [];
+  for (let idx = 0; idx < questions.length; idx++) {
+    const q = questions[idx];
     const qNum = idx + 1;
-    let out = `${qNum}. ${q.text || ""}\n`;
+    const prevQ = idx > 0 ? questions[idx - 1] : null;
+    const curPassage = (q.passage || "").trim();
+    const prevPassage = (prevQ && prevQ.passage) ? prevQ.passage.trim() : "";
+
+    let prefix = "";
+    if (curPassage && curPassage !== prevPassage) {
+      let endIdx = idx;
+      while (endIdx + 1 < questions.length && (questions[endIdx + 1].passage || "").trim() === curPassage) {
+        endIdx++;
+      }
+      if (endIdx > idx) {
+        prefix = `[Passage for Questions ${idx + 1} to ${endIdx + 1}]\n${curPassage}\n\n`;
+      } else {
+        prefix = `${curPassage}\n\n`;
+      }
+    }
+
+    const promptText = curPassage
+      ? (q.prompt || (String(q.text || "").startsWith(curPassage) ? String(q.text || "").slice(curPassage.length).trim() : String(q.text || "")))
+      : String(q.text || "");
+
+    let out = `${prefix}${qNum}. ${promptText}\n`;
     if (q.image) {
       out += `[🖼️ Diagram Attached]\n`;
     }
@@ -2920,9 +2966,12 @@ function convertToStandardCbtText(questions) {
     });
     if (q.correctLetter) {
       out += `Answer: ${q.correctLetter}`;
+    } else if (!q.correctLetter && (!q.correctAnswer || q.correctAnswer === "?")) {
+      out += `Answer: ?`;
     }
-    return out.trim();
-  }).join("\n\n");
+    blocks.push(out.trim());
+  }
+  return blocks.join("\n\n");
 }
 
 // ── Math Unicode & Rich HTML / Word OMML Equation Helpers ──
@@ -3410,10 +3459,68 @@ function extractCleanTextFromRichHtml(html) {
   return extractCleanTextFromDoc(doc);
 }
 
+const CBT_WORD_NUMBERS = {
+  one: 1, two: 2, three: 3, four: 4, five: 5,
+  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20
+};
+
+function parseCbtNumToken(tok) {
+  if (!tok) return NaN;
+  const s = String(tok).trim().toLowerCase();
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  return CBT_WORD_NUMBERS[s] || NaN;
+}
+
+function extractPassageQuestionRange(text) {
+  const s = String(text || "");
+  if (!s) return null;
+  const wordOrNum = "(?:\\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)";
+  const patterns = [
+    new RegExp(`\\b(?:questions?|nos?\\.?|numbers?|ibeere|items?|q\\.?)\\s*[:#]?\\s*\\(?(${wordOrNum})\\)?\\s*(?:to|thru|through|si|ati|–|—|-)\\s*\\(?(${wordOrNum})\\)?\\b`, "i"),
+    new RegExp(`\\b(?:use|read|study|answer|dahun|ka)\\b[^\\n]{0,60}?\\(?(${wordOrNum})\\)?\\s*(?:to|si|–|—|-)\\s*\\(?(${wordOrNum})\\)?(?=\\s|\\.|,|;|:|\\)|$)`, "i")
+  ];
+  for (const re of patterns) {
+    const m = s.match(re);
+    if (m) {
+      const start = parseCbtNumToken(m[1]);
+      const end = parseCbtNumToken(m[2]);
+      if (start >= 1 && end >= start && (end - start) <= 60) {
+        return { start, end };
+      }
+    }
+  }
+  return null;
+}
+
+function findTheoryCutoffIndex(text) {
+  const re = /\n\s*(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|PART\s*(?:II|2)|THEORY\b|ESSAY\b)[^\n]*/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const headingLine = m[0];
+    // Explicit Theory / Essay / Paper II is always a cutoff
+    if (/\b(?:PAPER\s*(?:II|2)|THEORY|ESSAY|SUBJECTIVE|WRITTEN)\b/i.test(headingLine)) {
+      return m.index;
+    }
+    // Ambiguous "SECTION B" / "PART II": check upcoming section chunk for MCQ options (A./B.)
+    // so multi-section English/Yoruba objective papers (Section A Comprehension, Section B Grammar...) are preserved!
+    const rest = text.slice(m.index + m[0].length);
+    const nextHdrOffset = rest.search(/\n\s*(?:PAPER|SECTION|PART)\s+/i);
+    const sectionChunk = nextHdrOffset !== -1 ? rest.slice(0, nextHdrOffset) : rest.slice(0, 2500);
+    const hasMcqOptions = /^\s*(?:\(?A[\.\)]|\[A\]|A:|A-)\s+\S/m.test(sectionChunk) &&
+      /^\s*(?:\(?B[\.\)]|\[B\]|B:|B-)\s+\S/m.test(sectionChunk);
+    if (!hasMcqOptions) {
+      return m.index;
+    }
+  }
+  return -1;
+}
+
 // ── Smart Exam Text Normalizer ──
 // Takes raw text (from Word .docx, .doc, or copy-paste) and ensures:
 // 1. School exam headers before Question 1, banners, and vertical watermarks are stripped
-// 2. Paper II (Theory) / Essay questions are cleanly separated from objective multiple choice
+// 2. Paper II (Theory) / Essay sections are cleanly separated while keeping multi-section objective MCQs (e.g. English/Yoruba Section B)
 // 3. Options (tight, inline, or across columns) are each placed on clean lines
 // 4. Mathematical acronyms (H.C.F, L.C.M, G.C.D) and algebraic expressions (4ab., c + d.) are NEVER split
 function normalizeExamText(text) {
@@ -3424,18 +3531,29 @@ function normalizeExamText(text) {
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
-  // A. Cut off Theory / Essay / Paper II sections so CBT only gets objective multiple choice questions
-  const theoryMatch = t.search(/\n\s*(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|PART\s*(?:II|2)|THEORY\b|ESSAY\b|PAPER\s*II\s*\(Theory\))/i);
+  // A. Cut off genuine Theory / Essay / Paper II sections without discarding objective Section B..Z in English/Yoruba
+  const theoryMatch = findTheoryCutoffIndex(t);
   if (theoryMatch !== -1) {
     t = t.substring(0, theoryMatch);
   }
 
-  // B. Strip school headers and metadata lines ONLY before the first numbered question
+  // B. Strip school headers and metadata lines ONLY before the first numbered question (never strip reading passages or range instructions!)
   const firstQMatch = t.match(/^\s*(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?1\)?[\.\)\:\-]\s+/im);
   if (firstQMatch && firstQMatch.index !== undefined) {
     let preamble = t.slice(0, firstQMatch.index);
     const body = t.slice(firstQMatch.index);
-    preamble = preamble.replace(/^(?:HONEYLAND|COLLEGE|HIGH SCHOOL|SECONDARY SCHOOL|COMPREHENSIVE|ACADEMY|OFFICIAL|SESSION|TERM|EXAM|CLASS|SUBJECT|DURATION|TIME\s*ALLOWED|INSTRUCTIONS?)[^\n]*\n*/gim, "");
+    preamble = preamble.split("\n").filter(ln => {
+      const s = ln.trim();
+      if (!s) return true;
+      if (/\b(?:passage|comprehension|cloze|extract|poem|ayoka|akaye|read\s+the|dahun|ibeere|questions?\s+(?:\d|one|two|three|four|five))/i.test(s)) {
+        return true;
+      }
+      if (/^(?:HONEYLAND\b|OFFICIAL\b.*\bTEMPLATE\b|CBT\s+EXAMINATION\b)/i.test(s)) return false;
+      if (/^(?:COLLEGE|HIGH SCHOOL|SECONDARY SCHOOL|COMPREHENSIVE|ACADEMY)\b/i.test(s) && s.length <= 70) return false;
+      if (/^(?:SESSION|TERM|EXAM(?:INATION)?|CLASS|SUBJECT|DURATION|TIME\s*ALLOWED|INSTRUCTIONS?)\s*[:\-–]/i.test(s)) return false;
+      if (/^(?:SESSION|TERM|DURATION|TIME\s*ALLOWED)\b/i.test(s) && s.length <= 60) return false;
+      return true;
+    }).join("\n");
     t = (preamble.trim() ? preamble.trim() + "\n\n" : "") + body;
   }
 
@@ -3447,19 +3565,19 @@ function normalizeExamText(text) {
   t = t.replace(/((?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$))[^\n]*)/gi, "$1\n");
   t = t.replace(/([^\n])[^\S\r\n]*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
 
-  // E. Separate Answer labels jammed directly after option/question text (e.g. "reticulumAnswer: B", "12Answer: C", "D. Answer: A")
-  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=][^\S\r\n]*([A-Ea-e]))(?=$|[^\S\r\n]*[\.\)\,\;\r\n]|[^\S\r\n]+\d+[\.\)])/gi, "$1\nAnswer: $3");
+  // E. Separate Answer labels jammed directly after option/question text (e.g. "reticulumAnswer: B", "12Answer: C", "D. Answer: A", "Answer: ?")
+  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=][^\S\r\n]*([A-Ea-e\?]))(?=$|[^\S\r\n]*[\.\)\,\;\r\n]|[^\S\r\n]+\d+[\.\)])/gi, "$1\nAnswer: $3");
 
   // Separate Points / Marks metadata lines if jammed
   t = t.replace(/([^\n\r])[^\S\r\n]*((?:Points?|Marks?|Scores?|Weight|Pts)\s*[\:\-\=][^\S\r\n]*\d+(?:\.\d+)?)(?=$|[^\S\r\n]*[\r\n])/gi, "$1\n$2");
 
-  // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is..." or "Answer: B 4. (−8)...")
-  t = t.replace(/(Answer:[^\S\r\n]*[A-Ea-e])[^\S\r\n]*(\d+[\.\)\:\-][^\S\r\n]*)/gi, "$1\n\n$2");
+  // F. Separate Question numbers jammed after Answer (e.g. "Answer: B2. What is..." or "Answer: ? 9. Next")
+  t = t.replace(/(Answer:[^\S\r\n]*[A-Ea-e\?])[^\S\r\n]*(\d+[\.\)\:\-][^\S\r\n]*)/gi, "$1\n\n$2");
   t = t.replace(/(Answer:[^\S\r\n]*[^\n]+?)[^\S\r\n]*(\d+[\.\)][^\S\r\n]+\S)/gi, "$1\n\n$2");
 
-  // G. Separate Diagram markers if jammed
-  t = t.replace(/([^\n])[^\S\r\n]*(\[\s*🖼️\s*Diagram Attached\s*\])/gi, "$1\n\n$2");
-  t = t.replace(/(\[\s*🖼️\s*Diagram Attached\s*\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
+  // G. Separate Diagram / Image markers if jammed
+  t = t.replace(/([^\n])[^\S\r\n]*(\[\s*🖼️?\s*(?:Diagram|Image|Picture)\s*Attached\s*\])/gi, "$1\n\n$2");
+  t = t.replace(/(\[\s*🖼️?\s*(?:Diagram|Image|Picture)\s*Attached\s*\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
   t = t.replace(/([^\n])[^\S\r\n]*(\[\[CBT_IMG_TOKEN_\d+\]\])/gi, "$1\n\n$2");
   t = t.replace(/(\[\[CBT_IMG_TOKEN_\d+\]\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
 
@@ -3621,24 +3739,19 @@ function handleTeacherFile(file) {
             updateTargetStatusBadge();
           }
 
-          $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-          $("tCbtReviewCard").style.display = "block";
+          teacherEditingReviewQIdx = null;
+          teacherReviewTempImage = undefined;
+          $("tCbtQuestionCount").textContent = `${teacherParsedQuestions.length} detected`;
           $("tCbtSubmitSuccess").style.display = "none";
           $("tCbtParseMsg").style.color = "var(--status-good)";
           const diagCount = teacherParsedQuestions.filter(q => q.image).length;
           const diagInfo = diagCount ? ` (${diagCount} diagram${diagCount > 1 ? 's' : ''} extracted)` : "";
           $("tCbtParseMsg").textContent = `✓ Successfully extracted ${teacherParsedQuestions.length} questions${diagInfo}. Review below!`;
-          renderTeacherReviewQuestions();
+          renderTeacherReviewQuestions({ animateCards: true });
+          revealAndScrollToReviewCard({ animateCards: true });
 
           const val = validateTeacherQuestions();
-          const unansweredCount = (teacherParsedQuestions || []).filter(q => {
-            const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
-            const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
-            return !(
-              (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-              (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-            );
-          }).length;
+          const unansweredCount = (teacherParsedQuestions || []).filter(q => !isQuestionAnswered(q)).length;
 
           if (val.valid) {
             showToast({
@@ -3687,15 +3800,20 @@ function handleTeacherFile(file) {
   }
 }
 
-// Universal Question & Answer Key Parser
+// Universal Question & Answer Key Parser (supports Math OMML equations & Reading Passages for English/Yoruba/etc.)
 function parseExamText(rawText, rawImages = []) {
   const normalized = normalizeExamText(rawText);
-  const lines = normalized.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const rawLines = normalized.split(/\r?\n/).map(l => l.trim());
   const questions = [];
   let currentQ = null;
   let isAnswerKeySection = false;
   const answerKeyMap = {}; // e.g. { 1: 'B', 2: 'C', ... }
   let defaultedAnswersCount = 0;
+
+  let pendingPassageLines = [];
+  let pendingImage = null;
+  let activeRangePassage = null; // { text, image, start, end }
+  let sawBlankLine = false;
 
   const qRegex = /^(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?(\d+)\)?[\.\)\:\-]\s*(.*)$/i;
   const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-E])\:|\b([A-Ea-e])\-)\s*(.*)$/;
@@ -3705,8 +3823,39 @@ function parseExamText(rawText, rawImages = []) {
   const ansKeyHeaderRegex = /^(?:✅\s*)?(?:answer\s*key|answers|correct\s*answers)(?:\s*summary)?/i;
   const endExamRegex = /^(?:—|-+)\s*end\s+of\s+(?:exam|examination)/i;
 
+  function filterPassageLines(linesArr) {
+    const cleaned = (linesArr || []).filter(ln => {
+      if (!ln) return false;
+      if (/^(?:HONEYLAND\b|OFFICIAL\b.*\bTEMPLATE\b|CBT\s+EXAMINATION\s+PORTAL\b|END\s+OF\s+EXAM(?:INATION)?\b|PAGE\s+\d+(?:\s+OF\s+\d+)?$|[-_=*—]{3,}$)/i.test(ln)) return false;
+      if (/^(?:DURATION|TIME\s*ALLOWED|CLASS|SUBJECT|SESSION|TERM|TOTAL\s*MARKS)\s*:/i.test(ln)) return false;
+      if (/^(?:PAPER\s*(?:I|1)\b|OBJECTIVE\s+(?:TEST|QUESTIONS?)\b|MULTIPLE\s+CHOICE\b)/i.test(ln)) return false;
+      return true;
+    });
+    return cleaned.join("\n").trim();
+  }
+
+  function isTheoryHeaderAtLine(idx) {
+    const ln = rawLines[idx] || "";
+    if (!/^(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|PART\s*(?:II|2)|THEORY|ESSAY)\b/i.test(ln)) return false;
+    if (/\b(?:PAPER\s*(?:II|2)|THEORY|ESSAY|SUBJECTIVE|WRITTEN)\b/i.test(ln)) return true;
+    // Check upcoming lines until next section for A./B. options
+    let hasOptA = false, hasOptB = false;
+    for (let j = idx + 1; j < rawLines.length; j++) {
+      const nxt = rawLines[j];
+      if (!nxt) continue;
+      if (/^(?:PAPER|SECTION|PART)\s+/i.test(nxt)) break;
+      if (/^(?:\(?A[\.\)]|\[A\]|A:|A-)\s+\S/.test(nxt)) hasOptA = true;
+      if (/^(?:\(?B[\.\)]|\[B\]|B:|B-)\s+\S/.test(nxt)) hasOptB = true;
+      if (hasOptA && hasOptB) return false;
+    }
+    return true;
+  }
+
   function finalizeQ(q) {
     q.text = (q.text || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+    if (q.prompt !== undefined) {
+      q.prompt = (q.prompt || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+    }
     if (q.correctLetter) {
       const opt = q.options.find(o => o.letter === q.correctLetter);
       if (opt) q.correctAnswer = opt.text;
@@ -3722,16 +3871,21 @@ function parseExamText(rawText, rawImages = []) {
     // so the teacher is required to review each question and pick the correct answer in Step 3 Review.
   }
 
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+  for (let i = 0; i < rawLines.length; i++) {
+    let line = rawLines[i];
+    if (!line) {
+      sawBlankLine = true;
+      continue;
+    }
 
     // Theory cutoff guard: do not parse Paper II / Theory as multiple choice
-    if (/^(?:PAPER\s*(?:II|2)|SECTION\s*[B-Z]|THEORY|ESSAY)\b/i.test(line)) {
+    if (isTheoryHeaderAtLine(i)) {
       if (currentQ && currentQ.text && currentQ.options.length) {
         finalizeQ(currentQ);
         questions.push(currentQ);
         currentQ = null;
       }
+      pendingPassageLines = [];
       break;
     }
 
@@ -3743,6 +3897,7 @@ function parseExamText(rawText, rawImages = []) {
         questions.push(currentQ);
         currentQ = null;
       }
+      pendingPassageLines = [];
       const pairs = line.match(/(\d+)[\.\)\:\-]\s*([A-Ea-e])/g);
       if (pairs) {
         pairs.forEach(p => {
@@ -3755,6 +3910,7 @@ function parseExamText(rawText, rawImages = []) {
 
     if (endExamRegex.test(line)) {
       isAnswerKeySection = true;
+      pendingPassageLines = [];
       continue;
     }
 
@@ -3774,30 +3930,74 @@ function parseExamText(rawText, rawImages = []) {
     const tokenMatch = line.match(tokenRegex);
     if (tokenMatch) {
       const imgIdx = parseInt(tokenMatch[1], 10);
-      if (currentQ && rawImages[imgIdx]) {
-        currentQ.image = rawImages[imgIdx];
+      if (rawImages[imgIdx]) {
+        if (currentQ && !currentQ._hasAnswer && pendingPassageLines.length === 0) {
+          currentQ.image = rawImages[imgIdx];
+        } else {
+          pendingImage = rawImages[imgIdx];
+        }
       }
       line = line.replace(tokenRegex, "").trim();
       if (!line) continue;
     }
 
-    // Skip diagram attachment label lines
+    // Skip diagram / image attachment label lines
     if (/^\s*\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]\s*$/i.test(line)) {
       continue;
     }
 
-    // Question start
+    // Ignore Points / Marks metadata lines
+    if (pointsRegex.test(line)) {
+      continue;
+    }
+
+    // Question start (guard against standalone 4-digit years like "1960." in passages unless prefixed with "Question")
     const qMatch = line.match(qRegex);
-    if (qMatch) {
+    const parsedQNum = qMatch ? parseInt(qMatch[1], 10) : NaN;
+    if (qMatch && (parsedQNum <= 250 || /^\s*(?:question|q)\b/i.test(line))) {
       if (currentQ && currentQ.text && currentQ.options.length) {
         finalizeQ(currentQ);
         questions.push(currentQ);
       }
-      const cleanQText = (qMatch[2] || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+
+      const cleanPrompt = (qMatch[2] || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+      const rawPendingText = filterPassageLines(pendingPassageLines);
+      const isBareSectionHeading = Boolean(
+        rawPendingText &&
+        !rawPendingText.includes("\n") &&
+        /^(?:SECTION|PART)\s*[A-Z0-9]+(?:\s*[:\-–—]\s*[A-Za-z0-9\s,&\/]{1,45})?$/i.test(rawPendingText)
+      );
+      const range = rawPendingText ? extractPassageQuestionRange(rawPendingText) : null;
+      const pendingText = rawPendingText.replace(/^\[Passage for Questions\s+[^\]]+\]\s*\n*/i, "").trim();
+
+      let qPassage = "";
+      let qImage = null;
+
+      if (isBareSectionHeading) {
+        activeRangePassage = null;
+      } else if (pendingText) {
+        if (range && parsedQNum >= range.start && parsedQNum <= range.end) {
+          activeRangePassage = { text: pendingText, image: pendingImage, start: range.start, end: range.end };
+        } else if (activeRangePassage && (parsedQNum > activeRangePassage.end || parsedQNum < activeRangePassage.start)) {
+          activeRangePassage = null;
+        }
+        qPassage = pendingText;
+        qImage = pendingImage;
+      } else if (activeRangePassage && parsedQNum >= activeRangePassage.start && parsedQNum <= activeRangePassage.end) {
+        qPassage = activeRangePassage.text;
+        qImage = activeRangePassage.image || null;
+      }
+
+      pendingPassageLines = [];
+      pendingImage = null;
+      sawBlankLine = false;
+
       currentQ = {
-        num: parseInt(qMatch[1], 10),
-        text: cleanQText,
-        image: null,
+        num: parsedQNum,
+        passage: qPassage,
+        prompt: cleanPrompt,
+        text: qPassage ? (qPassage + "\n\n" + cleanPrompt) : cleanPrompt,
+        image: qImage,
         options: [],
         correctAnswer: "",
         correctLetter: "",
@@ -3806,60 +4006,81 @@ function parseExamText(rawText, rawImages = []) {
       continue;
     }
 
-    if (!currentQ) continue;
-
-    // Ignore Points / Marks metadata lines
-    if (pointsRegex.test(line)) {
+    // Text before Question 1 belongs to pre-question passage / instruction buffer
+    if (!currentQ) {
+      if (!/^[-_=*]{3,}$/.test(line) && !/^page\s+\d+(?:\s+of\s+\d+)?$/i.test(line)) {
+        pendingPassageLines.push(line);
+      }
+      sawBlankLine = false;
       continue;
     }
 
-    // Answer directly under question
+    // Answer directly under question (handle "?" / "TBD" / "None" placeholders cleanly as unanswered)
     const ansMatch = line.match(ansRegex);
     if (ansMatch) {
       const val = ansMatch[1].trim();
-      if (/^[A-Ea-e]$/.test(val)) {
+      if (/^(?:\?+|none|n\/a|tbd|blank|-+)$/i.test(val)) {
+        currentQ.correctLetter = "";
+        currentQ.correctAnswer = "";
+      } else if (/^[A-Ea-e]$/.test(val)) {
         currentQ.correctLetter = val.toUpperCase();
       } else {
         currentQ.correctAnswer = val;
       }
       currentQ._hasAnswer = true;
+      sawBlankLine = false;
       continue;
     }
 
     // Option
-    const optMatch = line.match(optRegex);
+    const optMatch = (!currentQ._hasAnswer || currentQ.options.length === 0) ? line.match(optRegex) : null;
     if (optMatch) {
       const isStar = optMatch[1] === "*";
       const letter = (optMatch[2] || optMatch[3] || optMatch[4] || optMatch[5]).toUpperCase();
       const text = (optMatch[6] || "").trim();
       currentQ.options.push({ letter, text });
       if (isStar) currentQ.correctLetter = letter;
+      sawBlankLine = false;
       continue;
     }
 
     // Inline multi-option fallback (e.g. two options on the same line: "A. 10.5 apples  B. 20.5 bananas")
-    const inlineSplits = line.split(/(?:^|\s+)(?=\(?[A-E][\.\)]\s+\S)/);
-    if (inlineSplits.filter(s => /^\(?[A-E][\.\)]\s+/.test(s.trim())).length >= 2) {
-      inlineSplits.forEach(chunk => {
-        const m = chunk.trim().match(/^\(?([A-E])[\.\)]\s*(.*)$/);
-        if (m) {
-          currentQ.options.push({ letter: m[1].toUpperCase(), text: m[2].trim() });
-        }
-      });
-      continue;
+    if (!currentQ._hasAnswer || currentQ.options.length === 0) {
+      const inlineSplits = line.split(/(?:^|\s+)(?=\(?[A-E][\.\)]\s+\S)/);
+      if (inlineSplits.filter(s => /^\(?[A-E][\.\)]\s+/.test(s.trim())).length >= 2) {
+        inlineSplits.forEach(chunk => {
+          const m = chunk.trim().match(/^\(?([A-E])[\.\)]\s*(.*)$/);
+          if (m) {
+            currentQ.options.push({ letter: m[1].toUpperCase(), text: m[2].trim() });
+          }
+        });
+        sawBlankLine = false;
+        continue;
+      }
     }
 
-    // Continuation of question text or multi-line wrapped option text (ignore dividers / page footers / text after Answer:)
+    // Continuation lines vs Passage for the next question
     if (!/^\s*\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]\s*$/i.test(line) &&
         !/^[-_=*]{3,}$/.test(line) &&
         !/^page\s+\d+(?:\s+of\s+\d+)?$/i.test(line)) {
-      if (currentQ.options.length === 0) {
-        currentQ.text += (currentQ.text ? " " : "") + line;
-      } else if (!currentQ._hasAnswer) {
+      if (currentQ._hasAnswer && currentQ.options.length > 0) {
+        // Already past Answer: line of currentQ -> belongs to upcoming passage/instruction before next Q
+        pendingPassageLines.push(line);
+      } else if (currentQ.options.length === 0) {
+        currentQ.prompt = (currentQ.prompt ? currentQ.prompt + " " : "") + line;
+        currentQ.text = currentQ.passage ? (currentQ.passage + "\n\n" + currentQ.prompt) : currentQ.prompt;
+      } else {
         const lastOpt = currentQ.options[currentQ.options.length - 1];
-        if (lastOpt) lastOpt.text += (lastOpt.text ? " " : "") + line;
+        const looksLikePassageStart = /^(?:AKAYE\b|COMPREHENSION\b|CLOZE\b|PASSAGE\b|EXTRACT\b|POEM\b|DRAMA\b|PROSE\b|AYOKA\b|SECTION\s*[A-Z0-9]+\b|PART\s*(?:I|1|[A-Z0-9]+)\b|(?:Read|Study|Use)\s+the\s+(?:passage|extract|poem|story|diagram|table|following)\b|Ka\s+ayoka\b)/i.test(line) ||
+          Boolean(extractPassageQuestionRange(line));
+        if (looksLikePassageStart || pendingPassageLines.length > 0 || (currentQ.options.length >= 2 && lastOpt && lastOpt.text && sawBlankLine && line.length > 35)) {
+          pendingPassageLines.push(line);
+        } else if (lastOpt) {
+          lastOpt.text += (lastOpt.text ? " " : "") + line;
+        }
       }
     }
+    sawBlankLine = false;
   }
 
   if (currentQ && currentQ.text && currentQ.options.length) {
@@ -3898,7 +4119,10 @@ function parseTeacherCbtText() {
       o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) ||
       meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
     );
-    if (opt) $("tCbtSubject").value = opt.value;
+    if (opt) {
+      $("tCbtSubject").value = opt.value;
+      updateTeacherExamTitle();
+    }
   }
 
   // 1. Normalize the textarea content and write it back so the teacher sees clean formatting
@@ -3919,6 +4143,8 @@ function parseTeacherCbtText() {
   if (!teacherParsedQuestions.length) {
     $("tCbtParseMsg").textContent = "No numbered questions recognized. Please ensure questions start with 1. 2. etc.";
     $("tCbtReviewCard").style.display = "none";
+    wasTeacherExamReady = false;
+    syncTeacherSubmitDock(null);
     showToast({
       type: "warning",
       title: "No Questions Recognized",
@@ -3935,142 +4161,40 @@ function parseTeacherCbtText() {
     updateTargetStatusBadge();
   }
 
-  $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-  $("tCbtReviewCard").style.display = "block";
+  teacherEditingReviewQIdx = null;
+  teacherReviewTempImage = undefined;
+  $("tCbtQuestionCount").textContent = `${teacherParsedQuestions.length} detected`;
   $("tCbtSubmitSuccess").style.display = "none";
-  renderTeacherReviewQuestions();
+  renderTeacherReviewQuestions({ animateCards: true });
+  revealAndScrollToReviewCard({ animateCards: true });
 
   const val = validateTeacherQuestions();
-  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
-    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
-    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
-    return !(
-      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-    );
-  }).length;
+  const unansweredCount = (teacherParsedQuestions || []).filter(q => !isQuestionAnswered(q)).length;
 
   if (val.valid) {
     showToast({
       type: "success",
       title: "Questions Successfully Parsed!",
-      message: `Parsed exactly ${val.detectedCount} of ${val.targetCount} complete questions. All options & answers ready!`
+      message: `Parsed ${val.detectedCount} of ${val.targetCount} complete questions. You're ready to submit below!`
     });
   } else if (unansweredCount > 0) {
     showToast({
       type: "info",
       title: "Teacher Review Required",
-      message: `Parsed ${val.detectedCount} questions. Please review below and click the correct answer for each question before submitting.`,
+      message: `Parsed ${val.detectedCount} questions. Select the correct option for the ${unansweredCount} remaining question${unansweredCount !== 1 ? 's' : ''} below to unlock Submit.`,
       duration: 7500
     });
   } else {
     showToast({
       type: "warning",
       title: "Question Review Required",
-      message: `Parsed ${val.detectedCount} question${val.detectedCount !== 1 ? 's' : ''}. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to resolve in Step 3 before submitting.`,
+      message: `Parsed ${val.detectedCount} question${val.detectedCount !== 1 ? 's' : ''}. Found ${val.issues.length} issue${val.issues.length !== 1 ? 's' : ''} to fix in Step 3 before Submit unlocks.`,
       list: val.issues.slice(0, 4).map(i => i.message)
     });
   }
 }
 
-// ── Smart Auto-Convert to CBT Rules & Pass ──
-// Converts school exam papers, strips headers/theory, standardizes textarea,
-// and ensures full validation compliance in a single action
-function smartConvertAndPassExam(options = {}) {
-  const rawText = $("tCbtRawText") ? $("tCbtRawText").value.trim() : "";
-  if (!rawText) {
-    if (!options.silent) {
-      showToast({
-        type: "warning",
-        title: "No Content to Convert",
-        message: "Please paste your question paper or upload a file before converting."
-      });
-    }
-    return;
-  }
-
-  // 1. Detect metadata
-  const meta = extractExamMetadata(rawText);
-  if (meta.detectedDuration && $("tCbtDuration") && (!$("tCbtDuration").value || $("tCbtDuration").value === "60")) {
-    $("tCbtDuration").value = meta.detectedDuration;
-  }
-  if (meta.detectedSubject && $("tCbtSubject")) {
-    const opt = Array.from($("tCbtSubject").options).find(o =>
-      o.value.toLowerCase().includes(meta.detectedSubject.toLowerCase()) ||
-      meta.detectedSubject.toLowerCase().includes(o.value.toLowerCase())
-    );
-    if (opt) $("tCbtSubject").value = opt.value;
-  }
-
-  // 2. Parse questions
-  const existingImages = (teacherParsedQuestions || []).map(q => q.image);
-  const parsed = parseExamText(rawText, existingImages);
-
-  if (!parsed.questions.length) {
-    if (!options.silent) {
-      showToast({
-        type: "fail",
-        title: "Could Not Convert",
-        message: "Could not detect numbered questions (1. 2. etc.). Please check that questions are numbered."
-      });
-    }
-    return;
-  }
-
-  teacherParsedQuestions = parsed.questions;
-
-  // 3. Auto-sync target question count
-  if ($("tCbtTargetQuestions")) {
-    $("tCbtTargetQuestions").value = teacherParsedQuestions.length;
-    const pills = document.querySelectorAll(".cbt-pill-btn");
-    pills.forEach(btn => btn.classList.toggle("active", btn.dataset.count === String(teacherParsedQuestions.length)));
-    updateTargetStatusBadge();
-  }
-
-  // 4. Convert and format textarea with official CBT template syntax
-  const standardText = convertToStandardCbtText(teacherParsedQuestions);
-  $("tCbtRawText").value = standardText;
-
-  // 5. Update review UI
-  $("tCbtQuestionCount").textContent = teacherParsedQuestions.length;
-  $("tCbtReviewCard").style.display = "block";
-  $("tCbtSubmitSuccess").style.display = "none";
-  renderTeacherReviewQuestions();
-
-  const val = validateTeacherQuestions();
-  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
-    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
-    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
-    return !(
-      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-    );
-  }).length;
-
-  if (!options.silent) {
-    if (unansweredCount > 0) {
-      showToast({
-        type: "info",
-        title: "✨ Questions Converted!",
-        message: `Extracted ${val.detectedCount} questions cleanly. Please review each question below and click the correct answer before submitting.`,
-        duration: 7500
-      });
-    } else {
-      showToast({
-        type: "success",
-        title: "✨ All Questions Ready!",
-        message: `Successfully converted ${val.detectedCount} questions with verified answers! Ready to submit.`
-      });
-    }
-  }
-
-  $("tCbtReviewCard").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 $("tCbtParseBtn").onclick = parseTeacherCbtText;
-if ($("tCbtSmartConvertBtn")) {
-  $("tCbtSmartConvertBtn").onclick = () => smartConvertAndPassExam({ silent: false });
-}
 
 let activeTargetQuestionImageIdx = null;
 let teacherEditingReviewQIdx = null;
@@ -4239,52 +4363,368 @@ function validateTeacherQuestions() {
   };
 }
 
-function renderTeacherReviewQuestions() {
+let wasTeacherExamReady = false;
+
+function isQuestionAnswered(q) {
+  if (!q) return false;
+  const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
+  const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
+  return Boolean(
+    (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
+    (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
+  );
+}
+
+function evaluateTeacherExamReadiness() {
   const val = validateTeacherQuestions();
+  const extraIssues = [];
+
+  const subject = $("tCbtSubject") ? $("tCbtSubject").value.trim() : "";
+  const assigned = (typeof teacher !== "undefined" && teacher && Array.isArray(teacher.subjects) && teacher.subjects.length > 0)
+    ? teacher.subjects.filter(s => s && s.trim())
+    : [];
+
+  if (!subject) {
+    extraIssues.push({
+      type: "meta_missing",
+      title: "Subject Required",
+      message: "Please select an examination subject in Step 1 before submitting."
+    });
+  } else if (assigned.length > 0 && !assigned.includes(subject)) {
+    extraIssues.push({
+      type: "meta_unauthorized",
+      title: "Unauthorized Subject",
+      message: `Selected subject "${subject}" is outside your assigned subjects (${assigned.join(", ")}).`
+    });
+  }
+
+  const sClass = $("tCbtClass") ? $("tCbtClass").value.trim() : "";
+  if (!sClass) {
+    extraIssues.push({
+      type: "meta_missing",
+      title: "Class Required",
+      message: "Please select a target class in Step 1 before submitting."
+    });
+  }
+
+  const launchDate = $("tCbtLaunchDate") ? $("tCbtLaunchDate").value.trim() : "";
+  const gateOpen = $("tCbtGateOpen") ? $("tCbtGateOpen").value.trim() : "";
+  const gateClose = $("tCbtGateClose") ? $("tCbtGateClose").value.trim() : "";
+  if (!launchDate || !gateOpen || !gateClose) {
+    extraIssues.push({
+      type: "meta_schedule",
+      title: "Schedule Required",
+      message: "Please confirm Launch Date, Gate Open, and Gate Close times in Step 1."
+    });
+  }
+
+  if (teacherEditingReviewQIdx !== null && teacherEditingReviewQIdx >= 0 && teacherEditingReviewQIdx < (teacherParsedQuestions || []).length) {
+    extraIssues.push({
+      type: "editing_open",
+      qIdx: teacherEditingReviewQIdx,
+      qNum: teacherEditingReviewQIdx + 1,
+      title: `Question ${teacherEditingReviewQIdx + 1}`,
+      message: `Question ${teacherEditingReviewQIdx + 1} is currently being edited — click "Save Question" or "Cancel" to continue.`
+    });
+  }
+
+  let unansweredCount = 0;
+  let firstUnansweredIdx = -1;
+  (teacherParsedQuestions || []).forEach((q, idx) => {
+    if (!isQuestionAnswered(q)) {
+      unansweredCount++;
+      if (firstUnansweredIdx === -1) firstUnansweredIdx = idx;
+    }
+  });
+
+  let firstNonAnswerIssueIdx = -1;
+  Object.keys(val.questionIssuesMap).forEach(k => {
+    const idx = parseInt(k, 10);
+    const qErrs = val.questionIssuesMap[idx] || [];
+    if (firstNonAnswerIssueIdx === -1 && qErrs.some(e => !e.includes("Correct answer not selected"))) {
+      firstNonAnswerIssueIdx = idx;
+    }
+  });
+
+  const allIssues = [...val.issues, ...extraIssues];
+  const totalCount = (teacherParsedQuestions || []).length;
+  const verifiedCount = (teacherParsedQuestions || []).filter((q, idx) => {
+    const errs = val.questionIssuesMap[idx];
+    return !errs || errs.length === 0;
+  }).length;
+
+  const ready = Boolean(totalCount > 0 && val.valid && extraIssues.length === 0);
+
+  return {
+    ready,
+    val,
+    extraIssues,
+    allIssues,
+    unansweredCount,
+    firstUnansweredIdx,
+    firstNonAnswerIssueIdx,
+    verifiedCount,
+    totalCount,
+    subject,
+    sClass
+  };
+}
+
+function getHeaderScrollOffset() {
+  const header = document.querySelector(".app-master-header");
+  return (header ? header.getBoundingClientRect().height : 72) + 14;
+}
+
+function scrollReviewListToQuestion(qIdx, opts = {}) {
+  const reviewCard = $("tCbtReviewCard");
+  const listEl = $("tCbtQuestionsList");
+  if (!reviewCard || !listEl) return;
+
+  const listStyle = typeof getComputedStyle === "function" ? getComputedStyle(listEl) : null;
+  const isInnerScroll = listEl.scrollHeight > listEl.clientHeight + 4 && (!listStyle || /(auto|scroll)/.test(listStyle.overflowY || "auto"));
+
+  const spotlightCard = (targetCard) => {
+    if (!targetCard) return;
+    if (opts.spotlight) {
+      targetCard.classList.remove("cbt-q-card-spotlight");
+      void targetCard.offsetWidth;
+      targetCard.classList.add("cbt-q-card-spotlight");
+      setTimeout(() => targetCard.classList.remove("cbt-q-card-spotlight"), 1450);
+    }
+    if (opts.focusText) {
+      setTimeout(() => {
+        const ta = $("teacherReviewEditText");
+        if (ta) ta.focus({ preventScroll: true });
+      }, 280);
+    }
+  };
+
+  if (!isInnerScroll) {
+    const targetCard = listEl.querySelector(`.cbt-q-card[data-card-q-idx="${qIdx}"]`);
+    if (!targetCard) return;
+    const targetY = targetCard.getBoundingClientRect().top + window.scrollY - getHeaderScrollOffset();
+    window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+    setTimeout(() => spotlightCard(targetCard), 220);
+    return;
+  }
+
+  const doInnerScroll = () => {
+    const targetCard = listEl.querySelector(`.cbt-q-card[data-card-q-idx="${qIdx}"]`);
+    if (!targetCard) return;
+
+    const listRect = listEl.getBoundingClientRect();
+    const cardRect = targetCard.getBoundingClientRect();
+    const desiredTop = listEl.scrollTop + (cardRect.top - listRect.top) - Math.max(12, (listEl.clientHeight - cardRect.height) / 2);
+    listEl.scrollTo({ top: Math.max(0, desiredTop), behavior: "smooth" });
+    spotlightCard(targetCard);
+  };
+
+  const reviewRect = reviewCard.getBoundingClientRect();
+  const listRect = listEl.getBoundingClientRect();
+  const offset = getHeaderScrollOffset();
+  const viewportH = window.innerHeight || document.documentElement.clientHeight || 800;
+
+  // Bring Step 3 into view first if user clicked from above/below
+  if (listRect.top < offset || listRect.top > viewportH - 120) {
+    const targetY = reviewRect.top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+    setTimeout(doInnerScroll, 300);
+  } else {
+    doInnerScroll();
+  }
+}
+
+function revealAndScrollToReviewCard(opts = {}) {
+  const reviewCard = $("tCbtReviewCard");
+  if (!reviewCard) return;
+
+  reviewCard.style.display = "block";
+  reviewCard.classList.remove("cbt-card-revealing", "cbt-card-pulse-highlight");
+  void reviewCard.offsetWidth;
+  reviewCard.classList.add("cbt-card-pulse-highlight");
+
+  const listEl = $("tCbtQuestionsList");
+  if (opts.animateCards && listEl) {
+    listEl.scrollTop = 0;
+  }
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const offset = getHeaderScrollOffset();
+      const targetY = reviewCard.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+      if (opts.targetQIdx !== undefined && opts.targetQIdx !== null) {
+        setTimeout(() => scrollReviewListToQuestion(opts.targetQIdx, { spotlight: true, focusText: opts.focusText }), 260);
+      }
+    }, 45);
+  });
+
+  setTimeout(() => {
+    reviewCard.classList.remove("cbt-card-pulse-highlight");
+  }, 1350);
+}
+
+function syncTeacherSubmitDock(readiness, opts = {}) {
+  const dock = $("tCbtSubmitDock");
+  const metaEl = $("tCbtSubmitDockMeta");
+  const chip = $("tCbtReadinessChip");
+
+  if (!readiness || !readiness.totalCount) {
+    if (dock) {
+      dock.classList.remove("is-visible", "cbt-dock-entering");
+      dock.classList.add("is-hidden");
+      dock.setAttribute("aria-hidden", "true");
+    }
+    if (chip) {
+      chip.style.display = "none";
+      chip.onclick = null;
+    }
+    wasTeacherExamReady = false;
+    return;
+  }
+
+  if (chip) {
+    chip.style.display = "inline-flex";
+    chip.className = "cbt-readiness-chip";
+    if (readiness.ready) {
+      chip.classList.add("is-ready");
+      chip.textContent = `✅ ${readiness.totalCount}/${readiness.totalCount} Ready`;
+      chip.title = "All requirements met — Submit button is ready below";
+      chip.onclick = null;
+    } else if (readiness.unansweredCount > 0 && readiness.firstNonAnswerIssueIdx === -1 && readiness.extraIssues.length === 0) {
+      chip.classList.add("is-warning");
+      chip.textContent = `👇 ${readiness.unansweredCount} Answer${readiness.unansweredCount === 1 ? "" : "s"} Left`;
+      chip.title = `Jump to Question ${readiness.firstUnansweredIdx + 1}`;
+      chip.onclick = () => scrollReviewListToQuestion(readiness.firstUnansweredIdx, { spotlight: true });
+    } else {
+      chip.classList.add("is-error");
+      const issueNum = readiness.allIssues.length;
+      chip.textContent = `⚠️ ${issueNum} Requirement${issueNum === 1 ? "" : "s"} Left`;
+      const jumpIdx = readiness.firstNonAnswerIssueIdx !== -1 ? readiness.firstNonAnswerIssueIdx : readiness.firstUnansweredIdx;
+      chip.title = jumpIdx !== -1 ? `Jump to Question ${jumpIdx + 1}` : "See Step 3 checklist above";
+      chip.onclick = () => {
+        if (jumpIdx !== -1) {
+          scrollReviewListToQuestion(jumpIdx, { spotlight: true });
+        } else if ($("tCbtValidationStatusCard")) {
+          $("tCbtValidationStatusCard").scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      };
+    }
+  }
+
+  if (!dock) return;
+
+  if (!readiness.ready) {
+    dock.classList.remove("is-visible", "cbt-dock-entering");
+    dock.classList.add("is-hidden");
+    dock.setAttribute("aria-hidden", "true");
+    wasTeacherExamReady = false;
+    return;
+  }
+
+  if (metaEl) {
+    const subjLabel = readiness.subject ? ` · ${readiness.subject}` : "";
+    const clsLabel = readiness.sClass ? ` (${readiness.sClass})` : "";
+    metaEl.textContent = `${readiness.totalCount} of ${readiness.totalCount} questions verified${subjLabel}${clsLabel}`;
+  }
+
+  const becameReady = !wasTeacherExamReady;
+  dock.classList.remove("is-hidden");
+  dock.classList.add("is-visible");
+  dock.setAttribute("aria-hidden", "false");
+
+  if (becameReady || opts.forceAnimateDock) {
+    dock.classList.remove("cbt-dock-entering");
+    void dock.offsetWidth;
+    dock.classList.add("cbt-dock-entering");
+    setTimeout(() => dock.classList.remove("cbt-dock-entering"), 1200);
+
+    if (becameReady && opts.fromInteractiveFix) {
+      showToast({
+        type: "success",
+        title: "🎉 All Requirements Met!",
+        message: "Submit button unlocked below — click \"Submit Exam to School Admin\" when ready.",
+        duration: 5000
+      });
+    }
+  }
+
+  wasTeacherExamReady = true;
+}
+
+function renderTeacherReviewQuestions(renderOpts = {}) {
+  const readiness = evaluateTeacherExamReadiness();
+  const { val, unansweredCount, firstUnansweredIdx, firstNonAnswerIssueIdx, extraIssues, verifiedCount, totalCount } = readiness;
   updateTargetStatusBadge();
 
   if ($("tCbtQuestionCount")) {
     $("tCbtQuestionCount").textContent = val.targetCount
-      ? `${val.detectedCount} detected (Target: ${val.targetCount})`
+      ? `${val.detectedCount} / ${val.targetCount} detected`
       : `${val.detectedCount} detected`;
   }
 
   // Update Real-Time Quality & Question Count Banner
   const statusCard = $("tCbtValidationStatusCard");
-  const unansweredCount = (teacherParsedQuestions || []).filter(q => {
-    const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
-    const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
-    return !(
-      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-    );
-  }).length;
+  const pctReady = totalCount > 0 ? Math.round((verifiedCount / totalCount) * 100) : 0;
 
   if (statusCard) {
     statusCard.style.display = "block";
-    if (!val.valid) {
+    if (renderOpts.animateCards) {
+      statusCard.classList.remove("cbt-banner-enter");
+      void statusCard.offsetWidth;
+      statusCard.classList.add("cbt-banner-enter");
+    }
+
+    const progressHtml = totalCount > 0 ? `
+      <div style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px">
+          <span>Verification Progress</span>
+          <span>${verifiedCount} / ${totalCount} verified (${pctReady}%)</span>
+        </div>
+        <div class="cbt-val-progress-track">
+          <div class="cbt-val-progress-fill ${readiness.ready ? 'is-complete' : ''}" style="width:${readiness.ready ? 100 : pctReady}%"></div>
+        </div>
+      </div>
+    ` : "";
+
+    if (!readiness.ready) {
       const answerReviewNotice = unansweredCount > 0 ? `
         <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.35);border-radius:6px;padding:12px 16px;margin-bottom:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
             <span style="font-weight:700;color:#f59e0b;font-size:13.5px">
               ✍️ Teacher Answer Review: ${unansweredCount} of ${val.detectedCount} Question${val.detectedCount !== 1 ? 's' : ''} Need an Answer
             </span>
-            <span style="font-size:11px;background:rgba(245,158,11,0.2);color:#d97706;padding:2px 8px;border-radius:10px;font-weight:700">Must Select Before Submitting</span>
+            <span style="font-size:11px;background:rgba(245,158,11,0.2);color:#d97706;padding:2px 8px;border-radius:10px;font-weight:700">Submit Unlocks When Ready</span>
           </div>
           <p style="margin:6px 0 0 0;font-size:12px;color:var(--text);line-height:1.5">
-            Questions and options are formatted cleanly. As the teacher, please review each question card below and <strong>click the correct option (A, B, C, or D)</strong> to designate the right answer before submitting.
+            Review each question card below and <strong>click the correct option (A, B, C, or D)</strong> to unlock submission.
           </p>
+          ${firstUnansweredIdx !== -1 ? `
+            <button type="button" class="cbt-jump-btn" data-jump-review-q="${firstUnansweredIdx}">
+              👇 Jump to Next Unanswered (Q${firstUnansweredIdx + 1})
+            </button>
+          ` : ""}
+          ${otherIssuesEmptyOrFollows(val, extraIssues) ? progressHtml : ""}
         </div>
       ` : "";
 
-      const otherIssues = val.issues.filter(i => i.type !== "question_incomplete" || !i.message.includes("Correct answer not selected"));
-      const hasBlankOptionIssue = otherIssues.some(i => /has no text \(blank\)/i.test(i.message || ""));
-      const otherIssuesHtml = otherIssues.length > 0 ? `
+      const questionOtherIssues = val.issues.filter(i => i.type !== "question_incomplete" || !i.message.includes("Correct answer not selected"));
+      const combinedOtherIssues = [...questionOtherIssues, ...extraIssues];
+      const hasBlankOptionIssue = combinedOtherIssues.some(i => /has no text \(blank\)/i.test(i.message || ""));
+      const otherIssuesHtml = combinedOtherIssues.length > 0 ? `
         <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 14px;">
-          <div style="font-weight:700;color:#ef4444;font-size:12.5px;margin-bottom:4px">⚠️ Additional Issues to Fix:</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+            <span style="font-weight:700;color:#ef4444;font-size:12.5px">⚠️ Requirements to Fix Before Submitting:</span>
+            ${firstNonAnswerIssueIdx !== -1 ? `
+              <button type="button" class="cbt-jump-btn is-danger" style="margin-top:0" data-jump-review-q="${firstNonAnswerIssueIdx}">
+                👇 Jump to Q${firstNonAnswerIssueIdx + 1}
+              </button>
+            ` : ""}
+          </div>
           <ul style="margin:0 0 0 16px;font-size:12px;color:var(--text);line-height:1.5">
-            ${otherIssues.map(iss => `<li><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
+            ${combinedOtherIssues.map(iss => `<li><strong>${esc(iss.title || 'Alert')}:</strong> ${esc(iss.message)}</li>`).join("")}
           </ul>
+          ${unansweredCount === 0 ? progressHtml : ""}
           ${hasBlankOptionIssue ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(239,68,68,0.3);font-size:11.5px;color:var(--text-muted)">💡 <strong>Word Equations Tip:</strong> If copying &amp; pasting from a Word viewer dropped equations (fractions, roots, exponents), upload the <strong>.docx file directly</strong> using <em>Upload Exam File</em> so all equations convert automatically.</div>` : ""}
         </div>
       ` : "";
@@ -4294,32 +4734,46 @@ function renderTeacherReviewQuestions() {
       statusCard.innerHTML = `
         <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:12px 14px;color:#10b981;font-size:13px;font-weight:600">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <span>✅ Quality Checks Passed: All ${val.detectedCount} of ${val.targetCount} questions reviewed with verified answers!</span>
-            <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Ready for Admin Submission</span>
+            <span>✅ Quality Checks Passed: All ${val.detectedCount} of ${val.targetCount} questions, options &amp; details verified!</span>
+            <span style="font-size:11px;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:10px">Submit Ready Below</span>
           </div>
+          ${progressHtml}
         </div>
       `;
     }
+
+    statusCard.querySelectorAll("[data-jump-review-q]").forEach(btn => {
+      btn.onclick = () => {
+        const jumpIdx = parseInt(btn.dataset.jumpReviewQ, 10);
+        if (!isNaN(jumpIdx)) scrollReviewListToQuestion(jumpIdx, { spotlight: true });
+      };
+    });
   }
 
+  const listEl = $("tCbtQuestionsList");
+  const prevScrollTop = (!renderOpts.animateCards && listEl) ? listEl.scrollTop : 0;
+
   if (teacherParsedQuestions.length === 0) {
-    $("tCbtQuestionsList").innerHTML = `
-      <div style="text-align:center;padding:28px;color:var(--text-muted);background:var(--surface-alt);border:1px dashed var(--border);border-radius:var(--radius)">
-        No questions loaded. Click <strong>➕ Add Question</strong> or paste question text in Step 2.
-      </div>
-    `;
+    if (listEl) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:28px;color:var(--text-muted);background:var(--surface-alt);border:1px dashed var(--border);border-radius:var(--radius)">
+          No questions loaded. Click <strong>➕ Add Question</strong> or paste question text in Step 2.
+        </div>
+      `;
+    }
+    syncTeacherSubmitDock(readiness, renderOpts);
     return;
   }
 
-  $("tCbtQuestionsList").innerHTML = teacherParsedQuestions.map((q, idx) => {
+  listEl.innerHTML = teacherParsedQuestions.map((q, idx) => {
     const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
     const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
     const qErrors = val.questionIssuesMap[idx] || [];
     const hasError = qErrors.length > 0;
-    const isAnswered = Boolean(
-      (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-      (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-    );
+    const isAnswered = isQuestionAnswered(q);
+    const enterCls = (renderOpts.animateCards && idx < 10) ? "cbt-q-card-enter" : "";
+    const enterStyle = (renderOpts.animateCards && idx < 10) ? `style="animation-delay:${idx * 32}ms"` : "";
+    const isJustUpdated = renderOpts.updatedQIdx === idx;
     const issueBarHtml = (hasError && !isAnswered && qErrors.length > 1) ? `
       <div class="cbt-q-issue-bar">
         <span>⚠️ ${qErrors.filter(e => !e.includes("Correct answer not selected")).map(e => esc(e)).join(" · ")}</span>
@@ -4351,22 +4805,22 @@ function renderTeacherReviewQuestions() {
       `;
 
       return `
-        <div class="cbt-q-card ${!isAnswered ? 'needs-answer' : ''} ${hasError && isAnswered ? 'has-validation-error' : ''}">
+        <div class="cbt-q-card ${enterCls} ${!isAnswered ? 'needs-answer' : ''} ${hasError && isAnswered ? 'has-validation-error' : ''}" data-card-q-idx="${idx}" ${enterStyle}>
           <div class="cbt-q-header">
-            <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span class="cbt-q-num">Question ${idx + 1}</span>
               ${!isAnswered
           ? `<span style="font-size:11px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:4px;font-weight:600">⚠️ Click correct answer below</span>`
-          : `<span style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
+          : `<span class="${isJustUpdated ? 'cbt-answer-badge-pop' : ''}" style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:4px;font-weight:700">Answer: ${esc(q.correctLetter || '')}</span>`}
             </div>
-            <div style="display:flex;align-items:center;gap:12px">
+            <div class="cbt-q-card-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span style="font-size:12px;color:var(--text-muted);font-weight:600">Pts: <strong style="color:var(--accent)">${teacherCbtDefaults.marksPerQuestion || 0.4}</strong></span>
               <button type="button" class="btn-text" data-teacher-edit-review-q="${idx}" style="font-size:12px;color:var(--accent);font-weight:600;cursor:pointer">✏️ Edit</button>
               <button type="button" class="btn-text" data-teacher-del-review-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
           ${issueBarHtml}
-          <div class="cbt-q-text" style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text) : esc(q.text)}</div>
+          <div class="cbt-q-text" style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtQuestionDisplayHtml === "function" ? formatCbtQuestionDisplayHtml(q, { qIdx: idx, canSharePassage: true }) : (typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text) : esc(q.text))}</div>
           ${imgHtml}
           <div class="cbt-options-grid">
             ${opts.map((opt, oIdx) => {
@@ -4374,7 +4828,7 @@ function renderTeacherReviewQuestions() {
             const isEmptyOpt = !opt || !opt.trim();
             const isCorrect = (q.correctAnswer && opt.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) || (q.correctLetter === letter);
             return `
-                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}" title="Click to designate ${letter} as the correct answer">
+                <button type="button" class="cbt-opt-btn ${isCorrect ? 'correct' : ''} ${isCorrect && isJustUpdated ? 'cbt-opt-pop' : ''} ${isEmptyOpt ? 'is-empty-opt' : ''}" data-q-idx="${idx}" data-opt-letter="${letter}" data-opt-text="${esc(opt)}" title="Click to designate ${letter} as the correct answer">
                   <strong>${letter}.</strong>
                   <span>${isEmptyOpt ? '<em style="color:#ef4444">(Blank Option — Enter Text)</em>' : (typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(opt) : esc(opt))}</span>
                   ${isCorrect ? `<span style="margin-left:auto;font-size:11px;font-weight:700">✓ CORRECT</span>` : ''}
@@ -4389,7 +4843,7 @@ function renderTeacherReviewQuestions() {
     // Inline Edit Card in Step 3
     const currImg = teacherReviewTempImage !== undefined ? teacherReviewTempImage : q.image;
     return `
-      <div class="cbt-q-card q-card-edit" style="border:1px solid var(--accent);background:rgba(59,130,246,0.04);padding:16px;border-radius:6px">
+      <div class="cbt-q-card q-card-edit" data-card-q-idx="${idx}" style="border:1px solid var(--accent);background:rgba(59,130,246,0.04);padding:16px;border-radius:6px">
         <div class="cbt-q-header" style="margin-bottom:10px">
           <span class="cbt-q-num" style="background:var(--accent);color:#fff">Editing Question ${idx + 1}</span>
           <div style="display:flex;align-items:center;gap:6px">
@@ -4429,9 +4883,9 @@ function renderTeacherReviewQuestions() {
       const optVal = opts[oIdx] !== undefined ? opts[oIdx] : "";
       const isCorrect = currentTeacherReviewCorrectLetter === letter;
       return `
-                <div style="display:flex;align-items:center;gap:8px">
+                <div class="cbt-edit-opt-row">
                   <strong style="width:20px;font-size:13px;color:var(--text)">${letter}.</strong>
-                  <input type="text" class="cbt-form-input teacher-review-opt-input" data-letter="${letter}" data-opt-idx="${oIdx}" value="${esc(optVal)}" placeholder="Option ${letter}" style="flex:1;font-size:13px;padding:6px 10px">
+                  <input type="text" class="cbt-form-input teacher-review-opt-input" data-letter="${letter}" data-opt-idx="${oIdx}" value="${esc(optVal)}" placeholder="Option ${letter}" style="flex:1;min-width:140px;font-size:13px;padding:6px 10px">
                   <button type="button" class="btn btn-sm ${isCorrect ? 'btn-good' : 'btn-secondary'} teacher-review-set-correct-btn" data-letter="${letter}" style="font-size:11px;padding:4px 10px;white-space:nowrap">
                     ${isCorrect ? '✓ Correct Answer' : 'Mark as Correct'}
                   </button>
@@ -4441,9 +4895,9 @@ function renderTeacherReviewQuestions() {
           </div>
         </div>
 
-        <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">
+        <div class="cbt-edit-actions" style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-secondary btn-sm" id="teacherReviewCancelEditBtn">Cancel</button>
-          <button type="button" class="btn-primary btn-sm" id="teacherReviewSaveQBtn" data-save-idx="${idx}">💾 Save Question</button>
+          <button type="button" class="btn-primary btn-sm" id="teacherReviewSaveQBtn" data-save-idx="${idx}" style="width:auto">💾 Save Question</button>
         </div>
       </div>
     `;
@@ -4458,7 +4912,7 @@ function renderTeacherReviewQuestions() {
       teacherParsedQuestions[qIdx].correctLetter = letter;
       teacherParsedQuestions[qIdx].correctAnswer = optText;
       teacherParsedQuestions[qIdx].isDefaultAnswer = false;
-      renderTeacherReviewQuestions();
+      renderTeacherReviewQuestions({ updatedQIdx: qIdx, fromInteractiveFix: true });
     };
   });
 
@@ -4609,16 +5063,24 @@ function renderTeacherReviewQuestions() {
         const optInputs = document.querySelectorAll(".teacher-review-opt-input");
         const newOptions = Array.from(optInputs).map(inp => (inp.value || "").trim());
         const selectedLetter = currentTeacherReviewCorrectLetter || "A";
-        const correctIdx = ["A", "B", "C", "D"].indexOf(selectedLetter);
-        const newCorrect = (correctIdx >= 0 && newOptions[correctIdx]) ? newOptions[correctIdx] : newOptions[0];
+        const correctIdx = ["A", "B", "C", "D", "E"].indexOf(selectedLetter);
+        const newCorrect = (correctIdx >= 0 && newOptions[correctIdx]) ? newOptions[correctIdx] : "";
         const newPts = teacherCbtDefaults.marksPerQuestion || 0.4;
 
         const targetQ = teacherParsedQuestions[qIdx];
         targetQ.text = newText;
+        if (typeof splitCbtPassageAndPrompt === "function") {
+          const splitRes = splitCbtPassageAndPrompt(newText);
+          targetQ.passage = splitRes.passage;
+          targetQ.prompt = splitRes.prompt;
+        } else {
+          targetQ.passage = "";
+          targetQ.prompt = newText;
+        }
         targetQ.options = newOptions.map((text, oIdx) => ({ letter: String.fromCharCode(65 + oIdx), text }));
         targetQ.optionStrings = newOptions;
         targetQ.correctAnswer = newCorrect;
-        targetQ.correctLetter = selectedLetter;
+        targetQ.correctLetter = newCorrect ? selectedLetter : "";
         targetQ.points = newPts;
         if (teacherReviewTempImage !== undefined) {
           targetQ.image = teacherReviewTempImage;
@@ -4626,10 +5088,49 @@ function renderTeacherReviewQuestions() {
 
         teacherEditingReviewQIdx = null;
         teacherReviewTempImage = undefined;
-        renderTeacherReviewQuestions();
+        renderTeacherReviewQuestions({ updatedQIdx: qIdx, fromInteractiveFix: true });
       };
     }
   }
+
+  // Copy reading passage to a chosen question range (e.g. "1-5")
+  document.querySelectorAll("[data-apply-passage-q]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const srcIdx = parseInt(btn.dataset.applyPassageQ, 10);
+      const srcQ = teacherParsedQuestions[srcIdx];
+      if (!srcQ) return;
+      const srcSplit = typeof splitCbtPassageAndPrompt === "function" ? splitCbtPassageAndPrompt(srcQ) : { passage: srcQ.passage || "", prompt: srcQ.text || "" };
+      const passageToCopy = (srcSplit.passage || "").trim();
+      if (!passageToCopy) return;
+      const defaultEnd = Math.min(teacherParsedQuestions.length, srcIdx + 5);
+      const ans = prompt(`Apply Question ${srcIdx + 1}'s Reading Passage to which question range?\n(Example: ${srcIdx + 1}-${defaultEnd})`, `${srcIdx + 1}-${defaultEnd}`);
+      if (!ans) return;
+      const rm = ans.match(/(\d+)\s*(?:to|si|–|—|-)\s*(\d+)/i);
+      const single = !rm ? ans.match(/^\s*(\d+)\s*$/) : null;
+      let startQ = rm ? parseInt(rm[1], 10) : (single ? srcIdx + 1 : 0);
+      let endQ = rm ? parseInt(rm[2], 10) : (single ? parseInt(single[1], 10) : 0);
+      if (!startQ || !endQ || endQ < startQ) return;
+      startQ = Math.max(1, startQ);
+      endQ = Math.min(teacherParsedQuestions.length, endQ);
+
+      for (let k = startQ - 1; k <= endQ - 1; k++) {
+        const qItem = teacherParsedQuestions[k];
+        if (!qItem) continue;
+        const curSplit = typeof splitCbtPassageAndPrompt === "function" ? splitCbtPassageAndPrompt(qItem) : { passage: qItem.passage || "", prompt: qItem.text || "" };
+        const cleanPrompt = curSplit.prompt || qItem.text || "";
+        qItem.passage = passageToCopy;
+        qItem.prompt = cleanPrompt;
+        qItem.text = cleanPrompt ? `${passageToCopy}\n\n${cleanPrompt}` : passageToCopy;
+      }
+      renderTeacherReviewQuestions();
+      showToast({
+        type: "success",
+        title: "Passage Applied",
+        message: `Attached reading passage to Questions ${startQ}–${endQ}.`
+      });
+    };
+  });
 
   // Lightbox click for diagrams
   document.querySelectorAll("[data-zoom-img]").forEach(el => {
@@ -4642,6 +5143,16 @@ function renderTeacherReviewQuestions() {
       }
     };
   });
+
+  if (prevScrollTop > 0 && listEl) {
+    listEl.scrollTop = Math.min(prevScrollTop, listEl.scrollHeight);
+  }
+  syncTeacherSubmitDock(readiness, renderOpts);
+}
+
+function otherIssuesEmptyOrFollows(val, extraIssues) {
+  const questionOtherIssues = (val.issues || []).filter(i => i.type !== "question_incomplete" || !i.message.includes("Correct answer not selected"));
+  return questionOtherIssues.length === 0 && (!extraIssues || extraIssues.length === 0);
 }
 
 if ($("tCbtAddReviewQBtn")) {
@@ -4665,8 +5176,13 @@ if ($("tCbtAddReviewQBtn")) {
     teacherEditingReviewQIdx = teacherParsedQuestions.length - 1;
     teacherReviewTempImage = null;
     currentTeacherReviewCorrectLetter = "A";
-    $("tCbtReviewCard").style.display = "block";
+    const wasHidden = $("tCbtReviewCard") && $("tCbtReviewCard").style.display === "none";
     renderTeacherReviewQuestions();
+    if (wasHidden) {
+      revealAndScrollToReviewCard({ targetQIdx: teacherEditingReviewQIdx, focusText: true });
+    } else {
+      scrollReviewListToQuestion(teacherEditingReviewQIdx, { spotlight: true, focusText: true });
+    }
   };
 }
 
@@ -4687,16 +5203,9 @@ $("tCbtSubmitBtn").onclick = async () => {
   }
 
   // Strict Question Count & Completeness Validation
-  const val = validateTeacherQuestions();
-  if (!val.valid) {
-    const unansweredCount = (teacherParsedQuestions || []).filter(q => {
-      const rawOpts = Array.isArray(q.options) ? q.options : (q.optionStrings || []);
-      const opts = rawOpts.map(o => (typeof o === "object" && o !== null && o.text !== undefined) ? o.text : String(o));
-      return !(
-        (q.correctAnswer && q.correctAnswer.trim() && opts.some(o => o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase())) ||
-        (q.correctLetter && /^[A-E]$/i.test(q.correctLetter) && (q.correctLetter.toUpperCase().charCodeAt(0) - 65 < opts.length))
-      );
-    }).length;
+  const readinessCheck = evaluateTeacherExamReadiness();
+  if (!readinessCheck.val.valid) {
+    const unansweredCount = readinessCheck.unansweredCount;
 
     const errMsg = unansweredCount > 0
       ? `${unansweredCount} question${unansweredCount !== 1 ? 's do' : ' does'} not have an answer selected. Please review each question in Step 3 and click the correct option (A, B, C, or D) before submitting.`
@@ -4913,7 +5422,11 @@ $("tCbtSubmitBtn").onclick = async () => {
     $("tCbtTitle").value = "";
     if ($("tCbtValidationStatusCard")) $("tCbtValidationStatusCard").style.display = "none";
     teacherParsedQuestions = [];
+    teacherEditingReviewQIdx = null;
+    teacherReviewTempImage = undefined;
+    wasTeacherExamReady = false;
     updateTargetStatusBadge();
+    syncTeacherSubmitDock(null);
 
     // Show clean success notification banner and scroll into view
     $("tCbtSuccessTitle").textContent = isUpdate
@@ -5292,7 +5805,7 @@ function renderTeacherSubmittedPreviewQuestions() {
               <button type="button" class="btn-text" data-teacher-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
-          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || "")}</div>
+          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtQuestionDisplayHtml === "function" ? formatCbtQuestionDisplayHtml(q) : (typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || ""))}</div>
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {

@@ -152,7 +152,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/teacher.css?v=3.1">
+  <link rel="stylesheet" href="css/teacher.css?v=3.3">
 </head>
 
 <body>
@@ -838,15 +838,10 @@
                 placeholder="1. Solve for x in the quadratic equation: x² − 5x + 6 = 0.&#10;A. x = 1 or x = 6&#10;B. x = 2 or x = 3&#10;C. x = −2 or x = −3&#10;D. x = 0 or x = 5&#10;Answer: B&#10;&#10;2. Calculate the area of a circle with radius r = 7 cm (Take π = 22/7).&#10;A. 44 cm²&#10;B. 88 cm²&#10;C. 154 cm²&#10;D. 308 cm²&#10;Answer: C"
                 style="font-family:monospace;font-size:13px"></textarea>
 
-              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
+              <div class="cbt-parse-actions">
                 <button type="button" class="btn-text" id="tCbtClearTextBtn">Clear</button>
-                <button type="button" class="btn-secondary" id="tCbtSmartConvertBtn"
-                  style="min-height:42px;display:inline-flex;align-items:center;gap:6px;font-weight:600;border-color:rgba(245,158,11,0.4);color:#f59e0b"
-                  title="Automatically formats school exam papers, strips headers &amp; theory, and opens in Step 3 for teacher to review and mark correct answers">
-                  <span>⚡</span> Convert &amp; Review Questions
-                </button>
-                <button type="button" class="btn-primary" id="tCbtParseBtn" style="min-height:42px">🔍 Parse &amp;
-                  Review Questions</button>
+                <button type="button" class="btn-primary cbt-parse-btn" id="tCbtParseBtn">🔍 Parse &amp; Review
+                  Questions</button>
               </div>
               <div id="tCbtParseMsg" style="font-size:13px;color:var(--status-fail);margin-top:8px"></div>
             </div>
@@ -855,26 +850,37 @@
 
         <!-- Step 3: Interactive Verification & Submit -->
         <div class="cbt-card" id="tCbtReviewCard" style="display:none">
-          <div
-            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div class="cbt-review-head">
             <div>
-              <h2 class="cbt-card-title">Step 3 &mdash; Review &amp; Verify Questions (<span
-                  id="tCbtQuestionCount">0</span> detected)</h2>
+              <h2 class="cbt-card-title">Step 3 &mdash; Review &amp; Verify Questions (<span id="tCbtQuestionCount">0
+                  detected</span>)</h2>
               <p class="cbt-card-sub" id="tCbtValidationSub">Click any option below to change or set the correct answer
                 if needed.</p>
             </div>
-            <div style="display:flex;gap:10px;align-items:center">
-              <button type="button" class="btn-secondary" id="tCbtAddReviewQBtn"
-                style="min-height:44px;padding:0 16px;font-weight:600">➕ Add Question</button>
-              <button type="button" class="btn-primary" id="tCbtSubmitBtn"
-                style="min-height:44px;padding:0 24px;font-weight:700">🚀 Submit Exam to School Admin</button>
+            <div class="cbt-review-head-actions">
+              <button type="button" id="tCbtReadinessChip" class="cbt-readiness-chip" style="display:none"
+                title="Click to jump to the next question needing review"></button>
+              <button type="button" class="btn-secondary cbt-add-q-btn" id="tCbtAddReviewQBtn">➕ Add Question</button>
             </div>
           </div>
 
           <!-- Real-Time Question Validation Summary Card -->
           <div id="tCbtValidationStatusCard" style="margin-bottom:16px;display:none"></div>
 
-          <div id="tCbtQuestionsList" style="max-height:500px;overflow-y:auto;padding-right:4px"></div>
+          <div id="tCbtQuestionsList" class="cbt-questions-list"></div>
+
+          <!-- Smart Bottom / Floating Submit Dock (Only appears when ALL requirements are met) -->
+          <div id="tCbtSubmitDock" class="cbt-submit-dock is-hidden" aria-hidden="true">
+            <div class="cbt-submit-dock-inner">
+              <div class="cbt-submit-dock-info">
+                <div class="cbt-submit-dock-badge">✅ All Requirements Met</div>
+                <div class="cbt-submit-dock-meta" id="tCbtSubmitDockMeta">All questions verified &amp; ready to submit
+                  to School Admin</div>
+              </div>
+              <button type="button" class="btn-primary cbt-submit-dock-btn" id="tCbtSubmitBtn">🚀 Submit Exam to School
+                Admin</button>
+            </div>
+          </div>
         </div>
 
         <!-- Submission Feedback Alert Banner -->
@@ -1186,8 +1192,8 @@
     onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
-  <script src="js/cbt-catalog.js?v=5.0"></script>
-  <script src="js/teacher.js?v=5.6"></script>
+  <script src="js/cbt-catalog.js?v=5.2"></script>
+  <script src="js/teacher.js?v=5.9"></script>
 </body>
 
 </html>

@@ -811,3 +811,62 @@ function formatCbtMathHtml(rawText) {
   }
   return renderMathInlineRuns(s);
 }
+
+function splitCbtPassageAndPrompt(qOrText) {
+  if (qOrText && typeof qOrText === "object") {
+    const rawPassage = String(qOrText.passage || "").trim();
+    const fullText = String(qOrText.text || "").trim();
+    const rawPrompt = String(qOrText.prompt || "").trim();
+    if (rawPassage) {
+      let derivedPrompt = rawPrompt;
+      if (!derivedPrompt) {
+        derivedPrompt = fullText.startsWith(rawPassage)
+          ? fullText.slice(rawPassage.length).trim()
+          : fullText;
+      }
+      return { passage: rawPassage, prompt: derivedPrompt };
+    }
+    qOrText = fullText;
+  }
+
+  const s = String(qOrText == null ? "" : qOrText).trim();
+  const sepIdx = s.lastIndexOf("\n\n");
+  if (sepIdx > 0) {
+    const head = s.slice(0, sepIdx).trim();
+    const tail = s.slice(sepIdx + 2).trim();
+    const hasPassageCue = /^(?:AKAYE\b|COMPREHENSION\b|CLOZE\b|PASSAGE\b|EXTRACT\b|POEM\b|DRAMA\b|PROSE\b|AYOKA\b|Read\s+the\b|Study\s+the\b|Use\s+the\b|Ka\s+ayoka\b)/im.test(head) || head.length >= 130;
+    if (head && tail && hasPassageCue) {
+      return { passage: head, prompt: tail };
+    }
+  }
+  return { passage: "", prompt: s };
+}
+
+function formatCbtQuestionDisplayHtml(qOrText, opts = {}) {
+  const { forExport = false, qIdx = null, canSharePassage = false } = opts || {};
+  const { passage, prompt } = splitCbtPassageAndPrompt(qOrText);
+
+  const renderLinesHtml = (str) => {
+    const rendered = formatCbtMathHtml(str);
+    return rendered.replace(/\r?\n/g, "<br>");
+  };
+
+  if (!passage) {
+    return forExport ? renderLinesHtml(prompt) : formatCbtMathHtml(prompt);
+  }
+
+  const shareBtn = (canSharePassage && qIdx !== null)
+    ? `<button type="button" class="cbt-passage-share-btn" data-apply-passage-q="${qIdx}" style="font-size:11px;font-weight:700;color:var(--accent,#2563eb);background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.28);border-radius:5px;cursor:pointer;padding:4px 9px;line-height:1.2;white-space:nowrap">📌 Apply to Q range…</button>`
+    : "";
+
+  const passageHeader = forExport
+    ? `<div style="font-size:11px;font-weight:800;letter-spacing:0.5px;color:#2563eb;text-transform:uppercase;margin-bottom:4px">📖 Reading Passage</div>`
+    : `<div style="font-size:10.5px;font-weight:800;letter-spacing:0.5px;color:var(--accent,#2563eb);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 10px"><span>📖 Reading Passage</span>${shareBtn}</div>`;
+
+  const passageBox = `<div class="cbt-passage-box" style="background:rgba(59,130,246,0.06);border-left:3px solid #2563eb;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.55;font-weight:500;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word">${passageHeader}<div style="overflow-wrap:anywhere;word-break:break-word">${renderLinesHtml(passage)}</div></div>`;
+  const promptHtml = prompt
+    ? `<div style="font-weight:700;line-height:1.5">${forExport ? renderLinesHtml(prompt) : formatCbtMathHtml(prompt)}</div>`
+    : "";
+
+  return passageBox + promptHtml;
+}

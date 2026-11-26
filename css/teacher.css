@@ -78,6 +78,7 @@ body {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--font-system);
   background-color: var(--bg);
   color: var(--text);
@@ -232,6 +233,59 @@ a:focus-visible {
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Secondary & Generic Button Helpers */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition), transform 120ms ease, box-shadow var(--transition);
+}
+
+.btn-secondary {
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 8px 14px;
+  min-height: 38px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition), transform 120ms ease, box-shadow var(--transition);
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  min-height: 32px;
+  padding: 5px 11px;
+  font-size: 12px;
 }
 
 /* Plain Text Button */
@@ -2102,6 +2156,7 @@ tbody td.muted-cell {
   body {
     max-width: 100vw;
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* Portal Top Navigation */
@@ -2284,11 +2339,24 @@ tbody td.muted-cell {
 
   /* Question Edit Mode in Teacher Review */
   .cbt-q-edit-box input,
-  .cbt-q-edit-box textarea {
+  .cbt-q-edit-box textarea,
+  .q-card-edit input,
+  .q-card-edit textarea {
     font-size: 16px !important;
     width: 100% !important;
-    min-height: 42px !important;
+    min-height: 44px !important;
     box-sizing: border-box !important;
+  }
+
+  .cbt-questions-list {
+    max-height: none !important;
+    overflow-y: visible !important;
+    padding-right: 0 !important;
+  }
+
+  .cbt-q-card-actions .btn-text {
+    min-height: 36px !important;
+    padding: 5px 10px !important;
   }
 
   /* My CBT Exams Table Touch Scroll */
@@ -3035,5 +3103,532 @@ tbody td.muted-cell {
   .push-optin-actions {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CBT STEP 2 / STEP 3 FLOW, SMART SUBMIT DOCK & ANIMATIONS
+   ══════════════════════════════════════════════════════════ */
+.cbt-card,
+.cbt-q-card {
+  scroll-margin-top: 96px;
+}
+
+.cbt-parse-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.cbt-parse-btn {
+  width: auto !important;
+  min-width: 230px;
+  min-height: 44px;
+  padding: 10px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(185, 74, 74, 0.25);
+  transition: transform 140ms ease, box-shadow 180ms ease, background-color var(--transition), border-color var(--transition);
+}
+
+.cbt-parse-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(185, 74, 74, 0.34);
+}
+
+.cbt-parse-btn:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.cbt-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cbt-review-head-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cbt-add-q-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+.cbt-readiness-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 140ms ease, filter 140ms ease, background-color 200ms ease, border-color 200ms ease;
+}
+
+.cbt-readiness-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.cbt-readiness-chip.is-ready {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  cursor: default;
+}
+
+.cbt-readiness-chip.is-ready:hover {
+  transform: none;
+  filter: none;
+}
+
+.cbt-readiness-chip.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.42);
+  color: #f59e0b;
+}
+
+.cbt-readiness-chip.is-error {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.42);
+  color: #ef4444;
+}
+
+.cbt-questions-list {
+  max-height: min(560px, 62vh);
+  overflow-y: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+}
+
+.cbt-q-card {
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: border-color 220ms ease, box-shadow 220ms ease, background 220ms ease, transform 200ms ease;
+}
+
+.cbt-q-text {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cbt-opt-btn {
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cbt-opt-btn > span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cbt-passage-box {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cbt-edit-opt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cbt-opt-btn:active {
+  transform: scale(0.985);
+}
+
+/* Validation Progress & Jump Action */
+.cbt-val-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.cbt-val-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  transition: width 360ms cubic-bezier(0.16, 1, 0.3, 1), background 300ms ease;
+}
+
+.cbt-val-progress-fill.is-complete {
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+}
+
+.cbt-jump-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+  transition: transform 140ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.cbt-jump-btn:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.65);
+  transform: translateY(-1px);
+}
+
+.cbt-jump-btn.is-danger {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+}
+
+.cbt-jump-btn.is-danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.65);
+}
+
+/* Smart Sticky / Floating Submit Dock (Below Step 3 Questions) */
+.cbt-submit-dock {
+  position: sticky;
+  bottom: 14px;
+  z-index: 45;
+  margin-top: 16px;
+}
+
+.cbt-submit-dock.is-hidden {
+  display: none !important;
+}
+
+.cbt-submit-dock.is-visible {
+  display: block;
+}
+
+.cbt-submit-dock-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 92%, #10b981 8%);
+  border: 1px solid rgba(16, 185, 129, 0.48);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(16, 185, 129, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cbt-submit-dock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.cbt-submit-dock-badge {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cbt-submit-dock-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cbt-submit-dock-btn {
+  width: auto !important;
+  min-width: 250px;
+  min-height: 46px;
+  padding: 0 24px;
+  font-weight: 700;
+  font-size: 14px;
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
+  transition: transform 150ms ease, box-shadow 200ms ease, background-color 180ms ease;
+}
+
+.cbt-submit-dock-btn:hover:not(:disabled) {
+  background-color: #047857 !important;
+  border-color: #047857 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
+}
+
+.cbt-submit-dock-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+/* Animations */
+@keyframes cbtCardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cbtCardPulseHighlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(185, 74, 74, 0.45);
+  }
+  45% {
+    box-shadow: 0 0 0 6px rgba(185, 74, 74, 0.16);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(185, 74, 74, 0);
+  }
+}
+
+@keyframes cbtBannerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cbtQCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cbtOptSelectPop {
+  0% {
+    transform: scale(0.96);
+  }
+  55% {
+    transform: scale(1.022);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cbtBadgePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.84);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cbtCardSpotlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
+  }
+  40% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes cbtSubmitDockRise {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.008);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cbtSubmitBtnGlow {
+  0%, 100% {
+    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
+  }
+  50% {
+    box-shadow: 0 8px 26px rgba(16, 185, 129, 0.55);
+  }
+}
+
+.cbt-card-revealing {
+  animation: cbtCardReveal 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbt-card-pulse-highlight {
+  animation: cbtCardReveal 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards, cbtCardPulseHighlight 1.15s ease 120ms;
+}
+
+.cbt-banner-enter {
+  animation: cbtBannerIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbt-q-card-enter {
+  animation: cbtQCardIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cbt-opt-btn.cbt-opt-pop {
+  animation: cbtOptSelectPop 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbt-answer-badge-pop {
+  animation: cbtBadgePop 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbt-q-card-spotlight {
+  animation: cbtCardSpotlight 1.35s ease;
+}
+
+.cbt-submit-dock.cbt-dock-entering {
+  animation: cbtSubmitDockRise 440ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbt-submit-dock.cbt-dock-entering .cbt-submit-dock-btn {
+  animation: cbtSubmitBtnGlow 1.5s ease 250ms 2;
+}
+
+@media (max-width: 680px) {
+  .cbt-parse-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cbt-parse-btn {
+    width: 100% !important;
+    min-width: 0;
+  }
+  .cbt-review-head-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .cbt-readiness-chip {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+    font-size: 13px;
+  }
+  .cbt-jump-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+    font-size: 12.5px;
+    padding: 7px 12px;
+  }
+  .cbt-edit-opt-row {
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .cbt-edit-opt-row > strong {
+    width: auto !important;
+    align-self: center;
+  }
+  .cbt-edit-opt-row .teacher-review-opt-input {
+    flex: 1 1 180px !important;
+    min-width: 0 !important;
+  }
+  .cbt-edit-opt-row .teacher-review-set-correct-btn {
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 12.5px !important;
+  }
+  .cbt-edit-actions {
+    flex-direction: column-reverse;
+  }
+  .cbt-edit-actions button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+  .cbt-submit-dock {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .cbt-submit-dock-inner {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .cbt-submit-dock-meta {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+  }
+  .cbt-submit-dock-btn {
+    width: 100% !important;
+    min-width: 0;
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cbt-card-revealing,
+  .cbt-card-pulse-highlight,
+  .cbt-banner-enter,
+  .cbt-q-card-enter,
+  .cbt-opt-btn.cbt-opt-pop,
+  .cbt-answer-badge-pop,
+  .cbt-q-card-spotlight,
+  .cbt-submit-dock.cbt-dock-entering,
+  .cbt-submit-dock.cbt-dock-entering .cbt-submit-dock-btn {
+    animation: none !important;
+  }
+  .cbt-questions-list {
+    scroll-behavior: auto;
   }
 }

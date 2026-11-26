@@ -5539,7 +5539,9 @@ function buildExportData(sub) {
       : (q.correctAnswer ? formatForExport(q.correctAnswer) : (exportedOpts[0] || ""));
 
     const imgData = q.image || null;
-    let exportText = formatForExport(q.text || "");
+    let exportText = typeof formatCbtQuestionDisplayHtml === "function"
+      ? formatCbtQuestionDisplayHtml(q, { forExport: true })
+      : formatForExport(q.text || "");
     if (imgData && !exportText.includes("<img")) {
       exportText = `${exportText}<br><img src="${imgData}" style="max-width:100%;max-height:260px;margin:8px 0;border-radius:4px;display:block" />`;
     }
@@ -5842,7 +5844,7 @@ function renderCBTPreviewQuestions() {
               <button type="button" class="btn-text" data-admin-del-q="${idx}" style="font-size:12px;color:var(--status-fail);font-weight:600;cursor:pointer">🗑️ Delete</button>
             </div>
           </div>
-          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || "")}</div>
+          <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:8px;white-space:pre-wrap;line-height:1.6">${typeof formatCbtQuestionDisplayHtml === "function" ? formatCbtQuestionDisplayHtml(q) : (typeof formatCbtMathHtml === "function" ? formatCbtMathHtml(q.text || "") : esc(q.text || ""))}</div>
           ${imgHtml}
           <div class="q-options-grid">
             ${opts.map((opt, oIdx) => {
