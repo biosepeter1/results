@@ -3517,12 +3517,50 @@ function findTheoryCutoffIndex(text) {
   return -1;
 }
 
+// ── Shared CBT Question Boundary & Continuation Helpers ──
+function matchQuestionStartLine(line) {
+  const s = String(line || "").trim();
+  if (!s) return null;
+  const prefixMatch = s.match(/^(?:question|q)(?:\s*[\.\:\-])?\s*\(?(\d+)\)?(?:[\.\)\:\-](?!\d)|\s+|$)\s*(.*)$/i);
+  if (prefixMatch) {
+    return { num: parseInt(prefixMatch[1], 10), prompt: (prefixMatch[2] || "").trim(), hasPrefix: true };
+  }
+  // Reject decimals (2.5), times (6:30), ratios (4: 5), and hyphenations (6-sided, 6 - 3)
+  const bareMatch = s.match(/^\(?(\d+)\)?(?:([\.\)])(?!\d)|([\:\-])(?=\s+[^\d\s=\+\-\*\/×÷]|\s*$))\s*(.*)$/);
+  if (bareMatch) {
+    return { num: parseInt(bareMatch[1], 10), prompt: (bareMatch[4] || "").trim(), hasPrefix: false };
+  }
+  return null;
+}
+
+function hasExplicitDanglingEnding(text) {
+  const s = String(text || "").trim();
+  if (!s) return true;
+  if (/[,;:\(\[\{=\+\-−×÷\*\/<>≤≥≈∝]$/.test(s)) return true;
+  const lastWordM = s.match(/([A-Za-z0-9'’]+)$/);
+  if (lastWordM) {
+    const lw = lastWordM[1].toLowerCase();
+    if (/^(?:is|are|was|were|be|been|being|am|has|have|had|do|does|did|can|could|will|would|shall|should|may|might|must|of|in|on|at|to|for|by|as|from|with|into|onto|upon|over|under|about|between|among|around|through|than|then|when|where|while|if|that|which|whose|whom|who|and|or|but|nor|so|yet|the|a|an|this|these|those|each|every|all|any|some|equals|equal|plus|minus|times|divided|year|years|age|aged|number|numbers|nos|figure|figures|table|page|part|step|grade|class|mark|marks|score|scored|ratio|base|radius|length|width|height|mass|weight|volume|speed|time|rate|distance|value|values)$/.test(lw)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function endsWithDanglingClause(text) {
+  const s = String(text || "").trim();
+  if (!s) return true;
+  if (hasExplicitDanglingEnding(s)) return true;
+  if (/[\?\!…_]$/.test(s)) return false;
+  return !/[\.\?\!]$/.test(s);
+}
+
 // ── Smart Exam Text Normalizer ──
 // Takes raw text (from Word .docx, .doc, or copy-paste) and ensures:
 // 1. School exam headers before Question 1, banners, and vertical watermarks are stripped
 // 2. Paper II (Theory) / Essay sections are cleanly separated while keeping multi-section objective MCQs (e.g. English/Yoruba Section B)
-// 3. Options (tight, inline, or across columns) are each placed on clean lines
-// 4. Mathematical acronyms (H.C.F, L.C.M, G.C.D) and algebraic expressions (4ab., c + d.) are NEVER split
+// 3. Options (tight, inline, or across columns) are each placed on clean lines without splitting prose letters/numbers
+// 4. Mathematical acronyms (H.C.F, L.C.M, G.C.D) and mid-sentence numbers (e.g. "...when V is 6. Find...") are NEVER split
 function normalizeExamText(text) {
   if (!text) return "";
 
@@ -3565,8 +3603,8 @@ function normalizeExamText(text) {
   t = t.replace(/((?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$))[^\n]*)/gi, "$1\n");
   t = t.replace(/([^\n])[^\S\r\n]*(—\s*End of Exam[^\n]*—|-+\s*End of Exam[^\n]*-+)/gi, "$1\n\n$2");
 
-  // E. Separate Answer labels jammed directly after option/question text (e.g. "reticulumAnswer: B", "12Answer: C", "D. Answer: A", "Answer: ?")
-  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=][^\S\r\n]*([A-Ea-e\?]))(?=$|[^\S\r\n]*[\.\)\,\;\r\n]|[^\S\r\n]+\d+[\.\)])/gi, "$1\nAnswer: $3");
+  // E. Separate Answer labels jammed directly after option/question text (clean optional trailing full stop/paren after letter e.g. "Correct Option: C.")
+  t = t.replace(/([^\n\r])[^\S\r\n]*((?:✅[^\S\r\n]*)?(?:Answer|Ans|Correct(?:\s*(?:Answer|Option|Choice))?)\s*[\:\-\=][^\S\r\n]*([A-Ea-e\?])(?:[^\S\r\n]*[\.\)])?)(?=$|[^\S\r\n]*[\,\;\r\n]|[^\S\r\n]+\d+[\.\)])/gi, "$1\nAnswer: $3");
 
   // Separate Points / Marks metadata lines if jammed
   t = t.replace(/([^\n\r])[^\S\r\n]*((?:Points?|Marks?|Scores?|Weight|Pts)\s*[\:\-\=][^\S\r\n]*\d+(?:\.\d+)?)(?=$|[^\S\r\n]*[\r\n])/gi, "$1\n$2");
@@ -3581,34 +3619,106 @@ function normalizeExamText(text) {
   t = t.replace(/([^\n])[^\S\r\n]*(\[\[CBT_IMG_TOKEN_\d+\]\])/gi, "$1\n\n$2");
   t = t.replace(/(\[\[CBT_IMG_TOKEN_\d+\]\])[^\S\r\n]*([^\n])/gi, "$1\n\n$2");
 
-  // H. Separate Option A jammed directly against question text, blanks, or punctuation on the SAME line (never consume newlines)
-  t = t.replace(/([^\n\r]*?(?:[_\-\?\:\!\)\]]|[^A-Z\r\n]\.))[^\S\r\n]*(A)[\.\)][^\S\r\n]*(?=\S|$)/gm, "$1\n$2. ");
-  t = t.replace(/([^\n\r]+?)[ \t]+(A)[\.\)][ \t]*(?=\S|$)/gm, "$1\n$2. ");
+  // H. Separate Option A jammed on the SAME line ONLY when B. follows on this line or the next non-empty line
+  //    (prevents splitting prose like "Vitamin A. What..." or "Point A. Where...")
+  const hLines = t.split("\n");
+  t = hLines.map((line, idx) => {
+    const trimmed = line.trim();
+    if (!trimmed || /^(?:Answer|Ans|✅)/i.test(trimmed)) return line;
 
-  // I. Separate Options B-E jammed against previous text/options WITHOUT breaking acronyms (H.C.F, G.C.D, L.C.M)
-  //    or algebraic expressions ending in lowercase variable letters (4ab., c + d.)
+    let nextNonEmpty = "";
+    for (let k = idx + 1; k < hLines.length; k++) {
+      if (hLines[k].trim()) {
+        nextNonEmpty = hLines[k].trim();
+        break;
+      }
+    }
+    const nextStartsWithB = /^(?:\(?B[\.\)]|\[B\]|B:|B-)(?=$|\s)/i.test(nextNonEmpty);
+    const matches = Array.from(line.matchAll(/([_\-\?\:\!\)\]]|[^A-Z\r\n]\.|[^\S\r\n])[^\S\r\n]*(A)[\.\)][^\S\r\n]*(?=\S|$)/g));
+    if (!matches.length) return line;
+
+    const bPositions = [];
+    for (const bm of line.matchAll(/(?:^|[^\S\r\n])B[\.\)](?=$|\s)/g)) {
+      bPositions.push(bm.index + (bm[0].startsWith("B") ? 0 : 1));
+    }
+    if (!bPositions.length && !nextStartsWithB) return line;
+
+    // Pick only A. occurrences that sit directly before a B. boundary with no closer A. in between
+    const candidates = matches.map(m => {
+      const aPos = m.index + m[0].lastIndexOf("A");
+      const markerEnd = m.index + m[0].length;
+      const keepPrefixChar = !/[^\S\r\n]/.test(m[1]);
+      const cutEnd = keepPrefixChar ? m.index + m[1].length : m.index;
+      return { aPos, markerEnd, cutEnd };
+    }).filter((cand, cIdx, arr) => {
+      if (cand.aPos === 0) return false;
+      const nextB = bPositions.find(bp => bp > cand.aPos);
+      if (nextB !== undefined) {
+        const hasCloserA = arr.slice(cIdx + 1).some(o => o.aPos < nextB);
+        return !hasCloserA;
+      }
+      return nextStartsWithB && cIdx === arr.length - 1;
+    });
+
+    if (!candidates.length) return line;
+    let out = "";
+    let cursor = 0;
+    candidates.forEach(c => {
+      out += line.slice(cursor, c.cutEnd).replace(/[^\S\r\n]+$/, "") + "\nA. ";
+      cursor = c.markerEnd;
+    });
+    out += line.slice(cursor);
+    return out;
+  }).join("\n");
+
+  // I. Separate Options B-E jammed on the SAME line strictly in sequential option order
+  //    (never splits acronyms like H.C.F or prose sentences ending in "constant C.", "Vitamin D.", etc.)
+  let expectedNextOptCode = 0;
   t = t.split("\n").map(line => {
     const trimmed = line.trim();
-    // Preserve header / answer-key / answer lines untouched
-    if (/^(?:Answer|Ans|✅)/i.test(trimmed)) return line;
+    if (/^(?:Answer|Ans|✅)/i.test(trimmed)) {
+      expectedNextOptCode = 0;
+      return line;
+    }
 
-    // 1. Space before uppercase option marker B. / C. / D. / E. on the same line (never consume trailing space so consecutive blank options like "B.  C." aren't skipped!)
-    let out = line.replace(/(^|[^\S\r\n]+)([B-E])[\.\)](?=$|[^\S\r\n])/g, (m, pre, ltr, offset) => {
-      if (offset === 0 && !pre) return `${ltr}.`;
-      return `\n${ltr}.`;
-    });
+    const startsWithOptM = trimmed.match(/^(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|([A-E])\:)/);
+    const qStartLine = !startsWithOptM ? matchQuestionStartLine(trimmed) : null;
+    const hasInlineBC = /(?:^|\s)B[\.\)][^\S\r\n]*\S.*\sC[\.\)][^\S\r\n]*\S/.test(line);
 
-    // 2. Missing space before uppercase option marker jammed onto lowercase word/digit/punctuation (e.g. "germsD. food", "50?B. 40")
-    //    Explicitly skips dotted acronyms like "H.C.F" or "G.C.D)" where the preceding char is "[A-Za-z]."
-    out = out.replace(/([a-z0-9₦$€%²³⁴⁵⁶⁷⁸⁹⁾\?\!\)])([B-E])[\.\)]/g, (m, prev, ltr) => {
-      return `${prev}\n${ltr}.`;
-    });
+    if (qStartLine) {
+      expectedNextOptCode = hasInlineBC ? 66 : 0;
+      if (!hasInlineBC) return line;
+    } else if (startsWithOptM) {
+      const startCode = (startsWithOptM[1] || startsWithOptM[2] || startsWithOptM[3]).toUpperCase().charCodeAt(0);
+      expectedNextOptCode = (startCode >= 65 && startCode < 69) ? (startCode + 1) : 0;
+    } else if (expectedNextOptCode === 0 && hasInlineBC) {
+      expectedNextOptCode = 66;
+    }
 
-    // 3. Lowercase inline options ONLY when line already has at least two sequential markers like "a. ... b. ..."
+    let out = line;
+
+    // Lowercase inline options ONLY when line already has at least two sequential markers like "a. ... b. ..."
     if (/(?:^|\s)a[\.\)]\s+\S/.test(out) && /\sb[\.\)]\s+\S/.test(out)) {
       out = out.replace(/(^|[^\S\r\n]+)([a-e])[\.\)](?=$|[^\S\r\n])/g, (m, pre, ltr, offset) => {
         if (offset === 0 && !pre) return `${ltr.toUpperCase()}.`;
         return `\n${ltr.toUpperCase()}.`;
+      });
+      expectedNextOptCode = 66;
+    }
+
+    if (expectedNextOptCode >= 66 && expectedNextOptCode <= 69) {
+      out = out.replace(/(?:(^|[^\S\r\n]+)([B-E])[\.\)](?=$|[^\S\r\n])|([a-z0-9₦$€%²³⁴⁵⁶⁷⁸⁹⁾\?\!\)])([B-E])[\.\)])/g, (m, preSpace, spLtr, preChar, jamLtr, offset) => {
+        const ltr = spLtr || jamLtr;
+        const code = ltr.charCodeAt(0);
+        if (offset === 0 && !preSpace && !preChar) {
+          if (code >= 66 && code <= 69) expectedNextOptCode = code + 1;
+          return `${ltr}.`;
+        }
+        if (code !== expectedNextOptCode) {
+          return m;
+        }
+        expectedNextOptCode = (code < 69) ? (code + 1) : 70;
+        return `${preChar || ""}\n${ltr}.`;
       });
     }
 
@@ -3621,13 +3731,62 @@ function normalizeExamText(text) {
     return out;
   }).join("\n");
 
-  // J. Clean up questions in the main exam section (separate questions jammed together on the SAME line)
+  // J. Separate genuine jammed questions in the main exam section (e.g. "D. 6 2. What is...")
+  //    without ever breaking mid-sentence "<number>. <Word>" (e.g. "...when V is 6. Find the constant K.")
   const parts = t.split(/(?:✅[^\S\r\n]*)?(?:ANSWER\s*KEY|CORRECT\s*ANSWERS|ANSWERS(?:\s+SUMMARY)?(?=\s*[:\-\n\r]|$))/i);
   let mainExam = parts[0];
   const answerKeySection = parts[1] !== undefined ? parts.slice(1).join("\n") : null;
 
-  // Require "." or ")" (not ":", so "ratio 4: x" is never split into a question!)
-  mainExam = mainExam.replace(/([^\r\n])[^\S\r\n]+(\d+[\.\)][^\S\r\n]+[A-Za-z])/g, "$1\n\n$2");
+  let lastQNumInNorm = 0;
+  let seenOptionsSinceQ = false;
+  let sawAnswerSinceQ = false;
+  mainExam = mainExam.split("\n").map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return line;
+    if (/^(?:Answer|Ans|✅)/i.test(trimmed)) {
+      sawAnswerSinceQ = true;
+      return line;
+    }
+    const isOptLine = /^\*?\s*(?:\(?[A-Ea-e][\.\)]|\[[A-Ea-e]\]|[A-E]\:|[A-Ea-e]\-)\s*/.test(trimmed);
+    const qStart = !isOptLine ? matchQuestionStartLine(trimmed) : null;
+    if (qStart) {
+      const isLikelyContinuation = lastQNumInNorm > 0 && !seenOptionsSinceQ && !sawAnswerSinceQ && !qStart.hasPrefix &&
+        !(qStart.num > lastQNumInNorm && qStart.num <= lastQNumInNorm + 5);
+      if (!isLikelyContinuation) {
+        lastQNumInNorm = qStart.num;
+        seenOptionsSinceQ = false;
+        sawAnswerSinceQ = false;
+      }
+      return line;
+    }
+    if (isOptLine) {
+      seenOptionsSinceQ = true;
+    }
+    if (!seenOptionsSinceQ && !sawAnswerSinceQ) {
+      return line;
+    }
+
+    return line.replace(/([^\r\n])[^\S\r\n]+((?:(?:question|q)\s*[\.\:\-]?\s*)?)(\d+[\.\)][^\S\r\n]+[A-Za-z])/gi, (m, prevCh, qPref, rest, offset, full) => {
+      const nMatch = rest.match(/^(\d+)/);
+      const candNum = nMatch ? parseInt(nMatch[1], 10) : NaN;
+      if (!qPref) {
+        if (lastQNumInNorm > 0 && !(candNum > lastQNumInNorm && candNum <= lastQNumInNorm + 5)) {
+          return m;
+        }
+        if (lastQNumInNorm === 0 && candNum !== 1) {
+          return m;
+        }
+        const beforeChunk = full.slice(0, offset + 1).trim();
+        if (hasExplicitDanglingEnding(beforeChunk)) {
+          return m;
+        }
+      }
+      lastQNumInNorm = candNum;
+      seenOptionsSinceQ = false;
+      sawAnswerSinceQ = false;
+      return `${prevCh}\n\n${qPref}${rest}`;
+    });
+  }).join("\n");
 
   if (answerKeySection) {
     const formattedKey = answerKeySection
@@ -3815,13 +3974,88 @@ function parseExamText(rawText, rawImages = []) {
   let activeRangePassage = null; // { text, image, start, end }
   let sawBlankLine = false;
 
-  const qRegex = /^(?:(?:question|q)\s*[\.\:\-]?)?\s*\(?(\d+)\)?[\.\)\:\-]\s*(.*)$/i;
   const optRegex = /^(\*?)\s*(?:\(?([A-Ea-e])[\.\)]|\[([A-Ea-e])\]|\b([A-E])\:|\b([A-Ea-e])\-)\s*(.*)$/;
   const ansRegex = /^(?:answer|ans|correct(?:\s*(?:answer|option|choice))?|option)\s*[\:\-\=]\s*([A-Ea-e]|[^\r\n]+)$/i;
   const pointsRegex = /^(?:points?|marks?|scores?|weight|pts)\s*[\:\-\=]?\s*\d*(?:\.\d+)?\s*$/i;
   const tokenRegex = /\[\[CBT_IMG_TOKEN_(\d+)\]\]/;
   const ansKeyHeaderRegex = /^(?:✅\s*)?(?:answer\s*key|answers|correct\s*answers)(?:\s*summary)?/i;
   const endExamRegex = /^(?:—|-+)\s*end\s+of\s+(?:exam|examination)/i;
+
+  function upcomingBlockHasOptions(startIdx, candNum, curPromptText = "") {
+    let hasA = false;
+    let hasB = false;
+    let sawGap = false;
+    let prevText = curPromptText;
+    for (let j = startIdx + 1; j < rawLines.length; j++) {
+      const nxt = rawLines[j];
+      if (!nxt) {
+        sawGap = true;
+        continue;
+      }
+      if (isTheoryHeaderAtLine(j) || ansKeyHeaderRegex.test(nxt) || endExamRegex.test(nxt)) break;
+      const qNext = !optRegex.test(nxt) ? matchQuestionStartLine(nxt) : null;
+      if (qNext) {
+        const breaksBeforeA = hasA || qNext.hasPrefix || qNext.num === 1 ||
+          (sawGap && !endsWithDanglingClause(prevText) && candNum > 0 && qNext.num > candNum && qNext.num <= candNum + 5);
+        if (breaksBeforeA) break;
+      }
+      if (/^\*?\s*(?:\(?A[\.\)]|\[A\]|A:|A-)\s*(?:\S|$)/i.test(nxt)) hasA = true;
+      if (/^\*?\s*(?:\(?B[\.\)]|\[B\]|B:|B-)\s*(?:\S|$)/i.test(nxt)) hasB = true;
+      if (/(?:^|\s)\(?A[\.\)]\s+\S/.test(nxt) && /\s\(?B[\.\)]\s+\S/.test(nxt)) return true;
+      if (hasA && hasB) return true;
+      prevText = prevText ? (prevText + " " + nxt) : nxt;
+    }
+    return hasA && hasB;
+  }
+
+  function hasDuplicateQNumBeforeNext(startIdx, candNum) {
+    let seenOpt = false;
+    for (let j = startIdx + 1; j < rawLines.length; j++) {
+      const nxt = rawLines[j];
+      if (!nxt) continue;
+      if (isTheoryHeaderAtLine(j) || ansKeyHeaderRegex.test(nxt) || endExamRegex.test(nxt)) break;
+      if (optRegex.test(nxt)) {
+        seenOpt = true;
+        continue;
+      }
+      if (seenOpt) {
+        const qNext = matchQuestionStartLine(nxt);
+        if (qNext) return qNext.num === candNum;
+      }
+    }
+    return false;
+  }
+
+  function shouldLineStartNewQuestion(qMatch, lineIdx) {
+    if (!qMatch) return false;
+    const parsedQNum = qMatch.num;
+    if (!qMatch.hasPrefix && parsedQNum > 250) return false;
+    if (qMatch.hasPrefix) return true;
+
+    // Before Question 1: allow 1. / Question N, or subset pastes that actually lead into options
+    if (!currentQ) {
+      if (parsedQNum === 1) return true;
+      return upcomingBlockHasOptions(lineIdx, parsedQNum);
+    }
+
+    // Current question already has options -> genuine boundary for the next question (unless mid-option single-option false break)
+    if (currentQ.options.length > 0) {
+      if (currentQ._hasAnswer || currentQ.options.length >= 2) return true;
+      return (currentQ.num > 0 && parsedQNum > currentQ.num && parsedQNum <= currentQ.num + 5) ||
+        upcomingBlockHasOptions(lineIdx, parsedQNum);
+    }
+
+    // Current question has ZERO options and NO Answer yet:
+    // Protect wrapped continuation lines starting with "<number>." (e.g. "42. R varies... when V is\n6. Find the constant K.")
+    const isSequentialJump = (currentQ.num > 0)
+      ? (parsedQNum > currentQ.num && parsedQNum <= currentQ.num + 5)
+      : (parsedQNum >= 1 && parsedQNum <= 5);
+    if (!isSequentialJump) return false;
+    if (!sawBlankLine || endsWithDanglingClause(currentQ.prompt)) return false;
+    if (!upcomingBlockHasOptions(lineIdx, parsedQNum, currentQ.prompt)) return false;
+    if (hasDuplicateQNumBeforeNext(lineIdx, parsedQNum)) return false;
+    return true;
+  }
 
   function filterPassageLines(linesArr) {
     const cleaned = (linesArr || []).filter(ln => {
@@ -3951,16 +4185,16 @@ function parseExamText(rawText, rawImages = []) {
       continue;
     }
 
-    // Question start (guard against standalone 4-digit years like "1960." in passages unless prefixed with "Question")
-    const qMatch = line.match(qRegex);
-    const parsedQNum = qMatch ? parseInt(qMatch[1], 10) : NaN;
-    if (qMatch && (parsedQNum <= 250 || /^\s*(?:question|q)\b/i.test(line))) {
+    // Question start (context-aware so wrapped numbers like "6. Find..." or decimals "2.5" do not overwrite currentQ)
+    const qMatch = !optRegex.test(line) ? matchQuestionStartLine(line) : null;
+    if (shouldLineStartNewQuestion(qMatch, i)) {
+      const parsedQNum = qMatch.num;
       if (currentQ && currentQ.text && currentQ.options.length) {
         finalizeQ(currentQ);
         questions.push(currentQ);
       }
 
-      const cleanPrompt = (qMatch[2] || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
+      const cleanPrompt = (qMatch.prompt || "").replace(/\[\s*🖼️?\s*(?:Diagram|Picture|Image)\s*Attached\s*\]/gi, "").trim();
       const rawPendingText = filterPassageLines(pendingPassageLines);
       const isBareSectionHeading = Boolean(
         rawPendingText &&
@@ -4015,10 +4249,11 @@ function parseExamText(rawText, rawImages = []) {
       continue;
     }
 
-    // Answer directly under question (handle "?" / "TBD" / "None" placeholders cleanly as unanswered)
+    // Answer directly under question (handle "C." with trailing full stop and "?" / "TBD" / "None" placeholders cleanly)
     const ansMatch = line.match(ansRegex);
     if (ansMatch) {
-      const val = ansMatch[1].trim();
+      const rawVal = ansMatch[1].trim();
+      const val = rawVal.replace(/^([A-Ea-e])\s*[\.\)]+$/, "$1");
       if (/^(?:\?+|none|n\/a|tbd|blank|-+)$/i.test(val)) {
         currentQ.correctLetter = "";
         currentQ.correctAnswer = "";
