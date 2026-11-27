@@ -152,7 +152,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/teacher.css?v=3.3">
+  <link rel="stylesheet" href="css/teacher.css?v=3.4">
 </head>
 
 <body>
@@ -940,7 +940,7 @@
               <h3 class="modal-title" id="teacherPreviewModalTitle">Exam Questions Preview &amp; Edit</h3>
               <p style="font-size:12px;color:var(--text-muted);margin-top:2px" id="teacherPreviewModalMeta"></p>
             </div>
-            <button class="btn-close" id="teacherPreviewModalCloseBtn" type="button">Close</button>
+            <button class="btn-close" id="teacherPreviewModalCloseBtn" type="button">&times; Close</button>
           </div>
 
           <div id="teacherPreviewNotice"
@@ -987,7 +987,7 @@
 
   <!-- Student Academic Scorecard & Resit Slip Modal (Teacher View) -->
   <div class="modal-overlay" id="teacherStudentScoreModal"
-    style="z-index:9998;align-items:center;justify-content:center;">
+    style="z-index:15000;align-items:center;justify-content:center;">
     <div class="modal-box modal-wide"
       style="max-height:90vh;overflow-y:auto;width:95%;max-width:850px;position:relative;">
       <!-- Printable Official Header -->
@@ -1106,12 +1106,12 @@
 
   <!-- Lightbox Modal for Full-Size Diagram Inspection -->
   <div class="modal-overlay" id="cbtImageLightboxModal"
-    style="z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
+    style="z-index:16000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
     <div
       style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative"
       onclick="event.stopPropagation()">
       <button type="button" class="btn-close"
-        style="position:absolute;top:-36px;right:0;color:#ffffff;font-size:22px;font-weight:700;cursor:pointer"
+        style="position:absolute;top:-42px;right:0;background:rgba(15,23,42,0.85);border-color:rgba(255,255,255,0.35);color:#ffffff;font-size:16px;font-weight:700;cursor:pointer"
         id="cbtLightboxCloseBtn">&times; Close</button>
       <img id="cbtLightboxImg" src=""
         style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);background:#fff">

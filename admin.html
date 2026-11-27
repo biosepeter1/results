@@ -123,7 +123,7 @@
       display: block !important;
     }
   </style>
-  <link rel="stylesheet" href="css/admin.css?v=3.3">
+  <link rel="stylesheet" href="css/admin.css?v=3.7">
 </head>
 
 <body>
@@ -1524,13 +1524,21 @@
                   <option value="Year 12">Year 12</option>
                 </select>
               </div>
-              <div class="filter-control" style="flex:1;min-width:180px">
+              <div class="filter-control" style="flex:1;min-width:170px">
                 <label for="cbtFilterSubject">SUBJECT</label>
                 <select id="cbtFilterSubject">
                   <option value="">All subjects</option>
                 </select>
               </div>
-              <div class="filter-control" style="flex:2;min-width:220px">
+              <div class="filter-control cbt-date-filter-group" style="flex:1.15;min-width:205px">
+                <label for="cbtFilterDate">EXAM DATE</label>
+                <div class="cbt-date-filter-controls">
+                  <input id="cbtFilterDate" type="date" aria-label="Filter submissions by exam date">
+                  <button type="button" class="btn btn-secondary btn-sm cbt-filter-today-btn" id="cbtFilterTodayBtn"
+                    title="Filter for today's exam date">Today</button>
+                </div>
+              </div>
+              <div class="filter-control" style="flex:1.6;min-width:200px">
                 <label for="cbtFilterSearch">SEARCH EXAM OR TEACHER</label>
                 <input id="cbtFilterSearch" type="search" placeholder="Filter by title, teacher name, subject...">
               </div>
@@ -1550,10 +1558,36 @@
             </div>
           </div>
 
+          <!-- Smart Bulk Selection & Compass JSON Download Bar -->
+          <div id="cbtBulkActionBar" class="cbt-bulk-bar is-hidden" aria-hidden="true">
+            <div class="cbt-bulk-info">
+              <span class="cbt-bulk-count-pill" id="cbtBulkSelectionSummary">0 exams selected</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtSelectAllFilteredBtn"
+                style="display:none">Select all matching</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="cbtClearSelectionBtn">Clear</button>
+            </div>
+            <div class="cbt-bulk-actions">
+              <button type="button" class="btn btn-sm" id="cbtBulkDownloadBothBtn"
+                title="Download 1 merged Exams JSON and 1 merged Questions JSON for MongoDB Compass">
+                📦 Download Bulk Both (Exams + Questions)
+              </button>
+              <div class="cbt-bulk-split-btns">
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtBulkDownloadExamsBtn"
+                  title="Download merged cbtApp_v2.exams.json only">exams.json</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="cbtBulkDownloadQuestionsBtn"
+                  title="Download merged cbtApp_v2.questions.json only">questions.json</button>
+              </div>
+            </div>
+          </div>
+
           <div class="table-wrap">
             <table class="inst-table">
               <thead>
                 <tr>
+                  <th class="cbt-check-col" title="Select / deselect all exams on this page">
+                    <input type="checkbox" id="cbtSelectAllCheckbox" class="cbt-sub-checkbox"
+                      aria-label="Select all exams on current page">
+                  </th>
                   <th>Exam Title</th>
                   <th>Teacher</th>
                   <th>Subject &amp; Class</th>
@@ -1565,7 +1599,7 @@
               </thead>
               <tbody id="cbtSubmissionsTbody">
                 <tr>
-                  <td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher
+                  <td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Loading teacher
                     submissions…</td>
                 </tr>
               </tbody>
@@ -2164,7 +2198,7 @@
           <h3 class="modal-title" id="cbtPreviewModalTitle">Exam Questions Preview</h3>
           <p style="font-size:12px;color:var(--text-muted);margin-top:2px" id="cbtPreviewModalMeta"></p>
         </div>
-        <button class="btn-close" id="cbtPreviewModalCloseBtn" type="button">Close</button>
+        <button class="btn-close" id="cbtPreviewModalCloseBtn" type="button">&times; Close</button>
       </div>
 
       <!-- Exam Schedule, Gate & Assigned Arms (Admin Only) -->
@@ -2395,12 +2429,12 @@
 
   <!-- Lightbox Modal for Full-Size Diagram Inspection -->
   <div class="modal-overlay" id="cbtImageLightboxModal"
-    style="z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
+    style="z-index:16000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;cursor:pointer">
     <div
       style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative"
       onclick="event.stopPropagation()">
       <button type="button" class="btn-close"
-        style="position:absolute;top:-36px;right:0;color:#ffffff;font-size:22px;font-weight:700;cursor:pointer"
+        style="position:absolute;top:-42px;right:0;background:rgba(15,23,42,0.85);border-color:rgba(255,255,255,0.35);color:#ffffff;font-size:16px;font-weight:700;cursor:pointer"
         id="cbtLightboxCloseBtn">&times; Close</button>
       <img id="cbtLightboxImg" src=""
         style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.5);background:#fff">
@@ -2529,7 +2563,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=4.8"></script>
   <script src="js/cbt-catalog.js?v=5.2"></script>
-  <script src="js/admin.js?v=6.5"></script>
+  <script src="js/admin.js?v=6.9"></script>
 </body>
 
 </html>

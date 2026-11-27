@@ -4211,6 +4211,8 @@ let cbtFilteredSubmissions = [];
 let cbtCurrentPage = 1;
 let cbtPageSize = 10;
 let activePreviewSubmission = null;
+const cbtSelectedDocIds = new Set();
+let cbtBulkExportInProgress = false;
 
 // ── School-Wide Active CBT Examination Term (Dynamic & Editable Options) ──
 const DEFAULT_CBT_TERM_OPTIONS = [
@@ -4688,9 +4690,37 @@ function populateCbtFilterOptions() {
   `).join("");
 }
 
+function formatLocalYmd(dateObj) {
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function extractCbtSubmissionDateYmd(rawDate, useLocalTimezone = false) {
+  if (!rawDate) return "";
+  const raw = (typeof rawDate === "object" && rawDate.$date) ? String(rawDate.$date) : String(rawDate);
+  const s = raw.trim();
+  if (!s) return "";
+  const plainMatch = s.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (plainMatch) return plainMatch[1];
+  if (!useLocalTimezone) {
+    const utcMidnight = s.match(/^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.\d+)?Z$/i);
+    if (utcMidnight) return utcMidnight[1];
+  }
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return useLocalTimezone ? formatLocalYmd(parsed) : parsed.toISOString().slice(0, 10);
+  }
+  const fallback = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return fallback ? fallback[1] : "";
+}
+
 function filterCbtSubmissions() {
   const classFilter = ($("cbtFilterClass")?.value || "").trim().toLowerCase();
   const subjectFilter = ($("cbtFilterSubject")?.value || "").trim().toLowerCase();
+  const dateFilter = ($("cbtFilterDate")?.value || "").trim();
   const query = ($("cbtFilterSearch")?.value || "").trim().toLowerCase();
 
   cbtFilteredSubmissions = allCbtSubmissions.filter(sub => {
@@ -4706,6 +4736,11 @@ function filterCbtSubmissions() {
       const titleLower = (sub.title || "").toLowerCase();
       const matchesSubject = subSubject === subjectFilter || titleLower.includes(subjectFilter);
       if (!matchesSubject) return false;
+    }
+
+    if (dateFilter) {
+      const launchYmd = extractCbtSubmissionDateYmd(sub.launchDate || sub.examDate || sub.startDate, false);
+      if (launchYmd !== dateFilter) return false;
     }
 
     if (query) {
@@ -4727,6 +4762,7 @@ function filterCbtSubmissions() {
 function resetCbtFilters() {
   if ($("cbtFilterClass")) $("cbtFilterClass").value = "";
   if ($("cbtFilterSubject")) $("cbtFilterSubject").value = "";
+  if ($("cbtFilterDate")) $("cbtFilterDate").value = "";
   if ($("cbtFilterSearch")) $("cbtFilterSearch").value = "";
   filterCbtSubmissions();
 }
@@ -4776,11 +4812,17 @@ function updateCbtPaginationUI(startIdx, endIdx, totalRecords, totalPages) {
 // Load submissions created by teachers from Supabase
 async function loadCBTSubmissions() {
   const tbody = $("cbtSubmissionsTbody");
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions from Supabase…</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Loading teacher submissions from Supabase…</td></tr>';
   try {
     const sbSubs = await window.dbClient.getSubmissions();
     allCbtSubmissions = Array.isArray(sbSubs) ? sbSubs : [];
     allCbtSubmissions.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    // Prune any selected IDs that were removed
+    const validDocIds = new Set(allCbtSubmissions.map(s => s.docId));
+    Array.from(cbtSelectedDocIds).forEach(id => {
+      if (!validDocIds.has(id)) cbtSelectedDocIds.delete(id);
+    });
 
     const badge = cbtSubCountBadge;
     if (badge) {
@@ -4804,8 +4846,118 @@ async function loadCBTSubmissions() {
       }
     }
   } catch (err) {
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--status-fail)">Failed to load submissions: ' + esc(err.message) + '</td></tr>';
+    syncCbtBulkSelectionUI();
   }
+}
+
+function getVisibleCbtPageSubmissions() {
+  if (!cbtFilteredSubmissions.length) return [];
+  const totalRecords = cbtFilteredSubmissions.length;
+  const isAll = cbtPageSize === "All";
+  const numPageSize = isAll ? totalRecords : (Number(cbtPageSize) || 10);
+  const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalRecords / numPageSize));
+  const safePage = Math.min(Math.max(1, cbtCurrentPage), totalPages);
+  const startIdx = isAll ? 0 : (safePage - 1) * numPageSize;
+  const endIdx = isAll ? totalRecords : Math.min(startIdx + numPageSize, totalRecords);
+  return cbtFilteredSubmissions.slice(startIdx, endIdx);
+}
+
+function getSelectedCbtSubmissions() {
+  if (!cbtSelectedDocIds.size) return [];
+  const ordered = [];
+  const seen = new Set();
+  cbtFilteredSubmissions.forEach(s => {
+    if (cbtSelectedDocIds.has(s.docId) && !seen.has(s.docId)) {
+      ordered.push(s);
+      seen.add(s.docId);
+    }
+  });
+  allCbtSubmissions.forEach(s => {
+    if (cbtSelectedDocIds.has(s.docId) && !seen.has(s.docId)) {
+      ordered.push(s);
+      seen.add(s.docId);
+    }
+  });
+  return ordered;
+}
+
+function syncCbtBulkSelectionUI() {
+  const bar = $("cbtBulkActionBar");
+  const summaryEl = $("cbtBulkSelectionSummary");
+  const selectAllChk = $("cbtSelectAllCheckbox");
+  const selectFilteredBtn = $("cbtSelectAllFilteredBtn");
+
+  const pageSubs = getVisibleCbtPageSubmissions();
+  if (selectAllChk) {
+    if (!pageSubs.length) {
+      selectAllChk.checked = false;
+      selectAllChk.indeterminate = false;
+      selectAllChk.disabled = true;
+    } else {
+      selectAllChk.disabled = false;
+      const checkedOnPage = pageSubs.filter(s => cbtSelectedDocIds.has(s.docId)).length;
+      selectAllChk.checked = checkedOnPage === pageSubs.length;
+      selectAllChk.indeterminate = checkedOnPage > 0 && checkedOnPage < pageSubs.length;
+    }
+  }
+
+  const selectedSubs = getSelectedCbtSubmissions();
+  const count = selectedSubs.length;
+
+  if (!bar) return;
+
+  if (count === 0) {
+    bar.classList.add("is-hidden");
+    bar.setAttribute("aria-hidden", "true");
+    if (selectFilteredBtn) selectFilteredBtn.style.display = "none";
+    return;
+  }
+
+  const totalQs = selectedSubs.reduce((acc, s) => {
+    const qLen = (Array.isArray(s.questions) && s.questions.length > 0)
+      ? s.questions.length
+      : (Number(s.numberOfQuestions) || Number(s.totalQuestions) || 0);
+    return acc + qLen;
+  }, 0);
+
+  if (summaryEl) {
+    summaryEl.textContent = `${count} exam${count === 1 ? "" : "s"} selected · ${totalQs} question${totalQs === 1 ? "" : "s"}`;
+  }
+
+  if (selectFilteredBtn) {
+    const unselectedFilteredCount = cbtFilteredSubmissions.filter(s => !cbtSelectedDocIds.has(s.docId)).length;
+    if (unselectedFilteredCount > 0 && cbtFilteredSubmissions.length > 1) {
+      selectFilteredBtn.style.display = "inline-flex";
+      selectFilteredBtn.textContent = `Select all ${cbtFilteredSubmissions.length} matching`;
+    } else {
+      selectFilteredBtn.style.display = "none";
+    }
+  }
+
+  bar.classList.remove("is-hidden");
+  bar.setAttribute("aria-hidden", "false");
+}
+
+function toggleSelectAllCurrentCbtPage(checked) {
+  const pageSubs = getVisibleCbtPageSubmissions();
+  pageSubs.forEach(s => {
+    if (checked) cbtSelectedDocIds.add(s.docId);
+    else cbtSelectedDocIds.delete(s.docId);
+  });
+  renderCBTSubmissions();
+}
+
+function selectAllFilteredCbtSubmissions() {
+  cbtFilteredSubmissions.forEach(s => {
+    if (s.docId) cbtSelectedDocIds.add(s.docId);
+  });
+  renderCBTSubmissions();
+}
+
+function clearCbtSelection() {
+  cbtSelectedDocIds.clear();
+  renderCBTSubmissions();
 }
 
 function renderCBTSubmissions() {
@@ -4813,15 +4965,17 @@ function renderCBTSubmissions() {
   if (!tbody) return;
 
   if (!allCbtSubmissions.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No teacher exam submissions yet. When teachers upload from home in Notepad or Word, their exams will appear here ready to download as JSON.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No teacher exam submissions yet. When teachers upload from home in Notepad or Word, their exams will appear here ready to download as JSON.</td></tr>`;
     updateCbtPaginationUI(0, 0, 0, 1);
+    syncCbtBulkSelectionUI();
     return;
   }
 
   if (!cbtFilteredSubmissions.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No exam submissions match your filter criteria. <button type="button" class="btn btn-secondary btn-sm" id="cbtInlineResetBtn" style="margin-left:8px">Reset filters</button></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No exam submissions match your filter criteria. <button type="button" class="btn btn-secondary btn-sm" id="cbtInlineResetBtn" style="margin-left:8px">Reset filters</button></td></tr>`;
     if ($("cbtInlineResetBtn")) $("cbtInlineResetBtn").onclick = resetCbtFilters;
     updateCbtPaginationUI(0, 0, 0, 1);
+    syncCbtBulkSelectionUI();
     return;
   }
 
@@ -4854,9 +5008,14 @@ function renderCBTSubmissions() {
     const isReupload = !!(sub.isUpdate || (sub.version && sub.version > 1) || sub.status === "Updated by Teacher");
     const versionNum = sub.version || (isReupload ? 2 : 1);
     const lastUpText = sub.lastUpdated ? new Date(sub.lastUpdated).toLocaleDateString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+    const isSelected = cbtSelectedDocIds.has(sub.docId);
+    const rowClasses = [isSelected ? "cbt-row-selected" : ""].filter(Boolean).join(" ");
 
     return `
-      <tr${isReupload ? ' style="background:rgba(245, 158, 11, 0.04);"' : ''}>
+      <tr${rowClasses ? ` class="${rowClasses}"` : ''}${isReupload && !isSelected ? ' style="background:rgba(245, 158, 11, 0.04);"' : ''}>
+        <td class="cbt-check-col">
+          <input type="checkbox" class="cbt-sub-checkbox" data-select-sub="${esc(sub.docId)}" ${isSelected ? 'checked' : ''} aria-label="Select ${esc(sub.title || 'exam')}">
+        </td>
         <td style="font-weight:600;color:var(--text)">
           <div>${esc(sub.title || "Untitled Exam")}</div>
           ${isReupload ? `
@@ -4902,6 +5061,27 @@ function renderCBTSubmissions() {
     `;
   }).join("");
 
+  // Attach row selection events
+  tbody.querySelectorAll("[data-select-sub]").forEach(chk => {
+    chk.onchange = () => {
+      const docId = chk.dataset.selectSub;
+      if (chk.checked) cbtSelectedDocIds.add(docId);
+      else cbtSelectedDocIds.delete(docId);
+      const tr = chk.closest("tr");
+      if (tr) tr.classList.toggle("cbt-row-selected", chk.checked);
+      syncCbtBulkSelectionUI();
+    };
+  });
+  tbody.querySelectorAll(".cbt-check-col").forEach(td => {
+    td.onclick = (e) => {
+      if (e.target && e.target.tagName === "INPUT") return;
+      const chk = td.querySelector("[data-select-sub]");
+      if (!chk) return;
+      chk.checked = !chk.checked;
+      chk.onchange();
+    };
+  });
+
   // Attach button events
   tbody.querySelectorAll("[data-preview-sub]").forEach(b => {
     b.onclick = () => openCBTPreview(b.dataset.previewSub);
@@ -4920,6 +5100,7 @@ function renderCBTSubmissions() {
   });
 
   updateCbtPaginationUI(startIdx, endIdx, totalRecords, totalPages);
+  syncCbtBulkSelectionUI();
 }
 
 // ── CBT Custom Subjects Storage & State ──
@@ -5603,14 +5784,108 @@ async function ensureSubmissionQuestions(sub) {
   if (window.dbClient && window.dbClient.getSubmission && sub.docId) {
     try {
       const full = await window.dbClient.getSubmission(sub.docId);
-      if (full && Array.isArray(full.questions)) {
-        sub.questions = full.questions;
+      if (full) {
+        Object.assign(sub, full);
       }
     } catch (e) {
       console.warn("Could not fetch full submission questions:", e);
     }
   }
   return sub;
+}
+
+async function ensureSubmissionsQuestionsBatch(subs, onProgress) {
+  const list = Array.isArray(subs) ? subs : [];
+  const needFetch = list.filter(s => !(Array.isArray(s.questions) && s.questions.length > 0));
+  const totalToFetch = needFetch.length;
+  let completed = 0;
+  const failedTitles = [];
+
+  if (typeof onProgress === "function") onProgress(0, totalToFetch);
+
+  const CONCURRENCY = 4;
+  for (let i = 0; i < needFetch.length; i += CONCURRENCY) {
+    const batch = needFetch.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async sub => {
+      try {
+        if (window.dbClient && window.dbClient.getSubmission && sub.docId) {
+          const full = await window.dbClient.getSubmission(sub.docId);
+          if (full && Array.isArray(full.questions)) {
+            Object.assign(sub, full);
+          } else {
+            failedTitles.push(sub.title || sub.subjectName || sub.docId);
+          }
+        }
+      } catch (err) {
+        console.warn("Batch fetch submission error:", sub.docId, err);
+        failedTitles.push(sub.title || sub.subjectName || sub.docId);
+      } finally {
+        completed++;
+        if (typeof onProgress === "function") onProgress(completed, totalToFetch);
+      }
+    }));
+  }
+
+  const emptyTitles = list
+    .filter(s => !Array.isArray(s.questions) || s.questions.length === 0)
+    .map(s => s.title || s.subjectName || s.docId);
+
+  return { failedTitles, emptyTitles };
+}
+
+function buildBulkExportData(subs) {
+  const mergedExams = [];
+  const mergedQuestions = [];
+  const seenExamIds = new Set();
+  const seenQuestionIds = new Set();
+
+  (subs || []).forEach(sub => {
+    const { exams, questions } = buildExportData(sub);
+    const examDoc = exams && exams[0];
+    if (!examDoc) return;
+
+    let examOid = (examDoc._id && examDoc._id.$oid) ? examDoc._id.$oid : generateObjectId();
+    if (seenExamIds.has(examOid)) {
+      examOid = generateObjectId();
+      examDoc._id = { $oid: examOid };
+    }
+    seenExamIds.add(examOid);
+
+    const examQuestionRefs = [];
+    (questions || []).forEach(q => {
+      let qOid = (q._id && q._id.$oid) ? q._id.$oid : generateObjectId();
+      if (seenQuestionIds.has(qOid)) {
+        qOid = generateObjectId();
+        q._id = { $oid: qOid };
+      }
+      seenQuestionIds.add(qOid);
+      q.test_id = { $oid: examOid };
+      examQuestionRefs.push({ $oid: qOid });
+      mergedQuestions.push(q);
+    });
+
+    examDoc.questions = examQuestionRefs;
+    examDoc.numberOfQuestions = examQuestionRefs.length;
+    mergedExams.push(examDoc);
+  });
+
+  return { mergedExams, mergedQuestions };
+}
+
+function buildBulkCbtExportFilename(subs, kind, totalQuestions) {
+  const collectionPrefix = (kind === "questions") ? "cbtApp_v2.questions" : "cbtApp_v2.exams";
+  const classes = Array.from(new Set(
+    (subs || []).map(s => formatCbtFilenameClass(getSubClass(s))).filter(Boolean)
+  ));
+  const scope = classes.length === 1 ? classes[0] : "Bulk";
+  const examCountLabel = `${subs.length} Exam${subs.length === 1 ? "" : "s"}`;
+  const activeDateFilter = ($("cbtFilterDate")?.value || "").trim();
+  const dateStr = activeDateFilter || formatLocalYmd(new Date());
+  const parts = (kind === "questions")
+    ? [scope, examCountLabel, `${totalQuestions} Qs`, dateStr]
+    : [scope, examCountLabel, dateStr];
+  const suffix = sanitizeDownloadFilenamePart(parts.join(" - "));
+  return suffix ? `${collectionPrefix} (${suffix}).json` : `${collectionPrefix}.json`;
 }
 
 async function downloadSubmissionQuestionsJson(docId) {
@@ -5632,11 +5907,94 @@ async function downloadSubmissionBothJson(docId) {
   }, 400);
 }
 
+async function downloadBulkCbtJson(mode = "both") {
+  if (cbtBulkExportInProgress) return;
+  const selectedSubs = getSelectedCbtSubmissions();
+  if (!selectedSubs.length) {
+    showToast({
+      type: "warning",
+      title: "No Exams Selected",
+      message: "Check one or more exams in the table first to download in bulk."
+    });
+    return;
+  }
+
+  const btnBoth = $("cbtBulkDownloadBothBtn");
+  const btnExams = $("cbtBulkDownloadExamsBtn");
+  const btnQuestions = $("cbtBulkDownloadQuestionsBtn");
+  const origBothText = btnBoth ? btnBoth.textContent : "📦 Download Bulk Both (Exams + Questions)";
+
+  cbtBulkExportInProgress = true;
+  if (btnBoth) { btnBoth.disabled = true; btnBoth.textContent = "⏳ Loading selected exams..."; }
+  if (btnExams) btnExams.disabled = true;
+  if (btnQuestions) btnQuestions.disabled = true;
+
+  try {
+    const { failedTitles, emptyTitles } = await ensureSubmissionsQuestionsBatch(selectedSubs, (done, total) => {
+      if (btnBoth && total > 0) {
+        btnBoth.textContent = `⏳ Fetching (${done}/${total} exams)...`;
+      }
+    });
+
+    if (failedTitles.length > 0 || emptyTitles.length > 0) {
+      const badList = Array.from(new Set([...failedTitles, ...emptyTitles])).slice(0, 5);
+      showToast({
+        type: "error",
+        title: "Bulk Export Blocked",
+        message: "Some selected exams could not load questions or have 0 questions:",
+        list: badList,
+        duration: 8000
+      });
+      return;
+    }
+
+    if (btnBoth) btnBoth.textContent = "⏳ Building JSON files...";
+    const { mergedExams, mergedQuestions } = buildBulkExportData(selectedSubs);
+    const totalQ = mergedQuestions.length;
+
+    const examsFilename = buildBulkCbtExportFilename(selectedSubs, "exams", totalQ);
+    const questionsFilename = buildBulkCbtExportFilename(selectedSubs, "questions", totalQ);
+
+    if (mode === "exams") {
+      triggerJsonDownload(examsFilename, mergedExams);
+      showToast({
+        type: "success",
+        title: "Bulk Exams JSON Ready!",
+        message: `Downloaded 1 file containing ${mergedExams.length} exam${mergedExams.length === 1 ? "" : "s"} (${examsFilename}) for Compass collection cbtApp_v2.exams.`
+      });
+    } else if (mode === "questions") {
+      triggerJsonDownload(questionsFilename, mergedQuestions);
+      showToast({
+        type: "success",
+        title: "Bulk Questions JSON Ready!",
+        message: `Downloaded 1 file containing ${totalQ} question${totalQ === 1 ? "" : "s"} across ${mergedExams.length} exam${mergedExams.length === 1 ? "" : "s"} for Compass collection cbtApp_v2.questions.`
+      });
+    } else {
+      triggerJsonDownload(examsFilename, mergedExams);
+      setTimeout(() => {
+        triggerJsonDownload(questionsFilename, mergedQuestions);
+      }, 450);
+      showToast({
+        type: "success",
+        title: "Bulk Compass JSONs Downloaded!",
+        message: `Merged ${mergedExams.length} exam${mergedExams.length === 1 ? "" : "s"} and ${totalQ} questions into 2 files (1 Exams JSON + 1 Questions JSON). Allow multiple downloads if prompted by your browser.`,
+        duration: 7500
+      });
+    }
+  } finally {
+    cbtBulkExportInProgress = false;
+    if (btnBoth) { btnBoth.disabled = false; btnBoth.textContent = origBothText; }
+    if (btnExams) btnExams.disabled = false;
+    if (btnQuestions) btnQuestions.disabled = false;
+  }
+}
+
 async function deleteCBTSubmission(docId) {
   const sub = allCbtSubmissions.find(s => s.docId === docId);
   if (!confirm(`Delete exam "${sub?.title || 'this submission'}"?`)) return;
   try {
     await window.dbClient.deleteSubmission(docId);
+    cbtSelectedDocIds.delete(docId);
     showToast({
       type: "info",
       title: "Exam Deleted",
@@ -6229,10 +6587,27 @@ function syncPreviewInputsToActiveSubmission() {
   }
 }
 
-$("cbtPreviewModalCloseBtn").onclick = () => {
-  $("cbtPreviewModal").classList.remove("open");
+function closeCbtPreviewModal() {
+  if ($("cbtPreviewModal")) $("cbtPreviewModal").classList.remove("open");
   activePreviewSubmission = null;
-};
+}
+
+$("cbtPreviewModalCloseBtn").onclick = closeCbtPreviewModal;
+if ($("cbtPreviewModal")) {
+  $("cbtPreviewModal").addEventListener("click", (e) => {
+    if (e.target === $("cbtPreviewModal")) closeCbtPreviewModal();
+  });
+}
+if (typeof document !== "undefined" && document.addEventListener) {
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if ($("cbtImageLightboxModal")?.classList.contains("open")) {
+      $("cbtImageLightboxModal").classList.remove("open");
+    } else if ($("cbtPreviewModal")?.classList.contains("open")) {
+      closeCbtPreviewModal();
+    }
+  });
+}
 
 $("cbtModalDownloadExamsBtn").onclick = () => {
   if (activePreviewSubmission) {
@@ -6255,9 +6630,36 @@ $("cbtModalDownloadBothBtn").onclick = () => {
 $("refreshCBTSubmissionsBtn").onclick = loadCBTSubmissions;
 if ($("cbtAdminSaveDefaultsBtn")) $("cbtAdminSaveDefaultsBtn").onclick = saveAdminCbtDefaults;
 
+// ── CBT Submissions Bulk Selection & Merged Export Wiring ──
+if ($("cbtSelectAllCheckbox")) {
+  $("cbtSelectAllCheckbox").onchange = (e) => toggleSelectAllCurrentCbtPage(Boolean(e.target.checked));
+}
+if ($("cbtSelectAllFilteredBtn")) {
+  $("cbtSelectAllFilteredBtn").onclick = selectAllFilteredCbtSubmissions;
+}
+if ($("cbtClearSelectionBtn")) {
+  $("cbtClearSelectionBtn").onclick = clearCbtSelection;
+}
+if ($("cbtBulkDownloadBothBtn")) {
+  $("cbtBulkDownloadBothBtn").onclick = () => downloadBulkCbtJson("both");
+}
+if ($("cbtBulkDownloadExamsBtn")) {
+  $("cbtBulkDownloadExamsBtn").onclick = () => downloadBulkCbtJson("exams");
+}
+if ($("cbtBulkDownloadQuestionsBtn")) {
+  $("cbtBulkDownloadQuestionsBtn").onclick = () => downloadBulkCbtJson("questions");
+}
+
 // ── CBT Submissions Filters & Pagination Event Wiring ──
 if ($("cbtFilterClass")) $("cbtFilterClass").onchange = filterCbtSubmissions;
 if ($("cbtFilterSubject")) $("cbtFilterSubject").onchange = filterCbtSubmissions;
+if ($("cbtFilterDate")) $("cbtFilterDate").onchange = filterCbtSubmissions;
+if ($("cbtFilterTodayBtn")) {
+  $("cbtFilterTodayBtn").onclick = () => {
+    if ($("cbtFilterDate")) $("cbtFilterDate").value = formatLocalYmd(new Date());
+    filterCbtSubmissions();
+  };
+}
 if ($("cbtFilterSearch")) $("cbtFilterSearch").oninput = filterCbtSubmissions;
 if ($("cbtClearFiltersBtn")) $("cbtClearFiltersBtn").onclick = resetCbtFilters;
 

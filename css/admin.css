@@ -69,6 +69,7 @@ body {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--font-system);
   background-color: var(--bg);
   color: var(--text);
@@ -151,6 +152,29 @@ textarea {
   min-height: 32px;
   padding: 0 10px;
   font-size: 12px;
+}
+
+.btn-text {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 10px;
+  min-height: 32px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.btn-text:hover {
+  background: var(--surface-alt);
+  border-color: var(--text-muted);
 }
 
 /* ── Layout ── */
@@ -1264,8 +1288,10 @@ table.inst-table tr:hover td {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 100;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 15000;
   align-items: center;
   justify-content: center;
   padding: 16px;
@@ -1284,13 +1310,16 @@ table.inst-table tr:hover td {
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
 }
 
 .modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -1302,16 +1331,27 @@ table.inst-table tr:hover td {
 }
 
 .btn-close {
-  background: transparent;
-  border: none;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   font-size: 13px;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 12px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
 }
 
 .btn-close:hover {
-  color: var(--text);
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .modal-actions {
@@ -2533,6 +2573,7 @@ table.inst-table tr:hover td {
   body {
     max-width: 100vw;
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* Score Conversion Panel: Collapsible Dropdown ONLY on Mobile */
@@ -2704,14 +2745,16 @@ table.inst-table tr:hover td {
 
   /* CBT Exam Questions Preview Modal (.modal-wide) on Phones */
   .modal-overlay {
-    padding: 6px !important;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 6px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .modal-box.modal-wide {
     width: 100% !important;
     max-width: 100% !important;
-    height: 96vh !important;
-    max-height: 96vh !important;
+    height: 94vh !important;
+    height: 94dvh !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
     padding: 12px 10px !important;
     border-radius: 10px !important;
     display: flex !important;
@@ -2722,6 +2765,13 @@ table.inst-table tr:hover td {
   .modal-head {
     margin-bottom: 10px !important;
     padding-bottom: 8px !important;
+    gap: 10px !important;
+  }
+
+  .btn-close {
+    min-height: 40px !important;
+    padding: 6px 14px !important;
+    font-size: 13.5px !important;
   }
 
   .modal-title {
@@ -3993,5 +4043,161 @@ select option {
   }
   .admin-notif-chips {
     width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CBT SUBMISSIONS BULK SELECTION & MERGED EXPORT TOOLBAR
+   ══════════════════════════════════════════════════════════ */
+.cbt-check-col {
+  width: 44px;
+  min-width: 44px;
+  text-align: center !important;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cbt-sub-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  vertical-align: middle;
+}
+
+tbody tr.cbt-row-selected {
+  background: rgba(185, 74, 74, 0.08) !important;
+}
+
+tbody tr.cbt-row-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.cbt-bulk-bar {
+  position: sticky;
+  top: 8px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+  border: 1px solid rgba(185, 74, 74, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: cbtBulkSlideIn 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cbt-bulk-bar.is-hidden {
+  display: none !important;
+}
+
+.cbt-bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cbt-bulk-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: rgba(185, 74, 74, 0.14);
+  color: var(--accent);
+  border: 1px solid rgba(185, 74, 74, 0.3);
+}
+
+.cbt-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cbt-bulk-split-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@keyframes cbtBulkSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 680px) {
+  .cbt-bulk-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    gap: 10px;
+  }
+  .cbt-bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #cbtBulkDownloadBothBtn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .cbt-bulk-split-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .cbt-bulk-split-btns button {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+}
+
+/* CBT Exam Date Filter Control Group */
+.cbt-date-filter-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.cbt-date-filter-controls input[type="date"] {
+  flex: 1 1 130px;
+  min-width: 0;
+}
+
+.cbt-filter-today-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0 11px;
+}
+
+@media (max-width: 680px) {
+  .cbt-date-filter-controls {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  .cbt-filter-today-btn {
+    min-height: 42px;
+    padding: 0 14px;
   }
 }
